@@ -103,4 +103,6 @@ export interface GeocodeResult {
   name: string
   /** IANA tz, e.g. "Europe/Brussels" */
   timezone: string
+  /** ISO 3166-1 alpha-2, from Open-Meteo's `country_code` field — feeds holidays' baseCountry default. */
+  countryCode: string
 }

@@ -140,6 +140,7 @@ interface RawGeocodeResult {
   longitude: number
   name: string
   country?: string
+  country_code?: string
   timezone: string
 }
 
@@ -343,6 +344,7 @@ export async function geocode(query: string): Promise<GeocodeResult[]> {
     lat: r.latitude,
     lon: r.longitude,
     name: r.country ? `${r.name}, ${r.country}` : r.name,
-    timezone: r.timezone
+    timezone: r.timezone,
+    countryCode: r.country_code ?? ''
   }))
 }

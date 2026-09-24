@@ -16,9 +16,37 @@ import type { ConditionKey } from '../weather/mapWmo'
 import type { MoonPhaseKey } from '../weather/types'
 
 export interface Dictionary {
-  dateLine: { week: string; day: string; of: string }
+  dateLine: {
+    week: string
+    day: string
+    of: string
+    /** Overflow marker for the compact holiday item, e.g. "Christmas, Boxing Day" + "+1" more. */
+    more: (n: number) => string
+  }
   kiosk: { tapToStart: string; openSettings: string }
-  settings: { title: string; placeholder: string; close: string }
+  settings: {
+    title: string
+    placeholder: string
+    close: string
+    holidays: {
+      heading: string
+      country: string
+      region: string
+      allRegions: string
+      extraCountries: string
+      addCountry: string
+      /** Aria-label for the remove button on an extra-country chip. */
+      removeCountry: string
+      listHeading: string
+    }
+    saints: {
+      heading: string
+      enable: string
+      tradition: string
+      traditionRomanCatholic: string
+      traditionFrenchCivil: string
+    }
+  }
   status: {
     offline: string
     noDataYet: string
@@ -60,13 +88,35 @@ export interface Dictionary {
 }
 
 const en: Dictionary = {
-  dateLine: { week: 'Week', day: 'Day', of: 'of' },
+  dateLine: {
+    week: 'Week',
+    day: 'Day',
+    of: 'of',
+    more: (n) => `+${n}`
+  },
   kiosk: { tapToStart: 'Tap to start', openSettings: 'Open settings' },
   settings: {
     title: 'Settings',
     placeholder:
       'Location, units, holidays, photos and effects arrive here as each feature ships.',
-    close: 'Close settings'
+    close: 'Close settings',
+    holidays: {
+      heading: 'Holidays',
+      country: 'Country',
+      region: 'Region',
+      allRegions: 'All regions',
+      extraCountries: 'Extra countries',
+      addCountry: 'Add country',
+      removeCountry: 'Remove country',
+      listHeading: 'Holidays this year'
+    },
+    saints: {
+      heading: 'Saint of the day',
+      enable: 'Enable saint of the day',
+      tradition: 'Tradition',
+      traditionRomanCatholic: 'Roman Catholic',
+      traditionFrenchCivil: 'French civil calendar'
+    }
   },
   status: {
     offline: 'offline',
@@ -134,7 +184,12 @@ const en: Dictionary = {
 }
 
 const fr: Dictionary = {
-  dateLine: { week: 'Semaine', day: 'Jour', of: 'sur' },
+  dateLine: {
+    week: 'Semaine',
+    day: 'Jour',
+    of: 'sur',
+    more: (n) => `+${n}`
+  },
   kiosk: {
     tapToStart: 'Toucher pour démarrer',
     openSettings: 'Ouvrir les réglages'
@@ -143,7 +198,24 @@ const fr: Dictionary = {
     title: 'Réglages',
     placeholder:
       'La localisation, les unités, les jours fériés, les photos et les effets arriveront ici au fil des fonctionnalités.',
-    close: 'Fermer les réglages'
+    close: 'Fermer les réglages',
+    holidays: {
+      heading: 'Jours fériés',
+      country: 'Pays',
+      region: 'Région',
+      allRegions: 'Toutes les régions',
+      extraCountries: 'Pays supplémentaires',
+      addCountry: 'Ajouter un pays',
+      removeCountry: 'Retirer le pays',
+      listHeading: 'Jours fériés de l’année'
+    },
+    saints: {
+      heading: 'Saint du jour',
+      enable: 'Activer le saint du jour',
+      tradition: 'Tradition',
+      traditionRomanCatholic: 'Catholique romain',
+      traditionFrenchCivil: 'Calendrier civil français'
+    }
   },
   status: {
     offline: 'hors ligne',
@@ -213,7 +285,12 @@ const fr: Dictionary = {
 }
 
 const nl: Dictionary = {
-  dateLine: { week: 'Week', day: 'Dag', of: 'van' },
+  dateLine: {
+    week: 'Week',
+    day: 'Dag',
+    of: 'van',
+    more: (n) => `+${n}`
+  },
   kiosk: {
     tapToStart: 'Tik om te starten',
     openSettings: 'Instellingen openen'
@@ -222,7 +299,24 @@ const nl: Dictionary = {
     title: 'Instellingen',
     placeholder:
       'Locatie, eenheden, feestdagen, foto’s en effecten komen hier terwijl elke functie wordt uitgebracht.',
-    close: 'Instellingen sluiten'
+    close: 'Instellingen sluiten',
+    holidays: {
+      heading: 'Feestdagen',
+      country: 'Land',
+      region: 'Regio',
+      allRegions: 'Alle regio’s',
+      extraCountries: 'Extra landen',
+      addCountry: 'Land toevoegen',
+      removeCountry: 'Land verwijderen',
+      listHeading: 'Feestdagen dit jaar'
+    },
+    saints: {
+      heading: 'Heilige van de dag',
+      enable: 'Heilige van de dag inschakelen',
+      tradition: 'Traditie',
+      traditionRomanCatholic: 'Rooms-katholiek',
+      traditionFrenchCivil: 'Franse burgerlijke kalender'
+    }
   },
   status: {
     offline: 'offline',
@@ -291,7 +385,12 @@ const nl: Dictionary = {
 }
 
 const de: Dictionary = {
-  dateLine: { week: 'Woche', day: 'Tag', of: 'von' },
+  dateLine: {
+    week: 'Woche',
+    day: 'Tag',
+    of: 'von',
+    more: (n) => `+${n}`
+  },
   kiosk: {
     tapToStart: 'Zum Starten tippen',
     openSettings: 'Einstellungen öffnen'
@@ -300,7 +399,24 @@ const de: Dictionary = {
     title: 'Einstellungen',
     placeholder:
       'Standort, Einheiten, Feiertage, Fotos und Effekte erscheinen hier, sobald die jeweilige Funktion fertig ist.',
-    close: 'Einstellungen schließen'
+    close: 'Einstellungen schließen',
+    holidays: {
+      heading: 'Feiertage',
+      country: 'Land',
+      region: 'Region',
+      allRegions: 'Alle Regionen',
+      extraCountries: 'Zusätzliche Länder',
+      addCountry: 'Land hinzufügen',
+      removeCountry: 'Land entfernen',
+      listHeading: 'Feiertage dieses Jahr'
+    },
+    saints: {
+      heading: 'Namenstag',
+      enable: 'Namenstag anzeigen',
+      tradition: 'Tradition',
+      traditionRomanCatholic: 'Römisch-katholisch',
+      traditionFrenchCivil: 'Französischer Zivilkalender'
+    }
   },
   status: {
     offline: 'offline',
@@ -369,13 +485,35 @@ const de: Dictionary = {
 }
 
 const es: Dictionary = {
-  dateLine: { week: 'Semana', day: 'Día', of: 'de' },
+  dateLine: {
+    week: 'Semana',
+    day: 'Día',
+    of: 'de',
+    more: (n) => `+${n}`
+  },
   kiosk: { tapToStart: 'Toca para empezar', openSettings: 'Abrir ajustes' },
   settings: {
     title: 'Ajustes',
     placeholder:
       'La ubicación, las unidades, los días festivos, las fotos y los efectos llegarán aquí con cada función.',
-    close: 'Cerrar ajustes'
+    close: 'Cerrar ajustes',
+    holidays: {
+      heading: 'Días festivos',
+      country: 'País',
+      region: 'Región',
+      allRegions: 'Todas las regiones',
+      extraCountries: 'Países adicionales',
+      addCountry: 'Añadir país',
+      removeCountry: 'Quitar país',
+      listHeading: 'Días festivos de este año'
+    },
+    saints: {
+      heading: 'Santo del día',
+      enable: 'Activar el santo del día',
+      tradition: 'Tradición',
+      traditionRomanCatholic: 'Católico romano',
+      traditionFrenchCivil: 'Calendario civil francés'
+    }
   },
   status: {
     offline: 'sin conexión',
@@ -443,7 +581,12 @@ const es: Dictionary = {
 }
 
 const it: Dictionary = {
-  dateLine: { week: 'Settimana', day: 'Giorno', of: 'di' },
+  dateLine: {
+    week: 'Settimana',
+    day: 'Giorno',
+    of: 'di',
+    more: (n) => `+${n}`
+  },
   kiosk: {
     tapToStart: 'Tocca per iniziare',
     openSettings: 'Apri impostazioni'
@@ -452,7 +595,24 @@ const it: Dictionary = {
     title: 'Impostazioni',
     placeholder:
       'Posizione, unità, festività, foto ed effetti arriveranno qui non appena ogni funzione sarà pronta.',
-    close: 'Chiudi impostazioni'
+    close: 'Chiudi impostazioni',
+    holidays: {
+      heading: 'Festività',
+      country: 'Paese',
+      region: 'Regione',
+      allRegions: 'Tutte le regioni',
+      extraCountries: 'Paesi aggiuntivi',
+      addCountry: 'Aggiungi paese',
+      removeCountry: 'Rimuovi paese',
+      listHeading: 'Festività di quest’anno'
+    },
+    saints: {
+      heading: 'Santo del giorno',
+      enable: 'Attiva il santo del giorno',
+      tradition: 'Tradizione',
+      traditionRomanCatholic: 'Cattolico romano',
+      traditionFrenchCivil: 'Calendario civile francese'
+    }
   },
   status: {
     offline: 'offline',
@@ -520,7 +680,12 @@ const it: Dictionary = {
 }
 
 const pt: Dictionary = {
-  dateLine: { week: 'Semana', day: 'Dia', of: 'de' },
+  dateLine: {
+    week: 'Semana',
+    day: 'Dia',
+    of: 'de',
+    more: (n) => `+${n}`
+  },
   kiosk: {
     tapToStart: 'Toque para começar',
     openSettings: 'Abrir configurações'
@@ -529,7 +694,24 @@ const pt: Dictionary = {
     title: 'Configurações',
     placeholder:
       'Localização, unidades, feriados, fotos e efeitos chegarão aqui conforme cada funcionalidade for lançada.',
-    close: 'Fechar configurações'
+    close: 'Fechar configurações',
+    holidays: {
+      heading: 'Feriados',
+      country: 'País',
+      region: 'Região',
+      allRegions: 'Todas as regiões',
+      extraCountries: 'Países adicionais',
+      addCountry: 'Adicionar país',
+      removeCountry: 'Remover país',
+      listHeading: 'Feriados deste ano'
+    },
+    saints: {
+      heading: 'Santo do dia',
+      enable: 'Ativar o santo do dia',
+      tradition: 'Tradição',
+      traditionRomanCatholic: 'Católico romano',
+      traditionFrenchCivil: 'Calendário civil francês'
+    }
   },
   status: {
     offline: 'offline',

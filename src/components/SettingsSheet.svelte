@@ -8,6 +8,12 @@
   import { t } from '../lib/ui/strings'
   import { geocode } from '../lib/weather/openMeteo'
   import type { GeocodeResult } from '../lib/weather/types'
+  import {
+    getSupportedCountries,
+    getRegions,
+    getYearHolidays
+  } from '../lib/date/holidays'
+  import type { SaintTradition } from '../lib/date/saints'
 
   interface Props {
     open: boolean
@@ -45,7 +51,14 @@
   function selectLocation(result: GeocodeResult): void {
     settingsStore.update((current) => ({
       ...current,
-      location: { lat: result.lat, lon: result.lon, name: result.name }
+      location: { lat: result.lat, lon: result.lon, name: result.name },
+      // Default holidays to the newly-picked location's country (plan
+      // decision: "default = location's country+region"). This only runs
+      // on an explicit new-location pick, never on a passive re-render, so
+      // it can't fight a manual baseCountry change made after the fact.
+      holidays: result.countryCode
+        ? { ...current.holidays, baseCountry: result.countryCode }
+        : current.holidays
     }))
     results = []
     query = ''
@@ -67,6 +80,10 @@
     navigator.geolocation.getCurrentPosition(
       (position) => {
         gpsBusy = false
+        // No reverse geocoding in v1 (see comment above on
+        // currentLocationName), so raw GPS coords carry no country code —
+        // holidays.baseCountry can't be auto-set here and is left as-is;
+        // the user can still pick it manually in the holidays section.
         settingsStore.update((current) => ({
           ...current,
           location: {
@@ -81,6 +98,122 @@
         gpsError = s.weather.location.gpsDenied
       }
     )
+  }
+
+  // --- holidays: country/region + extra countries + per-holiday toggles ---
+  const supportedCountries = getSupportedCountries()
+  let extraCountryToAdd = $state('')
+  let holidayYear = new Date().getFullYear()
+
+  let baseCountry = $derived($settingsStore.holidays.baseCountry)
+  let regionOptions = $derived(getRegions(baseCountry))
+  let yearHolidays = $derived(
+    getYearHolidays(
+      holidayYear,
+      baseCountry,
+      $settingsStore.holidays.baseRegion,
+      $settingsStore.locale
+    )
+  )
+  // `date-holidays` can return two records sharing one rule (e.g. a
+  // fixed-date holiday plus its weekend-observed substitute) — same id by
+  // design (toggling disables both occurrences together, correctly, since
+  // they're the same named holiday), but Svelte's keyed #each needs unique
+  // keys, so the checklist itself is deduped by id for display.
+  let dedupedYearHolidays = $derived.by(() => {
+    const seen = new Set<string>()
+    const out: typeof yearHolidays = []
+    for (const holiday of yearHolidays) {
+      if (seen.has(holiday.id)) continue
+      seen.add(holiday.id)
+      out.push(holiday)
+    }
+    return out
+  })
+  // Countries not already the base or an added extra — keeps the "add"
+  // dropdown from offering a country that's already covered.
+  let addableCountries = $derived(
+    supportedCountries.filter(
+      (c) =>
+        c.code !== baseCountry &&
+        !$settingsStore.holidays.extraCountries.includes(c.code)
+    )
+  )
+
+  function setBaseCountry(code: string): void {
+    settingsStore.update((current) => ({
+      ...current,
+      holidays: { ...current.holidays, baseCountry: code, baseRegion: null }
+    }))
+  }
+
+  function setBaseRegion(code: string): void {
+    settingsStore.update((current) => ({
+      ...current,
+      holidays: { ...current.holidays, baseRegion: code === '' ? null : code }
+    }))
+  }
+
+  function addExtraCountry(): void {
+    const code = extraCountryToAdd
+    if (!code) return
+    settingsStore.update((current) => ({
+      ...current,
+      holidays: {
+        ...current.holidays,
+        extraCountries: current.holidays.extraCountries.includes(code)
+          ? current.holidays.extraCountries
+          : [...current.holidays.extraCountries, code]
+      }
+    }))
+    extraCountryToAdd = ''
+  }
+
+  function removeExtraCountry(code: string): void {
+    settingsStore.update((current) => ({
+      ...current,
+      holidays: {
+        ...current.holidays,
+        extraCountries: current.holidays.extraCountries.filter(
+          (c) => c !== code
+        )
+      }
+    }))
+  }
+
+  function toggleHoliday(id: string, enabled: boolean): void {
+    settingsStore.update((current) => {
+      const disabled = new Set(current.holidays.disabledHolidayIds)
+      if (enabled) disabled.delete(id)
+      else disabled.add(id)
+      return {
+        ...current,
+        holidays: { ...current.holidays, disabledHolidayIds: [...disabled] }
+      }
+    })
+  }
+
+  // --- saints: tradition + on/off toggle ---
+  const traditionOptions: {
+    value: SaintTradition
+    labelKey: 'traditionRomanCatholic' | 'traditionFrenchCivil'
+  }[] = [
+    { value: 'roman-catholic', labelKey: 'traditionRomanCatholic' },
+    { value: 'french-civil', labelKey: 'traditionFrenchCivil' }
+  ]
+
+  function setSaintsTradition(value: SaintTradition): void {
+    settingsStore.update((current) => ({
+      ...current,
+      saints: { ...current.saints, tradition: value }
+    }))
+  }
+
+  function setSaintsEnabled(enabled: boolean): void {
+    settingsStore.update((current) => ({
+      ...current,
+      saints: { ...current.saints, enabled }
+    }))
   }
 
   $effect(() => {
@@ -171,6 +304,127 @@
         {#if $settingsStore.location}
           <p class="location-current">{$settingsStore.location.name}</p>
         {/if}
+      </section>
+
+      <section class="location-section">
+        <h3>{s.settings.holidays.heading}</h3>
+
+        <label class="field">
+          <span>{s.settings.holidays.country}</span>
+          <select
+            value={baseCountry}
+            onchange={(e) => setBaseCountry(e.currentTarget.value)}
+          >
+            {#each supportedCountries as country (country.code)}
+              <option value={country.code}>{country.name}</option>
+            {/each}
+          </select>
+        </label>
+
+        {#if regionOptions.length > 0}
+          <label class="field">
+            <span>{s.settings.holidays.region}</span>
+            <select
+              value={$settingsStore.holidays.baseRegion ?? ''}
+              onchange={(e) => setBaseRegion(e.currentTarget.value)}
+            >
+              <option value="">{s.settings.holidays.allRegions}</option>
+              {#each regionOptions as region (region.code)}
+                <option value={region.code}>{region.name}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+
+        <div class="field">
+          <span>{s.settings.holidays.extraCountries}</span>
+          <div class="location-search">
+            <select bind:value={extraCountryToAdd}>
+              <option value="" disabled>
+                {s.settings.holidays.addCountry}
+              </option>
+              {#each addableCountries as country (country.code)}
+                <option value={country.code}>{country.name}</option>
+              {/each}
+            </select>
+            <button
+              type="button"
+              disabled={!extraCountryToAdd}
+              onclick={addExtraCountry}
+            >
+              {s.settings.holidays.addCountry}
+            </button>
+          </div>
+        </div>
+
+        {#if $settingsStore.holidays.extraCountries.length > 0}
+          <ul class="location-results chips">
+            {#each $settingsStore.holidays.extraCountries as code (code)}
+              <li>
+                <span
+                  >{supportedCountries.find((c) => c.code === code)?.name ??
+                    code}</span
+                >
+                <button
+                  type="button"
+                  aria-label={s.settings.holidays.removeCountry}
+                  onclick={() => removeExtraCountry(code)}
+                >
+                  ×
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        <h4>{s.settings.holidays.listHeading}</h4>
+        {#if dedupedYearHolidays.length > 0}
+          <ul class="holiday-list">
+            {#each dedupedYearHolidays as holiday (holiday.id)}
+              <li>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!$settingsStore.holidays.disabledHolidayIds.includes(
+                      holiday.id
+                    )}
+                    onchange={(e) =>
+                      toggleHoliday(holiday.id, e.currentTarget.checked)}
+                  />
+                  {holiday.name}
+                </label>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
+
+      <section class="location-section">
+        <h3>{s.settings.saints.heading}</h3>
+
+        <label class="field checkbox-field">
+          <input
+            type="checkbox"
+            checked={$settingsStore.saints.enabled}
+            onchange={(e) => setSaintsEnabled(e.currentTarget.checked)}
+          />
+          {s.settings.saints.enable}
+        </label>
+
+        <label class="field">
+          <span>{s.settings.saints.tradition}</span>
+          <select
+            value={$settingsStore.saints.tradition}
+            onchange={(e) =>
+              setSaintsTradition(e.currentTarget.value as SaintTradition)}
+          >
+            {#each traditionOptions as option (option.value)}
+              <option value={option.value}
+                >{s.settings.saints[option.labelKey]}</option
+              >
+            {/each}
+          </select>
+        </label>
       </section>
 
       <!-- Open-Meteo's forecast/geocoding/air-quality data is CC BY 4.0 —
@@ -331,6 +585,88 @@
     margin-top: 0.5rem;
     color: var(--color-text-2, rgba(238, 244, 251, 0.7));
     font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .location-section h3 {
+    margin: 0 0 0.75rem;
+    font-family: var(--display, inherit);
+    font-weight: 300;
+    font-size: var(--font-size-md, 1.1rem);
+  }
+
+  .location-section h4 {
+    margin: 1rem 0 0.5rem;
+    font-weight: 600;
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--color-text-2, rgba(238, 244, 251, 0.7));
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.75rem;
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .field select {
+    padding: 0.5em 0.75em;
+    border-radius: var(--radius-sm, 0.4rem);
+    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text, #eef4fb);
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--font-size-md, 1rem);
+  }
+
+  .field.checkbox-field {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .location-results.chips li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.35em 0.75em;
+    border-radius: var(--radius-sm, 0.4rem);
+    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+  }
+
+  .location-results.chips button {
+    width: auto;
+    padding: 0 0.4em;
+    color: var(--color-text-2, rgba(238, 244, 251, 0.7));
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .location-results.chips button:hover {
+    color: var(--color-text, #eef4fb);
+    background: transparent;
+  }
+
+  .holiday-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+    border-radius: var(--radius-sm, 0.4rem);
+  }
+
+  .holiday-list label {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.35em 0.5em;
+    font-size: var(--font-size-sm, 0.875rem);
+    cursor: pointer;
   }
 
   .attribution {

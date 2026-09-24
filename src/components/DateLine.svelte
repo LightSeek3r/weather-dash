@@ -5,6 +5,8 @@
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
   import { t } from '../lib/ui/strings'
+  import { getTodayHolidays } from '../lib/date/holidays'
+  import { getSaintOfDay, type SaintTradition } from '../lib/date/saints'
 
   let now = $state(new Date())
   let unsubscribe: (() => void) | undefined
@@ -42,6 +44,23 @@
   // leap-year check — Dec 31 is always the last day of its own year.
   let daysInYear = $derived(dayOfYear(new Date(now.getFullYear(), 11, 31)))
   let s = $derived(t($settingsStore.locale))
+
+  let saintName = $derived(
+    $settingsStore.saints.enabled
+      ? getSaintOfDay(now, $settingsStore.saints.tradition as SaintTradition)
+      : null
+  )
+  let todaysHolidays = $derived(
+    getTodayHolidays(now, $settingsStore.holidays, $settingsStore.locale)
+  )
+  // Compact date-line item, not a list view: show up to 2 names, then a
+  // "+N" overflow marker rather than growing the line unbounded (e.g. two
+  // extraCountries both landing on the same day).
+  let holidayDisplay = $derived.by(() => {
+    const names = todaysHolidays.map((h) => h.name)
+    if (names.length <= 2) return names.join(', ')
+    return `${names.slice(0, 2).join(', ')} ${s.dateLine.more(names.length - 2)}`
+  })
 </script>
 
 <p class="date">
@@ -53,14 +72,12 @@
 <ul class="meta">
   <li>{s.dateLine.week} <b>{week}</b></li>
   <li>{s.dateLine.day} <b>{doy}</b> {s.dateLine.of} {daysInYear}</li>
-  <li class="placeholder">
-    <!-- TODO phase 3: real saint-of-the-day data (bundled JSON per tradition, see plan P11) -->
-    <b>—</b>
-  </li>
-  <li class="placeholder">
-    <!-- TODO phase 3: real holiday data (date-holidays wrapper, country/region + toggles) -->
-    <b>—</b>
-  </li>
+  {#if saintName}
+    <li><b>{saintName}</b></li>
+  {/if}
+  {#if todaysHolidays.length > 0}
+    <li><b>{holidayDisplay}</b></li>
+  {/if}
 </ul>
 
 <style>
@@ -92,9 +109,5 @@
   .meta b {
     color: var(--text);
     font-weight: 700;
-  }
-  .meta .placeholder b {
-    color: var(--text-3);
-    font-weight: 400;
   }
 </style>

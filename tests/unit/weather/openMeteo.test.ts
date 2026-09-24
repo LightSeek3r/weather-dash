@@ -146,6 +146,7 @@ describe('geocode', () => {
             longitude: 4.34878,
             name: 'Brussels',
             country: 'Belgium',
+            country_code: 'BE',
             timezone: 'Europe/Brussels'
           }
         ]
@@ -158,7 +159,8 @@ describe('geocode', () => {
         lat: 50.85045,
         lon: 4.34878,
         name: 'Brussels, Belgium',
-        timezone: 'Europe/Brussels'
+        timezone: 'Europe/Brussels',
+        countryCode: 'BE'
       }
     ])
   })
