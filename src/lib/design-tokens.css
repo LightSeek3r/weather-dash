@@ -1,0 +1,86 @@
+/* Design tokens extracted from design/mockups/02-blue-hour.html — the "Blue Hour"
+   aesthetic chosen by the user (see design/mockups/README.md for the rationale).
+   Single source of truth for color, type scale, spacing/radii and glass/blur
+   values; imported once from src/app.css so every component reads the same
+   variables instead of re-declaring magic numbers. */
+
+@font-face {
+  font-family: 'Lexend';
+  font-style: normal;
+  font-weight: 200 600;
+  font-display: swap;
+  src: url('../assets/fonts/Lexend-normal-200_600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/AtkinsonHyperlegible-normal-400.woff2')
+    format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/AtkinsonHyperlegible-normal-700.woff2')
+    format('woff2');
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/AtkinsonHyperlegible-italic-400.woff2')
+    format('woff2');
+}
+
+:root {
+  /* Fluid unit every size below derives from, so phone -> 4K TV share one
+     layout with no fixed max-width. min(1vw, 1.55vh) keeps the narrow axis
+     (portrait width) from oversizing; the portrait override below compensates
+     by reading more from the (now taller) viewport height. */
+  --u: min(1vw, 1.55vh);
+
+  /* Blue-hour dusk gradient. Never pure #000 — avoids OLED black smear and
+     keeps the room from going lit-up dark at night. */
+  --sky-0: #0a1726;
+  --sky-1: #10243a;
+  --sky-2: #1a2e46;
+
+  --text: #eef4fb; /* primary */
+  --text-2: #bdcddd; /* secondary */
+  --text-3: #95a9bd; /* labels, still >=4.5:1 on glass */
+  --peach: #ffb896; /* warmth: sun, highs, "now" */
+  --ice: #a6dcff; /* cold/rain accents */
+  --rain: #7cc4ff;
+
+  --glass: rgb(196 222 255 / 0.075);
+  --glass-edge: rgb(222 238 255 / 0.16);
+  --glass-hi: rgb(255 255 255 / 0.1);
+
+  --display: 'Lexend', 'Segoe UI Variable Display', 'Avenir Next', sans-serif;
+  --text-font: 'Atkinson Hyperlegible', 'Verdana', sans-serif;
+
+  /* Type scale */
+  --fs-clock: calc(var(--u) * 19);
+  --fs-temp: calc(var(--u) * 9);
+  --fs-xl: calc(var(--u) * 3.3);
+  --fs-l: calc(var(--u) * 2.1);
+  --fs-m: max(17px, calc(var(--u) * 1.55));
+  --fs-s: max(14px, calc(var(--u) * 1.2));
+  --fs-xs: max(13px, calc(var(--u) * 1));
+
+  /* Spacing, radii, easing */
+  --pad: calc(var(--u) * 3);
+  --r: calc(var(--u) * 2.6);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (orientation: portrait) {
+  :root {
+    --u: min(1.4vw, 0.9vh);
+    --fs-clock: calc(var(--u) * 26);
+  }
+}
