@@ -84,3 +84,34 @@
     --fs-clock: calc(var(--u) * 26);
   }
 }
+
+/* Compatibility aliases — components built in parallel (StatusPill,
+   ToastStack, SettingsSheet) were written against a `--color-*`/`--space-*`
+   naming convention before this file existed, each with a matching fallback
+   in its own var() calls (see their "TODO: confirm token names" comments).
+   Aliasing here instead of touching every var() call keeps one naming
+   source of truth once a real "settings v1" pass renames things properly.
+   --color-success/--color-error have no equivalent above — the Blue Hour
+   palette has no green, so success/error are picked to stay in-family
+   (mint-tinted ice, rose-tinted peach) rather than reaching for stock
+   red/green. */
+:root {
+  --color-bg: var(--sky-0);
+  --color-glass: var(--glass);
+  --color-glass-edge: var(--glass-edge);
+  --color-glass-hi: var(--glass-hi);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-accent: var(--ice);
+  --color-success: #8ce8b0;
+  --color-error: #ff9a86;
+  --font-body: var(--text-font);
+  --font-size-sm: var(--fs-s);
+  --font-size-md: var(--fs-m);
+  --space-sm: calc(var(--u) * 1.2);
+  --space-md: calc(var(--u) * 2);
+  --radius-sm: calc(var(--r) * 0.5);
+  --radius-md: var(--r);
+  --radius-full: 999px;
+  --ease-standard: var(--ease);
+}
