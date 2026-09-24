@@ -2,6 +2,9 @@
   import { onMount, onDestroy } from 'svelte'
   import { scheduler } from '../lib/core/scheduler'
   import { dayOfYear, isoWeek } from '../lib/date/week'
+  import { settingsStore } from '../lib/core/storage/settings'
+  import { localeTag } from '../lib/ui/i18n'
+  import { t } from '../lib/ui/strings'
 
   let now = $state(new Date())
   let unsubscribe: (() => void) | undefined
@@ -16,7 +19,7 @@
   onDestroy(() => unsubscribe?.())
 
   let dateFormatter = $derived(
-    new Intl.DateTimeFormat(undefined, {
+    new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -38,6 +41,7 @@
   // Reuses dayOfYear itself for "days in this year" instead of a separate
   // leap-year check — Dec 31 is always the last day of its own year.
   let daysInYear = $derived(dayOfYear(new Date(now.getFullYear(), 11, 31)))
+  let s = $derived(t($settingsStore.locale))
 </script>
 
 <p class="date">
@@ -47,8 +51,8 @@
   <span>{dateParts.year}</span>
 </p>
 <ul class="meta">
-  <li>Week <b>{week}</b></li>
-  <li>Day <b>{doy}</b> of {daysInYear}</li>
+  <li>{s.dateLine.week} <b>{week}</b></li>
+  <li>{s.dateLine.day} <b>{doy}</b> {s.dateLine.of} {daysInYear}</li>
   <li class="placeholder">
     <!-- TODO phase 3: real saint-of-the-day data (bundled JSON per tradition, see plan P11) -->
     <b>—</b>

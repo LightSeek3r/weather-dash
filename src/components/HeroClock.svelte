@@ -1,15 +1,18 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import { scheduler } from '../lib/core/scheduler'
+  import { settingsStore } from '../lib/core/storage/settings'
+  import { localeTag } from '../lib/ui/i18n'
 
+  // Reads the user's clock-format choice from settings by default — props
+  // exist only so a caller (tests, future preview UI) can override without
+  // touching the store.
   interface Props {
-    /** 24h format when false (default), 12h with AM/PM when true. */
     hour12?: boolean
-    /** Append a running seconds readout. */
     showSeconds?: boolean
   }
 
-  let { hour12 = false, showSeconds = false }: Props = $props()
+  let { hour12, showSeconds }: Props = $props()
 
   let now = $state(new Date())
   let unsubscribe: (() => void) | undefined
@@ -21,12 +24,19 @@
   })
   onDestroy(() => unsubscribe?.())
 
+  let effectiveHour12 = $derived(
+    hour12 ?? $settingsStore.clock.format === '12h'
+  )
+  let effectiveShowSeconds = $derived(
+    showSeconds ?? $settingsStore.clock.showSeconds
+  )
+
   let formatter = $derived(
-    new Intl.DateTimeFormat(undefined, {
+    new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
       hour: '2-digit',
       minute: '2-digit',
-      second: showSeconds ? '2-digit' : undefined,
-      hour12
+      second: effectiveShowSeconds ? '2-digit' : undefined,
+      hour12: effectiveHour12
     })
   )
 
@@ -36,7 +46,7 @@
 </script>
 
 <time class="clock" datetime={now.toISOString()}>
-  {#each parts as part (part.type + part.value)}
+  {#each parts as part, i (i + part.type)}
     {#if part.type === 'literal'}
       <span class="sep">{part.value}</span>
     {:else if part.type === 'dayPeriod'}

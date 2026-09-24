@@ -4,6 +4,8 @@
   // just needs the open/close mechanics and a11y wiring in place so nothing
   // has to touch the sheet's container again.
   import { onDestroy } from 'svelte'
+  import { settingsStore } from '../lib/core/storage/settings'
+  import { t } from '../lib/ui/strings'
 
   interface Props {
     open: boolean
@@ -13,6 +15,7 @@
   let { open, onclose }: Props = $props()
   let closeButton: HTMLButtonElement | undefined = $state()
   let triggerToRestore: Element | null = null
+  let s = $derived(t($settingsStore.locale))
 
   $effect(() => {
     if (open) {
@@ -39,25 +42,22 @@
     class="sheet-backdrop"
     role="dialog"
     aria-modal="true"
-    aria-label="Settings"
+    aria-label={s.settings.title}
   >
     <div class="sheet">
       <header class="sheet__header">
-        <h2>Settings</h2>
+        <h2>{s.settings.title}</h2>
         <button
           type="button"
           bind:this={closeButton}
           class="sheet__close"
-          aria-label="Close settings"
+          aria-label={s.settings.close}
           onclick={onclose}
         >
           ×
         </button>
       </header>
-      <p class="sheet__placeholder">
-        Location, units, holidays, photos and effects arrive here as each
-        feature ships.
-      </p>
+      <p class="sheet__placeholder">{s.settings.placeholder}</p>
     </div>
   </div>
 {/if}

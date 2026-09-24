@@ -16,6 +16,7 @@ export const SCHEMA_VERSION = 1
 export const STORAGE_KEY = 'wall-dashboard:settings:v1'
 
 export const LOCALES = ['fr', 'en', 'nl', 'de', 'es', 'it', 'pt'] as const
+export type Locale = (typeof LOCALES)[number]
 export const PHOTO_ROTATION_VALUES = [
   '1m',
   '5m',

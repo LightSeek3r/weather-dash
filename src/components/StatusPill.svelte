@@ -1,5 +1,7 @@
 <script lang="ts">
   import { relativeTime } from '../lib/ui/status'
+  import { settingsStore } from '../lib/core/storage/settings'
+  import { t } from '../lib/ui/strings'
 
   interface Props {
     lastUpdated: Date | null
@@ -8,6 +10,7 @@
 
   let { lastUpdated, online = true }: Props = $props()
 
+  let s = $derived(t($settingsStore.locale))
   let now = $state(new Date())
 
   // Re-render "Xm ago" as time passes even though `lastUpdated` itself
@@ -22,10 +25,10 @@
 
   let label = $derived(
     !online
-      ? 'offline'
+      ? s.status.offline
       : lastUpdated
-        ? `updated ${relativeTime(lastUpdated, now)}`
-        : 'no data yet'
+        ? `${s.status.updatedPrefix} ${relativeTime(lastUpdated, now, s.status.relative)}`
+        : s.status.noDataYet
   )
 </script>
 

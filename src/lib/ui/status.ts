@@ -48,6 +48,23 @@ const MINUTE = 60
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
+/** Locale-specific words plugged into `relativeTime` — see `lib/ui/strings.ts`. */
+export interface RelativeTimeLabels {
+  justNow: string
+  minutesAgo: (n: number) => string
+  hoursAgo: (n: number) => string
+  yesterday: string
+  daysAgo: (n: number) => string
+}
+
+const ENGLISH_LABELS: RelativeTimeLabels = {
+  justNow: 'just now',
+  minutesAgo: (n) => `${n}m ago`,
+  hoursAgo: (n) => `${n}h ago`,
+  yesterday: 'yesterday',
+  daysAgo: (n) => `${n}d ago`
+}
+
 /**
  * Pure, testable relative-time formatter. Rounding rule (consistent, always
  * floors towards the coarser unit — a stale-data indicator only needs to be
@@ -59,18 +76,26 @@ const DAY = 24 * HOUR
  *  - otherwise     → "{n}d ago"
  * A `date` in the future (clock skew) clamps to "just now" rather than
  * showing a negative duration.
+ *
+ * `labels` defaults to English so every existing call site/test keeps
+ * working unchanged; callers that care about the viewer's locale pass
+ * `t(locale).status.relative` instead (see StatusPill.svelte).
  */
-export function relativeTime(date: Date, now: Date = new Date()): string {
+export function relativeTime(
+  date: Date,
+  now: Date = new Date(),
+  labels: RelativeTimeLabels = ENGLISH_LABELS
+): string {
   const deltaSec = Math.max(
     0,
     Math.floor((now.getTime() - date.getTime()) / 1000)
   )
 
-  if (deltaSec < MINUTE) return 'just now'
-  if (deltaSec < HOUR) return `${Math.floor(deltaSec / MINUTE)}m ago`
-  if (deltaSec < DAY) return `${Math.floor(deltaSec / HOUR)}h ago`
+  if (deltaSec < MINUTE) return labels.justNow
+  if (deltaSec < HOUR) return labels.minutesAgo(Math.floor(deltaSec / MINUTE))
+  if (deltaSec < DAY) return labels.hoursAgo(Math.floor(deltaSec / HOUR))
 
   const days = Math.floor(deltaSec / DAY)
-  if (days === 1) return 'yesterday'
-  return `${days}d ago`
+  if (days === 1) return labels.yesterday
+  return labels.daysAgo(days)
 }

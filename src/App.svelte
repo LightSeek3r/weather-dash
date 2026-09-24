@@ -10,6 +10,10 @@
   import { startKiosk, watchVisibilityForWakeLock } from './lib/core/fullscreen'
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
+  import { settingsStore } from './lib/core/storage/settings'
+  import { t } from './lib/ui/strings'
+
+  let s = $derived(t($settingsStore.locale))
 
   registerSW()
 
@@ -67,7 +71,7 @@
   type="button"
   class="gear"
   class:gear--hidden={!gearVisible}
-  aria-label="Open settings"
+  aria-label={s.kiosk.openSettings}
   onclick={() => (settingsOpen = true)}
 >
   ⚙
@@ -77,7 +81,7 @@
 
 {#if !started}
   <button type="button" class="start-overlay" onclick={handleStart}>
-    <span class="glass">Tap to start</span>
+    <span class="glass">{s.kiosk.tapToStart}</span>
   </button>
 {/if}
 
