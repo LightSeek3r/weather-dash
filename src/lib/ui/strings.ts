@@ -12,6 +12,8 @@
  */
 import type { Locale } from '../core/storage/settings'
 import type { RelativeTimeLabels } from './status'
+import type { ConditionKey } from '../weather/mapWmo'
+import type { MoonPhaseKey } from '../weather/types'
 
 export interface Dictionary {
   dateLine: { week: string; day: string; of: string }
@@ -23,6 +25,37 @@ export interface Dictionary {
     /** Prefixes `relative`, e.g. "updated" + "5m ago" -> "updated 5m ago". */
     updatedPrefix: string
     relative: RelativeTimeLabels
+  }
+  weather: {
+    /** Toasted on a failed weather refresh (last-good data stays on screen, see store.ts). */
+    fetchError: string
+    condition: Record<ConditionKey, string>
+    moonPhase: Record<MoonPhaseKey, string>
+    /** Modifiers composed onto `condition[key]` by CurrentWeather, e.g. "Heavy" + "Rain". */
+    intensity: { light: string; moderate: string; heavy: string }
+    /** Appended when `WeatherVisual.hail` is true, e.g. "Thunderstorm" + "with hail". */
+    hail: string
+    panel: {
+      feelsLike: string
+      humidity: string
+      uvIndex: string
+      wind: string
+      force: string
+      gusts: string
+      sunrise: string
+      sunset: string
+      tomorrow: string
+      noLocation: string
+    }
+    location: {
+      searchPlaceholder: string
+      searchButton: string
+      useMyLocation: string
+      /** Location name stored after a successful GPS lookup (no reverse geocoding in v1). */
+      currentLocationName: string
+      gpsUnavailable: string
+      gpsDenied: string
+    }
   }
 }
 
@@ -45,6 +78,57 @@ const en: Dictionary = {
       hoursAgo: (n) => `${n}h ago`,
       yesterday: 'yesterday',
       daysAgo: (n) => `${n}d ago`
+    }
+  },
+  weather: {
+    fetchError: 'Could not update weather',
+    condition: {
+      clearSky: 'Clear sky',
+      mainlyClear: 'Mainly clear',
+      partlyCloudy: 'Partly cloudy',
+      overcast: 'Overcast',
+      fog: 'Fog',
+      drizzle: 'Drizzle',
+      freezingDrizzle: 'Freezing drizzle',
+      rain: 'Rain',
+      freezingRain: 'Freezing rain',
+      snow: 'Snow',
+      snowGrains: 'Snow grains',
+      rainShowers: 'Rain showers',
+      snowShowers: 'Snow showers',
+      thunderstorm: 'Thunderstorm'
+    },
+    moonPhase: {
+      newMoon: 'New moon',
+      waxingCrescent: 'Waxing crescent',
+      firstQuarter: 'First quarter',
+      waxingGibbous: 'Waxing gibbous',
+      fullMoon: 'Full moon',
+      waningGibbous: 'Waning gibbous',
+      lastQuarter: 'Last quarter',
+      waningCrescent: 'Waning crescent'
+    },
+    intensity: { light: 'Light', moderate: 'Moderate', heavy: 'Heavy' },
+    hail: 'with hail',
+    panel: {
+      feelsLike: 'Feels like',
+      humidity: 'Humidity',
+      uvIndex: 'UV index',
+      wind: 'Wind',
+      force: 'force',
+      gusts: 'gusts',
+      sunrise: 'Sunrise',
+      sunset: 'Sunset',
+      tomorrow: 'Tomorrow',
+      noLocation: 'Set a location to see the weather'
+    },
+    location: {
+      searchPlaceholder: 'Search for a city',
+      searchButton: 'Search',
+      useMyLocation: 'Use my location',
+      currentLocationName: 'Current location',
+      gpsUnavailable: 'Location is not available on this device',
+      gpsDenied: 'Location access was denied'
     }
   }
 }
@@ -72,6 +156,59 @@ const fr: Dictionary = {
       yesterday: 'hier',
       daysAgo: (n) => `il y a ${n} j`
     }
+  },
+  // fr weather vocabulary below is idiomatic, not just literal-translated
+  // calendar words — flagging for a native-speaker review pass (per plan).
+  weather: {
+    fetchError: 'Impossible de mettre à jour la météo',
+    condition: {
+      clearSky: 'Ciel dégagé',
+      mainlyClear: 'Plutôt dégagé',
+      partlyCloudy: 'Partiellement nuageux',
+      overcast: 'Couvert',
+      fog: 'Brouillard',
+      drizzle: 'Bruine',
+      freezingDrizzle: 'Bruine verglaçante',
+      rain: 'Pluie',
+      freezingRain: 'Pluie verglaçante',
+      snow: 'Neige',
+      snowGrains: 'Neige en grains',
+      rainShowers: 'Averses',
+      snowShowers: 'Averses de neige',
+      thunderstorm: 'Orage'
+    },
+    moonPhase: {
+      newMoon: 'Nouvelle lune',
+      waxingCrescent: 'Premier croissant',
+      firstQuarter: 'Premier quartier',
+      waxingGibbous: 'Gibbeuse croissante',
+      fullMoon: 'Pleine lune',
+      waningGibbous: 'Gibbeuse décroissante',
+      lastQuarter: 'Dernier quartier',
+      waningCrescent: 'Dernier croissant'
+    },
+    intensity: { light: 'Léger', moderate: 'Modéré', heavy: 'Fort' },
+    hail: 'avec grêle',
+    panel: {
+      feelsLike: 'Ressenti',
+      humidity: 'Humidité',
+      uvIndex: 'Indice UV',
+      wind: 'Vent',
+      force: 'force',
+      gusts: 'rafales',
+      sunrise: 'Lever du soleil',
+      sunset: 'Coucher du soleil',
+      tomorrow: 'Demain',
+      noLocation: 'Définissez un lieu pour voir la météo'
+    },
+    location: {
+      searchPlaceholder: 'Rechercher une ville',
+      searchButton: 'Rechercher',
+      useMyLocation: 'Utiliser ma position',
+      currentLocationName: 'Position actuelle',
+      gpsUnavailable: 'La localisation n’est pas disponible sur cet appareil',
+      gpsDenied: 'L’accès à la position a été refusé'
+    }
   }
 }
 
@@ -97,6 +234,58 @@ const nl: Dictionary = {
       hoursAgo: (n) => `${n} u geleden`,
       yesterday: 'gisteren',
       daysAgo: (n) => `${n} d geleden`
+    }
+  },
+  // nl weather vocabulary — flagging for a native-speaker review pass (per plan).
+  weather: {
+    fetchError: 'Weer bijwerken mislukt',
+    condition: {
+      clearSky: 'Heldere lucht',
+      mainlyClear: 'Grotendeels helder',
+      partlyCloudy: 'Deels bewolkt',
+      overcast: 'Bewolkt',
+      fog: 'Mist',
+      drizzle: 'Motregen',
+      freezingDrizzle: 'Onderkoelde motregen',
+      rain: 'Regen',
+      freezingRain: 'Onderkoelde regen',
+      snow: 'Sneeuw',
+      snowGrains: 'Sneeuwkorrels',
+      rainShowers: 'Regenbuien',
+      snowShowers: 'Sneeuwbuien',
+      thunderstorm: 'Onweer'
+    },
+    moonPhase: {
+      newMoon: 'Nieuwe maan',
+      waxingCrescent: 'Wassende maansikkel',
+      firstQuarter: 'Eerste kwartier',
+      waxingGibbous: 'Wassende maan',
+      fullMoon: 'Volle maan',
+      waningGibbous: 'Afnemende maan',
+      lastQuarter: 'Laatste kwartier',
+      waningCrescent: 'Afnemende maansikkel'
+    },
+    intensity: { light: 'Licht', moderate: 'Matig', heavy: 'Zwaar' },
+    hail: 'met hagel',
+    panel: {
+      feelsLike: 'Voelt als',
+      humidity: 'Vochtigheid',
+      uvIndex: 'UV-index',
+      wind: 'Wind',
+      force: 'kracht',
+      gusts: 'windstoten',
+      sunrise: 'Zonsopgang',
+      sunset: 'Zonsondergang',
+      tomorrow: 'Morgen',
+      noLocation: 'Stel een locatie in om het weer te zien'
+    },
+    location: {
+      searchPlaceholder: 'Zoek een stad',
+      searchButton: 'Zoeken',
+      useMyLocation: 'Mijn locatie gebruiken',
+      currentLocationName: 'Huidige locatie',
+      gpsUnavailable: 'Locatie is niet beschikbaar op dit apparaat',
+      gpsDenied: 'Toegang tot locatie is geweigerd'
     }
   }
 }
@@ -124,6 +313,58 @@ const de: Dictionary = {
       yesterday: 'gestern',
       daysAgo: (n) => `vor ${n} Tg.`
     }
+  },
+  // de weather vocabulary — flagging for a native-speaker review pass (per plan).
+  weather: {
+    fetchError: 'Wetter konnte nicht aktualisiert werden',
+    condition: {
+      clearSky: 'Klarer Himmel',
+      mainlyClear: 'Überwiegend klar',
+      partlyCloudy: 'Teilweise bewölkt',
+      overcast: 'Bedeckt',
+      fog: 'Nebel',
+      drizzle: 'Sprühregen',
+      freezingDrizzle: 'Gefrierender Sprühregen',
+      rain: 'Regen',
+      freezingRain: 'Gefrierender Regen',
+      snow: 'Schnee',
+      snowGrains: 'Schneegriesel',
+      rainShowers: 'Regenschauer',
+      snowShowers: 'Schneeschauer',
+      thunderstorm: 'Gewitter'
+    },
+    moonPhase: {
+      newMoon: 'Neumond',
+      waxingCrescent: 'Zunehmende Sichel',
+      firstQuarter: 'Erstes Viertel',
+      waxingGibbous: 'Zunehmender Mond',
+      fullMoon: 'Vollmond',
+      waningGibbous: 'Abnehmender Mond',
+      lastQuarter: 'Letztes Viertel',
+      waningCrescent: 'Abnehmende Sichel'
+    },
+    intensity: { light: 'Leicht', moderate: 'Mäßig', heavy: 'Stark' },
+    hail: 'mit Hagel',
+    panel: {
+      feelsLike: 'Gefühlt',
+      humidity: 'Luftfeuchtigkeit',
+      uvIndex: 'UV-Index',
+      wind: 'Wind',
+      force: 'Stärke',
+      gusts: 'Böen',
+      sunrise: 'Sonnenaufgang',
+      sunset: 'Sonnenuntergang',
+      tomorrow: 'Morgen',
+      noLocation: 'Standort festlegen, um das Wetter zu sehen'
+    },
+    location: {
+      searchPlaceholder: 'Stadt suchen',
+      searchButton: 'Suchen',
+      useMyLocation: 'Meinen Standort verwenden',
+      currentLocationName: 'Aktueller Standort',
+      gpsUnavailable: 'Standort ist auf diesem Gerät nicht verfügbar',
+      gpsDenied: 'Standortzugriff wurde verweigert'
+    }
   }
 }
 
@@ -146,6 +387,57 @@ const es: Dictionary = {
       hoursAgo: (n) => `hace ${n} h`,
       yesterday: 'ayer',
       daysAgo: (n) => `hace ${n} d`
+    }
+  },
+  weather: {
+    fetchError: 'No se pudo actualizar el tiempo',
+    condition: {
+      clearSky: 'Cielo despejado',
+      mainlyClear: 'Mayormente despejado',
+      partlyCloudy: 'Parcialmente nublado',
+      overcast: 'Cubierto',
+      fog: 'Niebla',
+      drizzle: 'Llovizna',
+      freezingDrizzle: 'Llovizna helada',
+      rain: 'Lluvia',
+      freezingRain: 'Lluvia helada',
+      snow: 'Nieve',
+      snowGrains: 'Granos de nieve',
+      rainShowers: 'Chubascos',
+      snowShowers: 'Chubascos de nieve',
+      thunderstorm: 'Tormenta'
+    },
+    moonPhase: {
+      newMoon: 'Luna nueva',
+      waxingCrescent: 'Creciente iluminante',
+      firstQuarter: 'Cuarto creciente',
+      waxingGibbous: 'Gibosa creciente',
+      fullMoon: 'Luna llena',
+      waningGibbous: 'Gibosa menguante',
+      lastQuarter: 'Cuarto menguante',
+      waningCrescent: 'Creciente menguante'
+    },
+    intensity: { light: 'Ligero', moderate: 'Moderado', heavy: 'Fuerte' },
+    hail: 'con granizo',
+    panel: {
+      feelsLike: 'Sensación',
+      humidity: 'Humedad',
+      uvIndex: 'Índice UV',
+      wind: 'Viento',
+      force: 'fuerza',
+      gusts: 'rachas',
+      sunrise: 'Amanecer',
+      sunset: 'Atardecer',
+      tomorrow: 'Mañana',
+      noLocation: 'Configura una ubicación para ver el tiempo'
+    },
+    location: {
+      searchPlaceholder: 'Buscar una ciudad',
+      searchButton: 'Buscar',
+      useMyLocation: 'Usar mi ubicación',
+      currentLocationName: 'Ubicación actual',
+      gpsUnavailable: 'La ubicación no está disponible en este dispositivo',
+      gpsDenied: 'Se denegó el acceso a la ubicación'
     }
   }
 }
@@ -173,6 +465,57 @@ const it: Dictionary = {
       yesterday: 'ieri',
       daysAgo: (n) => `${n} g fa`
     }
+  },
+  weather: {
+    fetchError: 'Impossibile aggiornare il meteo',
+    condition: {
+      clearSky: 'Cielo sereno',
+      mainlyClear: 'Prevalentemente sereno',
+      partlyCloudy: 'Parzialmente nuvoloso',
+      overcast: 'Coperto',
+      fog: 'Nebbia',
+      drizzle: 'Pioviggine',
+      freezingDrizzle: 'Pioviggine gelata',
+      rain: 'Pioggia',
+      freezingRain: 'Pioggia gelata',
+      snow: 'Neve',
+      snowGrains: 'Graniglia di neve',
+      rainShowers: 'Rovesci di pioggia',
+      snowShowers: 'Rovesci di neve',
+      thunderstorm: 'Temporale'
+    },
+    moonPhase: {
+      newMoon: 'Luna nuova',
+      waxingCrescent: 'Luna crescente',
+      firstQuarter: 'Primo quarto',
+      waxingGibbous: 'Gibbosa crescente',
+      fullMoon: 'Luna piena',
+      waningGibbous: 'Gibbosa calante',
+      lastQuarter: 'Ultimo quarto',
+      waningCrescent: 'Luna calante'
+    },
+    intensity: { light: 'Leggera', moderate: 'Moderata', heavy: 'Forte' },
+    hail: 'con grandine',
+    panel: {
+      feelsLike: 'Percepita',
+      humidity: 'Umidità',
+      uvIndex: 'Indice UV',
+      wind: 'Vento',
+      force: 'forza',
+      gusts: 'raffiche',
+      sunrise: 'Alba',
+      sunset: 'Tramonto',
+      tomorrow: 'Domani',
+      noLocation: 'Imposta una posizione per vedere il meteo'
+    },
+    location: {
+      searchPlaceholder: 'Cerca una città',
+      searchButton: 'Cerca',
+      useMyLocation: 'Usa la mia posizione',
+      currentLocationName: 'Posizione attuale',
+      gpsUnavailable: 'La posizione non è disponibile su questo dispositivo',
+      gpsDenied: 'Accesso alla posizione negato'
+    }
   }
 }
 
@@ -198,6 +541,57 @@ const pt: Dictionary = {
       hoursAgo: (n) => `há ${n} h`,
       yesterday: 'ontem',
       daysAgo: (n) => `há ${n} d`
+    }
+  },
+  weather: {
+    fetchError: 'Não foi possível atualizar o tempo',
+    condition: {
+      clearSky: 'Céu limpo',
+      mainlyClear: 'Predominantemente limpo',
+      partlyCloudy: 'Parcialmente nublado',
+      overcast: 'Nublado',
+      fog: 'Nevoeiro',
+      drizzle: 'Chuvisco',
+      freezingDrizzle: 'Chuvisco gelado',
+      rain: 'Chuva',
+      freezingRain: 'Chuva gelada',
+      snow: 'Neve',
+      snowGrains: 'Grãos de neve',
+      rainShowers: 'Aguaceiros',
+      snowShowers: 'Aguaceiros de neve',
+      thunderstorm: 'Trovoada'
+    },
+    moonPhase: {
+      newMoon: 'Lua nova',
+      waxingCrescent: 'Crescente côncava',
+      firstQuarter: 'Quarto crescente',
+      waxingGibbous: 'Gibosa crescente',
+      fullMoon: 'Lua cheia',
+      waningGibbous: 'Gibosa minguante',
+      lastQuarter: 'Quarto minguante',
+      waningCrescent: 'Minguante côncava'
+    },
+    intensity: { light: 'Fraca', moderate: 'Moderada', heavy: 'Forte' },
+    hail: 'com granizo',
+    panel: {
+      feelsLike: 'Sensação',
+      humidity: 'Humidade',
+      uvIndex: 'Índice UV',
+      wind: 'Vento',
+      force: 'força',
+      gusts: 'rajadas',
+      sunrise: 'Nascer do sol',
+      sunset: 'Pôr do sol',
+      tomorrow: 'Amanhã',
+      noLocation: 'Defina uma localização para ver o tempo'
+    },
+    location: {
+      searchPlaceholder: 'Pesquisar uma cidade',
+      searchButton: 'Pesquisar',
+      useMyLocation: 'Usar a minha localização',
+      currentLocationName: 'Localização atual',
+      gpsUnavailable: 'A localização não está disponível neste dispositivo',
+      gpsDenied: 'O acesso à localização foi negado'
     }
   }
 }

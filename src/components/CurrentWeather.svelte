@@ -1,0 +1,275 @@
+<script lang="ts">
+  // Renders into Layout's `cap` slot (the glass panel is Layout's — this
+  // only fills its content, matching design/mockups/02-blue-hour.html's
+  // .cap-now / .cap-cond / .reads structure).
+  import { weatherStore } from '../lib/weather/store'
+  import { settingsStore } from '../lib/core/storage/settings'
+  import { localeTag } from '../lib/ui/i18n'
+  import { t } from '../lib/ui/strings'
+  import { mapWmoCode } from '../lib/weather/mapWmo'
+  import { beaufortForce } from '../lib/weather/beaufort'
+  import { displayTemperature } from '../lib/weather/units'
+  import { compassDirection } from '../lib/weather/wind'
+  import WeatherIconSprite from './WeatherIconSprite.svelte'
+
+  let s = $derived(t($settingsStore.locale))
+  let unit = $derived($settingsStore.weather.tempUnit)
+  let snapshot = $derived($weatherStore.snapshot)
+  let current = $derived(snapshot?.current ?? null)
+  let visual = $derived(
+    current ? mapWmoCode(current.weatherCode, current.isDay) : null
+  )
+
+  function roundedTemp(celsius: number): number {
+    return Math.round(displayTemperature(celsius, unit))
+  }
+
+  // Condition label composes the parallel agent's Dictionary.weather.condition
+  // name with this component's own intensity/hail modifiers, e.g.
+  // "Heavy" + "Rain" or "Thunderstorm" + "with hail".
+  let conditionLabel = $derived.by(() => {
+    if (!visual) return ''
+    const condition = s.weather.condition[visual.conditionKey]
+    const intensity = visual.intensity
+      ? s.weather.intensity[visual.intensity]
+      : undefined
+    const hail = visual.hail ? s.weather.hail : undefined
+    return [intensity, condition, hail].filter(Boolean).join(' ')
+  })
+
+  let timeFormatter = $derived(
+    new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  )
+  let sunrise = $derived(
+    snapshot ? timeFormatter.format(new Date(snapshot.today.sunrise)) : ''
+  )
+  let sunset = $derived(
+    snapshot ? timeFormatter.format(new Date(snapshot.today.sunset)) : ''
+  )
+</script>
+
+<WeatherIconSprite />
+
+{#if !current || !visual}
+  <p class="no-location">{s.weather.panel.noLocation}</p>
+{:else}
+  <div class="weather-panel">
+    <div class="cap-now">
+      <p class="temp">{roundedTemp(current.temperature)}<sup>°{unit}</sup></p>
+      <svg class="hero-icon" aria-hidden="true">
+        <use href="#{visual.icon}" />
+      </svg>
+    </div>
+    <div class="cap-cond">
+      <p class="cond">{conditionLabel}</p>
+      <p class="rain">
+        <svg class="ic-inline" aria-hidden="true"><use href="#i-drop" /></svg>
+        {current.precipitationProbability}% · {current.precipitationMm} mm
+      </p>
+    </div>
+    <div class="reads">
+      <p class="read">
+        <small>{s.weather.panel.feelsLike}</small><b
+          >{roundedTemp(current.feelsLike)}°</b
+        >
+      </p>
+      <p class="read">
+        <small>{s.weather.panel.humidity}</small><b>{current.humidity}</b><span
+          class="q">%</span
+        >
+      </p>
+      <p class="read">
+        <small>{s.weather.panel.uvIndex}</small><b>{current.uvIndex}</b>
+      </p>
+      <div class="read wind">
+        <svg class="dial" viewBox="0 0 48 48" aria-hidden="true">
+          <circle
+            cx="24"
+            cy="24"
+            r="21"
+            fill="none"
+            stroke="rgb(222 238 255 / 0.22)"
+            stroke-width="1.5"
+          />
+          <text
+            x="24"
+            y="16"
+            text-anchor="middle"
+            font-size="7"
+            fill="var(--text-3)">N</text
+          >
+          <g
+            style="rotate:{current.windDirectionDeg}deg;transform-origin:24px 24px"
+          >
+            <path d="M24 11l6 18-6-4-6 4z" fill="var(--ice)" />
+          </g>
+        </svg>
+        <div>
+          <small
+            >{s.weather.panel.wind} · {s.weather.panel.force}
+            {beaufortForce(current.windSpeedKmh)}</small
+          >
+          <b>{Math.round(current.windSpeedKmh)}</b>
+          <span class="q"
+            >km/h {compassDirection(current.windDirectionDeg)} · {s.weather
+              .panel.gusts}
+            {Math.round(current.windGustsKmh)}</span
+          >
+        </div>
+      </div>
+      <div class="read sun">
+        <small>{s.weather.panel.sunrise} / {s.weather.panel.sunset}</small>
+        <b><svg aria-hidden="true"><use href="#i-rise" /></svg>{sunrise}</b>
+        <b><svg aria-hidden="true"><use href="#i-set" /></svg>{sunset}</b>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  /* This component's own <p> tags (temp/cond/rain/read/no-location) need
+     resetting — the project has no global paragraph-margin reset (see
+     src/app.css), and the UA default 1em margin explodes at --fs-temp's
+     size, silently inflating the panel's grid rows far past their content. */
+  p {
+    margin: 0;
+  }
+
+  .no-location {
+    color: var(--text-2);
+    font-size: var(--fs-m);
+  }
+
+  .weather-panel {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: calc(var(--u) * 1.4);
+    height: 100%;
+    min-height: 0;
+  }
+
+  .cap-now {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--u) * 1);
+  }
+  .temp {
+    font-family: var(--display);
+    font-size: var(--fs-temp);
+    font-weight: 200;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .temp sup {
+    font-size: 0.36em;
+    font-weight: 300;
+    vertical-align: 1.2em;
+    color: var(--text-2);
+    margin-left: 0.06em;
+  }
+  .hero-icon {
+    width: calc(var(--u) * 8.5);
+    height: calc(var(--u) * 8.5);
+    flex: none;
+  }
+
+  .cond {
+    font-family: var(--display);
+    font-size: var(--fs-l);
+    font-weight: 400;
+    line-height: 1.15;
+    text-transform: capitalize;
+  }
+  .rain {
+    margin-top: calc(var(--u) * 0.5);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    color: var(--text-2);
+    font-size: var(--fs-s);
+  }
+  .ic-inline {
+    width: 1em;
+    height: 1em;
+    color: var(--rain);
+  }
+
+  .reads {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: calc(var(--u) * 0.8);
+    align-content: end;
+  }
+  .read {
+    padding: calc(var(--u) * 0.9) calc(var(--u) * 1);
+    border-radius: calc(var(--r) * 0.55);
+    background: rgb(196 222 255 / 0.05);
+    min-width: 0;
+  }
+  .read small {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+  }
+  .read b {
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: calc(var(--u) * 2.2);
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .read .q {
+    font-size: var(--fs-s);
+    color: var(--text-2);
+  }
+  .read.wind {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 1);
+  }
+  .dial {
+    width: calc(var(--u) * 4.4);
+    height: calc(var(--u) * 4.4);
+    flex: none;
+  }
+  .read.sun small {
+    margin-bottom: 0.2em;
+  }
+  .read.sun b {
+    font-size: calc(var(--u) * 1.7);
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+  .read.sun svg {
+    width: 1em;
+    height: 1em;
+    color: var(--peach);
+  }
+
+  @media (orientation: portrait) {
+    .weather-panel {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      grid-template-rows: auto auto;
+      column-gap: calc(var(--u) * 3);
+    }
+    .cap-now {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .cap-cond {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .reads {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-content: center;
+    }
+  }
+</style>

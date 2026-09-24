@@ -7,11 +7,15 @@
   import StatusPill from './components/StatusPill.svelte'
   import ToastStack from './components/ToastStack.svelte'
   import SettingsSheet from './components/SettingsSheet.svelte'
+  import CurrentWeather from './components/CurrentWeather.svelte'
+  import Timeline24h from './components/Timeline24h.svelte'
+  import Tomorrow from './components/Tomorrow.svelte'
   import { startKiosk, watchVisibilityForWakeLock } from './lib/core/fullscreen'
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
   import { settingsStore } from './lib/core/storage/settings'
   import { t } from './lib/ui/strings'
+  import { weatherStore, initWeather } from './lib/weather/store'
 
   let s = $derived(t($settingsStore.locale))
 
@@ -26,9 +30,11 @@
   let online = $state(getOnlineStatus())
   let stopWatchingOnline: (() => void) | undefined
 
-  // No weather fetch exists yet (phase 2) — the pill correctly shows
-  // "no data yet" until then rather than a fake timestamp.
-  const lastUpdated: Date | null = null
+  // Real timestamp once initWeather() below has fetched at least once;
+  // null (renders "no data yet") until the first fetch resolves — see
+  // lib/weather/store.ts, which also keeps the last-good snapshot visible
+  // through subsequent failures rather than clearing it.
+  let lastUpdated = $derived($weatherStore.lastUpdated)
 
   // Gear fades in on any activity, hides after 5s idle (plan decision) —
   // keeps the screen free of always-visible chrome on a 24/7 wall display.
@@ -43,7 +49,11 @@
     const unsubscribe = idleVisibility.visible.subscribe(
       (v) => (gearVisible = v)
     )
-    return unsubscribe
+    const stopWeather = initWeather()
+    return () => {
+      unsubscribe()
+      stopWeather()
+    }
   })
   onDestroy(() => {
     stopWatchingVisibility?.()
@@ -62,6 +72,15 @@
     <HeroClock />
     <DateLine />
     <StatusPill {lastUpdated} {online} />
+  {/snippet}
+  {#snippet cap()}
+    <CurrentWeather />
+  {/snippet}
+  {#snippet tl()}
+    <Timeline24h />
+  {/snippet}
+  {#snippet tm()}
+    <Tomorrow />
   {/snippet}
 </Layout>
 
