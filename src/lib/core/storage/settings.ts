@@ -15,7 +15,18 @@ import { writable, get, type Writable } from 'svelte/store'
 export const SCHEMA_VERSION = 2
 export const STORAGE_KEY = 'wall-dashboard:settings:v1'
 
-export const LOCALES = ['fr', 'en', 'nl', 'de', 'es', 'it', 'pt'] as const
+export const LOCALES = [
+  'fr',
+  'en',
+  'nl',
+  'de',
+  'es',
+  'it',
+  'pt',
+  'ru',
+  'zh',
+  'hi'
+] as const
 export type Locale = (typeof LOCALES)[number]
 export const PHOTO_ROTATION_VALUES = [
   '1m',

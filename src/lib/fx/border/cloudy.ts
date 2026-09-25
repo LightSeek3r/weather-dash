@@ -3,6 +3,12 @@
  * steady wind, visible only where it crosses the border ring (clipped by
  * the shared ring mask) — so a shadow drifts in on one edge and out the
  * other, the way real overcast light moves across a window frame.
+ *
+ * `conditionKey` (see types.ts) splits this one module into two readings
+ * of the same scene rather than a second file: `partlyCloudy` gets fewer,
+ * lighter puffs with a brighter sunlit rim (sun bleeding through gaps),
+ * `overcast` gets a fuller, flatter, more uniform grey field. Everything
+ * else — motion, puff shapes, the ring mask — is shared.
  */
 import { createCanvas2dEffect, rand, type Scene2d } from './common'
 import type { BorderEffect, EffectOptions } from './types'
@@ -43,7 +49,16 @@ function cloudyScene(opts: EffectOptions): Scene2d {
   let h = 0
   let band = 0
   let clouds: Cloud[] = []
-  const count = opts.tier === 'high' ? 11 : 7
+  // Partly-cloudy: sparser, lighter shadows with more sun bleeding through.
+  // Overcast: a fuller, flatter, more uniform grey field. Both variants
+  // still scale up with density (a heavier overcast day vs a hazy one).
+  const partly = opts.conditionKey === 'partlyCloudy'
+  const baseCount = opts.tier === 'high' ? 16 : 12
+  const count = Math.round(
+    (partly ? baseCount * 0.6 : baseCount) * (0.7 + 0.3 * opts.density)
+  )
+  const shadowAlpha = partly ? 0.32 : 0.5
+  const rimAlpha = partly ? 0.1 : 0.06
 
   return {
     resize(nw, nh, nb) {
@@ -66,19 +81,20 @@ function cloudyScene(opts: EffectOptions): Scene2d {
           const py = c.y + p.dy * c.r
           const pr = c.r * p.r
           const g = ctx.createRadialGradient(px, py, 0, px, py, pr)
-          g.addColorStop(0, `rgba(3, 9, 18, ${0.46 * depth})`)
-          g.addColorStop(0.6, `rgba(5, 12, 22, ${0.2 * depth})`)
+          g.addColorStop(0, `rgba(3, 9, 18, ${shadowAlpha * depth})`)
+          g.addColorStop(0.6, `rgba(5, 12, 22, ${shadowAlpha * 0.43 * depth})`)
           g.addColorStop(1, 'rgba(5, 12, 22, 0)')
           ctx.fillStyle = g
           ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2)
         }
-        // Sunlit upper rim — keeps the shadows readable on an already-dark sky.
+        // Sunlit upper rim — keeps the shadows readable on an already-dark
+        // sky, and (for partly-cloudy) reads as sun bleeding through gaps.
         const rx = c.x - c.r * 0.2
         const ry = c.y - c.r * 0.55
         const rr = c.r * 0.8
         const g = ctx.createRadialGradient(rx, ry, rr * 0.4, rx, ry, rr)
         g.addColorStop(0, 'rgba(189, 205, 221, 0)')
-        g.addColorStop(0.75, `rgba(189, 205, 221, ${0.07 * depth})`)
+        g.addColorStop(0.75, `rgba(189, 205, 221, ${rimAlpha * depth})`)
         g.addColorStop(1, 'rgba(189, 205, 221, 0)')
         ctx.fillStyle = g
         ctx.fillRect(rx - rr, ry - rr, rr * 2, rr * 2)

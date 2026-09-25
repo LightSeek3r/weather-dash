@@ -39,9 +39,13 @@ export function pickEffect(
   }
 }
 
+// `light`/`moderate` raised from an earlier 0.35/0.65 (see plan feedback:
+// effects read as too subtle to notice, especially at the `eco` tier) —
+// `heavy` stays exactly 1, several unit tests and the storm floor below
+// depend on it.
 const LEVEL: Record<NonNullable<WeatherVisual['intensity']>, number> = {
-  light: 0.35,
-  moderate: 0.65,
+  light: 0.45,
+  moderate: 0.75,
   heavy: 1
 }
 
@@ -51,7 +55,11 @@ export function densityFor(
   intensity: WeatherVisual['intensity']
 ): number {
   const level = intensity ? LEVEL[intensity] : LEVEL.moderate
-  if (fx === 'drizzle') return level * 0.5
+  // Drizzle stays visibly lighter than rain (0.6x) but no longer this faint
+  // at low intensity — rain-eco/rain-webgl also swap to a finer, slower
+  // droplet style for drizzle (see their `conditionKey` handling), so the
+  // distinction isn't carried by count/opacity alone anymore.
+  if (fx === 'drizzle') return level * 0.6
   if (fx === 'storm') return Math.max(level, 0.85)
   return level
 }

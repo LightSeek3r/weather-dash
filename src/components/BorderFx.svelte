@@ -75,6 +75,11 @@
       : null
   )
   let density = $derived(visual ? densityFor(visual.fx, visual.intensity) : 0)
+  // Primitives only (see the effectId comment above) — read separately so
+  // an effect module can tell partly-cloudy from overcast, drizzle from
+  // rain, without pickEffect() needing a distinct EffectId per pair.
+  let conditionKey = $derived(visual?.conditionKey ?? null)
+  let intensity = $derived(visual?.intensity)
 
   // Reads state, never writes it: mounting happens after an async import,
   // outside this effect's tracking scope, so nothing an effect module does
@@ -84,6 +89,8 @@
     const id = effectId
     const activeTier = tier
     const d = density
+    const ck = conditionKey
+    const it = intensity
     if (!el || !id || activeTier === 'off') return
 
     let cancelled = false
@@ -92,7 +99,12 @@
       .then((create) => {
         if (cancelled) return
         fx = create()
-        fx.mount(el, { tier: activeTier, density: d })
+        fx.mount(el, {
+          tier: activeTier,
+          density: d,
+          conditionKey: ck ?? undefined,
+          intensity: it
+        })
       })
       .catch((err) => console.warn(`[fx] could not load "${id}"`, err))
 

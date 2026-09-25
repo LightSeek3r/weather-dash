@@ -102,12 +102,22 @@ function rainScene(opts: EffectOptions): Scene2d {
   let trail: Bead[] = []
   let runners: Runner[] = []
   const sprite = dropSprite()
-  const scale = 0.35 + 0.65 * opts.density
-  const beadTarget = Math.round((opts.tier === 'high' ? 190 : 120) * scale)
+  // Drizzle/freezing-drizzle: finer, more numerous, slower droplets and far
+  // fewer heavy runners — reads as a fine mist rather than rain's fuller,
+  // faster streaks (less "accumulation" sliding down the glass).
+  const isDrizzle =
+    opts.conditionKey === 'drizzle' || opts.conditionKey === 'freezingDrizzle'
+  const scale = 0.45 + 0.55 * opts.density
+  const beadTarget = Math.round(
+    (opts.tier === 'high' ? 220 : 170) * scale * (isDrizzle ? 1.25 : 1)
+  )
   const runnerTarget = Math.max(
     2,
-    Math.round((opts.tier === 'high' ? 12 : 7) * scale)
+    Math.round(
+      (opts.tier === 'high' ? 14 : 10) * scale * (isDrizzle ? 0.45 : 1)
+    )
   )
+  const dropAlpha = isDrizzle ? 0.7 : 1
   const TRAIL_CAP = 260
 
   function newBead(age = 0): Bead {
@@ -115,9 +125,9 @@ function rainScene(opts: EffectOptions): Scene2d {
     return {
       x,
       y,
-      r: rand(1.4, 4.2) * px,
+      r: (isDrizzle ? rand(0.9, 2.3) : rand(1.4, 4.2)) * px,
       age,
-      life: rand(18, 60)
+      life: isDrizzle ? rand(14, 45) : rand(18, 60)
     }
   }
 
@@ -135,10 +145,10 @@ function rainScene(opts: EffectOptions): Scene2d {
       x0,
       x: x0,
       y: fromTop ? -rand(0, band) : rand(0, h),
-      r: rand(3.5, 6.5) * px,
+      r: (isDrizzle ? rand(2, 3.6) : rand(3.5, 6.5)) * px,
       phase: rand(0, TAU),
-      rate: rand(0.35, 0.8),
-      vmax: band * rand(1.1, 2.2),
+      rate: isDrizzle ? rand(0.22, 0.45) : rand(0.35, 0.8),
+      vmax: band * (isDrizzle ? rand(0.5, 1.0) : rand(1.1, 2.2)),
       seed: rand(0, 100),
       sinceTrail: 0
     }
@@ -153,7 +163,7 @@ function rainScene(opts: EffectOptions): Scene2d {
     stretch = 1
   ): void {
     if (alpha < 0.02) return
-    ctx.globalAlpha = Math.min(1, alpha)
+    ctx.globalAlpha = Math.min(1, alpha * dropAlpha)
     ctx.drawImage(sprite, x - r, y - r * stretch, r * 2, r * 2 * stretch)
   }
 

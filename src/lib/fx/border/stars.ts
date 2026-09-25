@@ -59,7 +59,7 @@ function starsScene(opts: EffectOptions): Scene2d {
   let nextMeteor = rand(20, 50)
   const cool = starSprite('238, 244, 251')
   const warm = starSprite('255, 214, 190')
-  const count = opts.tier === 'high' ? 120 : 65
+  const count = opts.tier === 'high' ? 150 : 100
 
   return {
     resize(nw, nh, nb) {

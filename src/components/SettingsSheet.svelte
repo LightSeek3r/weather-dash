@@ -38,6 +38,25 @@
   let triggerToRestore: Element | null = null
   let s = $derived(t($settingsStore.locale))
 
+  // --- language: full locale list, each shown in its own native name so a
+  // user who can't read the current UI language can still find theirs ---
+  const LOCALE_OPTIONS: { value: Settings['locale']; label: string }[] = [
+    { value: 'en', label: 'English' },
+    { value: 'fr', label: 'Français' },
+    { value: 'nl', label: 'Nederlands' },
+    { value: 'de', label: 'Deutsch' },
+    { value: 'es', label: 'Español' },
+    { value: 'it', label: 'Italiano' },
+    { value: 'pt', label: 'Português' },
+    { value: 'ru', label: 'Русский' },
+    { value: 'zh', label: '中文' },
+    { value: 'hi', label: 'हिन्दी' }
+  ]
+
+  function setLocale(value: Settings['locale']): void {
+    settingsStore.update((current) => ({ ...current, locale: value }))
+  }
+
   // --- location: city search + GPS (plan decision: "city search or GPS button") ---
   let query = $state('')
   let results = $state<GeocodeResult[]>([])
@@ -489,6 +508,23 @@
         </button>
       </header>
       <p class="sheet__placeholder">{s.settings.placeholder}</p>
+
+      <section class="location-section">
+        <h3>{s.settings.language.heading}</h3>
+
+        <div class="field">
+          <select
+            aria-label={s.settings.language.heading}
+            value={$settingsStore.locale}
+            onchange={(e) =>
+              setLocale(e.currentTarget.value as Settings['locale'])}
+          >
+            {#each LOCALE_OPTIONS as option (option.value)}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </div>
+      </section>
 
       <section class="location-section">
         <form

@@ -18,7 +18,7 @@ interface Wisp {
   phase: number
 }
 
-function makeWisp(w: number, h: number, band: number): Wisp {
+function makeWisp(w: number, h: number, band: number, boost: number): Wisp {
   const roll = Math.random()
   // Half the wisps hug the bottom edge, a fifth the top, the rest anywhere
   // (only visible where the ring mask lets them through on the sides).
@@ -34,7 +34,7 @@ function makeWisp(w: number, h: number, band: number): Wisp {
     r: band * rand(0.5, 1.1),
     stretch: rand(2.4, 4.5),
     vx: band * rand(0.012, 0.035) * (Math.random() < 0.5 ? -1 : 1),
-    alpha: rand(0.07, 0.14),
+    alpha: rand(0.09, 0.18) * boost,
     period: rand(18, 40),
     phase: rand(0, Math.PI * 2)
   }
@@ -46,22 +46,27 @@ function fogScene(opts: EffectOptions): Scene2d {
   let band = 0
   let wisps: Wisp[] = []
   let haze: CanvasGradient | null = null
-  const count = opts.tier === 'high' ? 16 : 9
+  const count = Math.round(
+    (opts.tier === 'high' ? 22 : 16) * (0.7 + 0.3 * opts.density)
+  )
+  // Density has no intensity signal to ride for fog (mapWmo never sets one
+  // for codes 45/48), so it only nudges wisp opacity rather than the count.
+  const boost = 0.85 + 0.3 * opts.density
 
   return {
     resize(nw, nh, nb) {
       w = nw
       h = nh
       band = nb
-      wisps = Array.from({ length: count }, () => makeWisp(w, h, band))
+      wisps = Array.from({ length: count }, () => makeWisp(w, h, band, boost))
       haze = null
     },
     draw(ctx, t, dt) {
       if (!haze) {
         haze = ctx.createLinearGradient(0, 0, 0, h)
-        haze.addColorStop(0, 'rgba(149, 169, 189, 0.07)')
-        haze.addColorStop(0.6, 'rgba(149, 169, 189, 0.05)')
-        haze.addColorStop(1, 'rgba(149, 169, 189, 0.16)')
+        haze.addColorStop(0, 'rgba(149, 169, 189, 0.09)')
+        haze.addColorStop(0.6, 'rgba(149, 169, 189, 0.07)')
+        haze.addColorStop(1, 'rgba(149, 169, 189, 0.2)')
       }
       ctx.fillStyle = haze
       ctx.fillRect(0, 0, w, h)

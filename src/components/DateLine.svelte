@@ -38,15 +38,16 @@
     })
   )
 
-  function partsOf(date: Date, formatter: Intl.DateTimeFormat) {
-    const out: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {}
-    for (const part of formatter.formatToParts(date)) {
-      out[part.type] = part.value
-    }
-    return out
-  }
-
-  let dateParts = $derived(partsOf(now, dateFormatter))
+  // Render every part in the order Intl itself produces, not a hand-picked
+  // Western "weekday, day, month, year" order with literals dropped — that
+  // hand-picked order happens to work for space-separated European
+  // languages, but is wrong for zh (year-month-day order, with 年/月/日
+  // *separator* characters carried as `literal` parts this discarded, so
+  // "25 9 2026" rendered with no separators and in the wrong order instead
+  // of "2026年9月25日"). `HeroClock.svelte` already renders all parts in
+  // natural order for the same reason; this follows that precedent instead
+  // of reintroducing the same class of bug in a second component.
+  let dateParts = $derived(dateFormatter.formatToParts(now))
   let week = $derived(isoWeek(now))
   let doy = $derived(dayOfYear(now))
   // Reuses dayOfYear itself for "days in this year" instead of a separate
@@ -79,10 +80,13 @@
 </script>
 
 <p class="date">
-  {dateParts.weekday}
-  {dateParts.day}
-  {dateParts.month}
-  <span>{dateParts.year}</span>
+  {#each dateParts as part, i (i + part.type)}
+    {#if part.type === 'year'}
+      <span>{part.value}</span>
+    {:else}
+      {part.value}
+    {/if}
+  {/each}
 </p>
 <ul class="meta">
   <li>{s.dateLine.week} <b>{week}</b></li>

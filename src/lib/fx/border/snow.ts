@@ -36,7 +36,7 @@ function snowScene(opts: EffectOptions): Scene2d {
   let flakes: Flake[] = []
   let frost: CanvasGradient | null = null
   const count = Math.round(
-    (opts.tier === 'high' ? 170 : 85) * (0.4 + 0.6 * opts.density)
+    (opts.tier === 'high' ? 200 : 140) * (0.5 + 0.5 * opts.density)
   )
   const sprite = makeSprite(SPRITE, SPRITE, (ctx) => {
     const c = SPRITE / 2

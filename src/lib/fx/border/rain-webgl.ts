@@ -52,6 +52,9 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform float uDensity;
 uniform float uBand;
+// 0 for rain, 1 for drizzle/freezing-drizzle (see EffectOptions.conditionKey)
+// — finer, slower, quieter droplets rather than just fewer of them.
+uniform float uDrizzle;
 
 // Hash without sine, Dave Hoskins (MIT) — stable across GPUs, unlike sin-hashes.
 float hash11(float p) {
@@ -79,16 +82,18 @@ vec3 env(vec2 p) {
 }
 
 // -> (normal.xy in drop radii, coverage)
-vec3 beads(vec2 uv, float t, float density) {
-  vec2 g = uv * 30.0;
+vec3 beads(vec2 uv, float t, float density, float drizzle) {
+  // Drizzle packs a finer grid of smaller, slower-cycling beads — a mist of
+  // condensation rather than rain's sparser, plumper drops.
+  vec2 g = uv * mix(30.0, 42.0, drizzle);
   vec2 id = floor(g);
   vec2 gv = fract(g) - 0.5;
   vec3 n = hash31(id.x * 107.45 + id.y * 3543.654);
   if (n.z > density) return vec3(0.0);
   vec3 m = hash31(n.z * 917.3 + n.x * 31.1);
-  float life = fract(t * 0.035 * (0.6 + m.x) + m.y);
+  float life = fract(t * mix(0.035, 0.022, drizzle) * (0.6 + m.x) + m.y);
   float fade = smoothstep(0.0, 0.03, life) * smoothstep(1.0, 0.55, life);
-  float rMax = 0.1 + 0.24 * m.z;
+  float rMax = mix(0.1, 0.055, drizzle) + mix(0.24, 0.12, drizzle) * m.z;
   float r = rMax * (0.65 + 0.35 * smoothstep(0.0, 0.08, life));
   vec2 p = (n.xy - 0.5) * 2.0 * (0.5 - rMax);
   vec2 dv = gv - p;
@@ -103,8 +108,10 @@ float runnerPath(float y, vec3 n) {
 }
 
 // -> (normal.xy, coverage, trail wetness)
-vec4 runners(vec2 uv, float t, float density, float seed) {
-  const vec2 CELL = vec2(0.075, 0.5);
+vec4 runners(vec2 uv, float t, float density, float seed, float drizzle) {
+  // Drizzle's runners are thinner, narrower and slide down slower — a light
+  // trickle rather than rain's fuller, faster streaks.
+  vec2 CELL = mix(vec2(0.075, 0.5), vec2(0.06, 0.5), drizzle);
   vec2 g = uv / CELL;
   g.y += hash11(floor(g.x) * 13.7 + seed) * 11.0;
   vec2 id = floor(g);
@@ -112,13 +119,13 @@ vec4 runners(vec2 uv, float t, float density, float seed) {
   vec3 n = hash31(id.x * 35.17 + id.y * 2376.13 + seed * 17.0);
   if (n.x > density) return vec4(0.0);
 
-  float s = fract(t * (0.07 + 0.08 * n.y) + n.z);
+  float s = fract(t * mix(1.0, 0.45, drizzle) * (0.07 + 0.08 * n.y) + n.z);
   const float K = 3.0;
   float prog = s - sin(6.2831853 * K * s) / (6.2831853 * K);
   float dropY = 0.95 - prog * 0.9;
   float dropX = runnerPath(dropY, n);
   float vis = smoothstep(0.0, 0.06, s) * smoothstep(1.0, 0.9, s);
-  float r = (0.011 + 0.008 * fract(n.z * 51.3)) * mix(1.0, 0.7, s);
+  float r = mix(1.0, 0.6, drizzle) * (0.011 + 0.008 * fract(n.z * 51.3)) * mix(1.0, 0.7, s);
 
   vec2 dv = (gv - vec2(dropX, dropY)) * CELL;
   dv.y *= dv.y > 0.0 ? 0.7 : 1.1;
@@ -159,9 +166,10 @@ void main() {
     return;
   }
 
-  vec3 b = beads(uv, uTime, 0.25 + 0.45 * uDensity);
-  vec4 r1 = runners(uv, uTime, 0.12 + 0.6 * uDensity, 0.0);
-  vec4 r2 = runners(uv * 1.7 + vec2(0.31, 0.0), uTime * 1.15, 0.08 + 0.5 * uDensity, 7.0);
+  float beadDensity = (0.32 + 0.5 * uDensity) * mix(1.0, 1.3, uDrizzle);
+  vec3 b = beads(uv, uTime, min(beadDensity, 0.95), uDrizzle);
+  vec4 r1 = runners(uv, uTime, 0.16 + 0.62 * uDensity, 0.0, uDrizzle);
+  vec4 r2 = runners(uv * 1.7 + vec2(0.31, 0.0), uTime * 1.15, 0.12 + 0.52 * uDensity, 7.0, uDrizzle);
   float trail = max(r1.w, r2.w);
   b.z *= 1.0 - smoothstep(0.0, 0.5, trail);
   vec3 d = b;
@@ -315,6 +323,9 @@ export function createEffect(): BorderEffect {
     const uTime = gl.getUniformLocation(program, 'uTime')
     gl.uniform1f(gl.getUniformLocation(program, 'uDensity'), opts.density)
     gl.uniform1f(gl.getUniformLocation(program, 'uBand'), BAND_FRACTION)
+    const isDrizzle =
+      opts.conditionKey === 'drizzle' || opts.conditionKey === 'freezingDrizzle'
+    gl.uniform1f(gl.getUniformLocation(program, 'uDrizzle'), isDrizzle ? 1 : 0)
 
     let t = Math.random() * 600
     let warm = 0
