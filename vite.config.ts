@@ -8,28 +8,39 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Wall Dashboard',
-        short_name: 'Wall',
-        description: 'Fullscreen 24/7 weather and date wall display',
+        name: 'Weather Dash',
+        short_name: 'Weather Dash',
+        description:
+          'Fullscreen, always-on weather and date wall display for phones, tablets, PCs and TVs',
         display: 'fullscreen',
-        theme_color: '#0a0a0f',
-        background_color: '#0a0a0f',
+        theme_color: '#0a1726',
+        background_color: '#0a1726',
         start_url: '/',
         scope: '/',
-        // TODO: real icons, apple touch icons, screenshots for install prompt
+        categories: ['weather', 'utilities'],
         icons: [
+          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect fill="%230a0a0f" width="192" height="192"/></svg>',
-            sizes: '192x192',
-            type: 'image/svg+xml',
-            purpose: 'any'
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ],
         screenshots: [
           {
-            src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 720"><rect fill="%230a0a0f" width="540" height="720"/></svg>',
-            sizes: '540x720',
-            type: 'image/svg+xml'
+            src: '/screenshot-wide.png',
+            sizes: '1920x1080',
+            type: 'image/png',
+            form_factor: 'wide'
+          },
+          {
+            src: '/screenshot-narrow.png',
+            sizes: '780x1688',
+            type: 'image/png',
+            form_factor: 'narrow'
           }
         ]
       },

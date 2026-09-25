@@ -1,4 +1,8 @@
-# Wall Dashboard
+<img src="public/favicon.svg" alt="" width="72" />
+
+# Weather Dash
+
+**Live:** https://weather-dash-9j2.pages.dev/
 
 Fullscreen 24/7 weather and date wall display for phones, tablets, and TVs. Local-first settings, beautiful dark visuals with weather-driven effects, and anti-burn-in. Built with Svelte 5, TypeScript, Vite, and PWA technology.
 
@@ -28,6 +32,7 @@ npm run preview   # Preview production build
 - `npm run preview` - Preview production build
 - `npm run test` - Run unit tests (Vitest)
 - `npm run test:e2e` - Run end-to-end tests (Playwright)
+- `node scripts/brand-assets.mjs` - Regenerate icons, OG image and install screenshots in `public/` from `public/favicon.svg` (needs `npm run dev` running)
 - `npm run lint` - Lint code (ESLint)
 - `npm run format` - Format code (Prettier)
 

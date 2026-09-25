@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://weather-dash-9j2.pages.dev/sitemap.xml

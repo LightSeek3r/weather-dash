@@ -5,20 +5,16 @@
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
+  import { t } from '../lib/ui/strings'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import type { HourlyPoint } from '../lib/weather/types'
 
   let hourly = $derived($weatherStore.snapshot?.hourly ?? [])
+  let s = $derived(t($settingsStore.locale))
 
   let hourFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
       hour: '2-digit'
-    })
-  )
-  let dayFormatter = $derived(
-    new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
-      weekday: 'short',
-      day: 'numeric'
     })
   )
 
@@ -76,20 +72,15 @@
     const idx = hourly.findIndex((h) => new Date(h.time).getDate() !== firstDay)
     return idx > 0 ? idx : -1
   })
-  let midnightLabel = $derived(
-    midnightIndex >= 0
-      ? dayFormatter.format(new Date(hourly[midnightIndex].time))
-      : ''
-  )
 </script>
 
 <div class="chart">
   <div class="row hours">
     {#each hourly as point, i (point.time)}
-      <span class={i === 0 ? 'n' : ''}>
+      <span class={i === 0 ? 'n' : i % 6 ? 'sparse' : ''}>
         {#if i === 0}
-          Now
-        {:else if i % 3 === 0 && i !== midnightIndex}
+          {s.weather.panel.now}
+        {:else if i % 3 === 0}
           {hourFormatter.format(new Date(point.time))}
         {/if}
       </span>
@@ -117,9 +108,12 @@
     {/each}
   </div>
   <div class="row rain">
-    {#each hourly as point (point.time)}
+    {#each hourly as point, i (point.time)}
       <div
-        class={point.precipitationProbability < 15 ? 'dry' : ''}
+        class={[
+          point.precipitationProbability < 15 && 'dry',
+          i % 3 && 'sparse'
+        ]}
         style="height:{Math.max(point.precipitationProbability, 4)}%"
       >
         {#if point.precipitationProbability >= 30}
@@ -129,15 +123,29 @@
     {/each}
   </div>
   {#if midnightIndex >= 0}
-    <div class="midnight" style="left:{(midnightIndex / hourly.length) * 100}%">
-      <span>{midnightLabel}</span>
-    </div>
+    <div
+      class="midnight"
+      style="left:{(midnightIndex / hourly.length) * 100}%"
+    ></div>
   {/if}
 </div>
 
 <style>
   .chart {
     position: relative;
+    container-type: inline-size;
+  }
+  /* 24 columns get narrow fast: per-hour rain percentages collide below
+     ~40px a column, 3-hourly hour labels below ~25px. */
+  @container (max-width: 1000px) {
+    .rain .sparse span {
+      visibility: hidden;
+    }
+  }
+  @container (max-width: 600px) {
+    .hours .sparse {
+      visibility: hidden;
+    }
   }
   .row {
     display: grid;
@@ -243,18 +251,5 @@
     top: 0;
     bottom: 0;
     border-left: 1.5px dashed rgb(222 238 255 / 0.35);
-  }
-  .midnight span {
-    position: absolute;
-    top: calc(var(--u) * -0.2);
-    left: 0;
-    translate: -50% 0;
-    padding: 0.1em 0.7em;
-    border-radius: 99px;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    color: var(--sky-0);
-    background: var(--text-2);
-    white-space: nowrap;
   }
 </style>

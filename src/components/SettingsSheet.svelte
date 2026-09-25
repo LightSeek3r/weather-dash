@@ -841,7 +841,7 @@
            self-hosted fonts (see design-tokens.css) are OFL and credited
            here too. No dedicated About screen exists yet, so it lives here. -->
       <div class="attribution">
-        <p class="attribution__app">Wall Dashboard</p>
+        <p class="attribution__app">Weather Dash</p>
         <p>
           Weather data © <a
             href="https://open-meteo.com/"
