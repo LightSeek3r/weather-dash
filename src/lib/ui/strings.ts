@@ -67,6 +67,15 @@ export interface Dictionary {
       /** `{used} MB of {quota} MB used`, composed not hardcoded per-value. */
       storageUsage: (usedMB: number, quotaMB: number) => string
     }
+    backup: {
+      heading: string
+      exportButton: string
+      importButton: string
+      exportSuccess: string
+      importSuccess: string
+      /** Prefixes the human-readable message `importSettings()` already returns (see storage/settings.ts's `summarizeIssues`) — that message itself stays untranslated (technical field paths), same treatment as an upstream error code. */
+      importErrorPrefix: string
+    }
   }
   status: {
     offline: string
@@ -154,6 +163,14 @@ const en: Dictionary = {
       blur: 'Blur',
       shuffle: 'Shuffle photos',
       storageUsage: (used, quota) => `${used} MB of ${quota} MB used`
+    },
+    backup: {
+      heading: 'Backup',
+      exportButton: 'Export settings',
+      importButton: 'Import settings',
+      exportSuccess: 'Settings exported',
+      importSuccess: 'Settings imported',
+      importErrorPrefix: 'Import failed'
     }
   },
   status: {
@@ -270,6 +287,14 @@ const fr: Dictionary = {
       blur: 'Flou',
       shuffle: 'Lecture aléatoire des photos',
       storageUsage: (used, quota) => `${used} Mo sur ${quota} Mo utilisés`
+    },
+    backup: {
+      heading: 'Sauvegarde',
+      exportButton: 'Exporter les réglages',
+      importButton: 'Importer les réglages',
+      exportSuccess: 'Réglages exportés',
+      importSuccess: 'Réglages importés',
+      importErrorPrefix: 'Échec de l’importation'
     }
   },
   status: {
@@ -391,6 +416,14 @@ const nl: Dictionary = {
       blur: 'Vervagen',
       shuffle: 'Willekeurige volgorde',
       storageUsage: (used, quota) => `${used} MB van ${quota} MB gebruikt`
+    },
+    backup: {
+      heading: 'Backup',
+      exportButton: 'Instellingen exporteren',
+      importButton: 'Instellingen importeren',
+      exportSuccess: 'Instellingen geëxporteerd',
+      importSuccess: 'Instellingen geïmporteerd',
+      importErrorPrefix: 'Importeren mislukt'
     }
   },
   status: {
@@ -508,6 +541,14 @@ const de: Dictionary = {
       blur: 'Unschärfe',
       shuffle: 'Zufällige Reihenfolge',
       storageUsage: (used, quota) => `${used} MB von ${quota} MB verwendet`
+    },
+    backup: {
+      heading: 'Sicherung',
+      exportButton: 'Einstellungen exportieren',
+      importButton: 'Einstellungen importieren',
+      exportSuccess: 'Einstellungen exportiert',
+      importSuccess: 'Einstellungen importiert',
+      importErrorPrefix: 'Import fehlgeschlagen'
     }
   },
   status: {
@@ -622,6 +663,14 @@ const es: Dictionary = {
       blur: 'Desenfoque',
       shuffle: 'Orden aleatorio',
       storageUsage: (used, quota) => `${used} MB de ${quota} MB usados`
+    },
+    backup: {
+      heading: 'Copia de seguridad',
+      exportButton: 'Exportar ajustes',
+      importButton: 'Importar ajustes',
+      exportSuccess: 'Ajustes exportados',
+      importSuccess: 'Ajustes importados',
+      importErrorPrefix: 'Error al importar'
     }
   },
   status: {
@@ -740,6 +789,14 @@ const it: Dictionary = {
       blur: 'Sfocatura',
       shuffle: 'Ordine casuale',
       storageUsage: (used, quota) => `${used} MB di ${quota} MB utilizzati`
+    },
+    backup: {
+      heading: 'Backup',
+      exportButton: 'Esporta impostazioni',
+      importButton: 'Importa impostazioni',
+      exportSuccess: 'Impostazioni esportate',
+      importSuccess: 'Impostazioni importate',
+      importErrorPrefix: 'Importazione non riuscita'
     }
   },
   status: {
@@ -856,6 +913,14 @@ const pt: Dictionary = {
       blur: 'Desfoque',
       shuffle: 'Ordem aleatória',
       storageUsage: (used, quota) => `${used} MB de ${quota} MB utilizados`
+    },
+    backup: {
+      heading: 'Cópia de segurança',
+      exportButton: 'Exportar configurações',
+      importButton: 'Importar configurações',
+      exportSuccess: 'Configurações exportadas',
+      importSuccess: 'Configurações importadas',
+      importErrorPrefix: 'Falha na importação'
     }
   },
   status: {

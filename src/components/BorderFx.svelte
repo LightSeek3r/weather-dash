@@ -28,6 +28,7 @@
     type EffectId
   } from '../lib/fx/border'
   import type { BorderEffect } from '../lib/fx/border/types'
+  import { debugParams } from '../lib/core/debug-params'
 
   let host = $state<HTMLDivElement | null>(null)
   let osReducedMotion = $state(false)
@@ -37,7 +38,11 @@
   // that dim would defeat half the point, so treat night mode the same as
   // an explicit `fxQuality: 'off'` rather than letting the two features
   // disagree about whether the screen should be quiet right now.
-  let now = $state(new Date())
+  // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
+  // instant so night-mode gating (and thus which tier/effect mounts) is
+  // deterministic under the debug flag rather than depending on the real
+  // wall-clock time the test happens to run at.
+  let now = $state(debugParams.now ?? new Date())
   const unsubscribeClock = scheduler.on('minute', (tickNow) => {
     now = tickNow
   })

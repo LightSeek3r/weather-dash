@@ -18,3 +18,13 @@ body {
   font-variant-numeric: tabular-nums;
   overflow: hidden;
 }
+
+/* Debug-only (see lib/core/debug-params.ts, `?freeze=1`): stops every
+   CSS animation/transition dead so a screenshot in the Playwright visual
+   suite never lands mid-crossfade/Ken-Burns/border-FX/night-dim-fade. Never
+   applied outside the debug flag — this class is only ever added by
+   main.ts, gated on the query param. */
+html.debug-freeze * {
+  animation: none !important;
+  transition: none !important;
+}

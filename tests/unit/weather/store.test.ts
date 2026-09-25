@@ -25,7 +25,8 @@ import { toast } from '../../../src/lib/ui/toast'
 import {
   initWeather,
   weatherStore,
-  resetWeatherStoreForTests
+  resetWeatherStoreForTests,
+  setDebugWeatherSnapshot
 } from '../../../src/lib/weather/store'
 import {
   settingsStore,
@@ -215,5 +216,20 @@ describe('weather store', () => {
 
     expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(2)
     expect(fetchWeatherSnapshot).toHaveBeenLastCalledWith(48.85, 2.35)
+  })
+
+  // Debug-only path (see lib/core/debug-params.ts `?weather=`) — a direct
+  // store write, never combined with initWeather()'s real fetch.
+  it('setDebugWeatherSnapshot sets the snapshot/status/lastUpdated directly, with no fetch involved', () => {
+    const snapshot = makeSnapshot({ fetchedAt: '2026-01-15T15:00:00.000Z' })
+
+    setDebugWeatherSnapshot(snapshot)
+
+    const state = get(weatherStore)
+    expect(state.snapshot).toBe(snapshot)
+    expect(state.status).toBe('idle')
+    expect(state.lastUpdated).toEqual(new Date(snapshot.fetchedAt))
+    expect(fetchWeatherSnapshot).not.toHaveBeenCalled()
+    expect(fetchAirQuality).not.toHaveBeenCalled()
   })
 })

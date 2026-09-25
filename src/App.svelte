@@ -24,7 +24,17 @@
   import { createIdleVisibility } from './lib/ui/idle-visibility'
   import { settingsStore } from './lib/core/storage/settings'
   import { t } from './lib/ui/strings'
-  import { weatherStore, initWeather } from './lib/weather/store'
+  import {
+    weatherStore,
+    initWeather,
+    setDebugWeatherSnapshot
+  } from './lib/weather/store'
+  import {
+    buildDebugSnapshot,
+    isDebugWeatherState,
+    type DebugWeatherState
+  } from './lib/weather/debug-snapshots'
+  import { debugParams } from './lib/core/debug-params'
   import {
     scheduleNightlyReload,
     consumeNightlyReloadMarker
@@ -60,13 +70,44 @@
   let gearVisible = $state(true)
   let settingsOpen = $state(false)
 
+  const DEBUG_FALLBACK_LOCATION = {
+    lat: 50.85,
+    lon: 4.35,
+    name: 'Brussels',
+    timezone: 'Europe/Brussels'
+  }
+
+  /**
+   * `?weather=<state>` (see lib/core/debug-params.ts) substitutes a canned
+   * snapshot for a real fetch — dev/test only, and never combined with
+   * initWeather() (see setDebugWeatherSnapshot's doc in weather/store.ts).
+   * Returns a no-op cleanup so the caller can treat it the same as
+   * initWeather()'s real unsubscribe function.
+   */
+  function startDebugWeather(state: DebugWeatherState): () => void {
+    const location = $settingsStore.location
+      ? {
+          ...$settingsStore.location,
+          timezone: DEBUG_FALLBACK_LOCATION.timezone
+        }
+      : DEBUG_FALLBACK_LOCATION
+    setDebugWeatherSnapshot(
+      buildDebugSnapshot(state, debugParams.now ?? new Date(), location)
+    )
+    return () => {}
+  }
+
   onMount(() => {
     stopWatchingVisibility = watchVisibilityForWakeLock()
     stopWatchingOnline = subscribeOnlineStatus((next) => (online = next))
     const unsubscribe = idleVisibility.visible.subscribe(
       (v) => (gearVisible = v)
     )
-    const stopWeather = initWeather()
+    const debugWeather = debugParams.weather
+    const stopWeather =
+      debugWeather && isDebugWeatherState(debugWeather)
+        ? startDebugWeather(debugWeather)
+        : initWeather()
     const stopNightlyReload = scheduleNightlyReload('03:30')
     if (started) void acquireWakeLock()
     return () => {

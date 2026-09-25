@@ -3,6 +3,7 @@
   import { scheduler } from '../lib/core/scheduler'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
+  import { debugParams } from '../lib/core/debug-params'
 
   // Reads the user's clock-format choice from settings by default — props
   // exist only so a caller (tests, future preview UI) can override without
@@ -14,7 +15,11 @@
 
   let { hour12, showSeconds }: Props = $props()
 
-  let now = $state(new Date())
+  // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
+  // instant directly since scheduler.start() is skipped while frozen, so
+  // the 'second' subscription below never fires again to correct a real
+  // `new Date()` initial value.
+  let now = $state(debugParams.now ?? new Date())
   let unsubscribe: (() => void) | undefined
 
   onMount(() => {

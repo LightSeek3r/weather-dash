@@ -39,6 +39,22 @@ export function resetWeatherStoreForTests(): void {
   state.set({ ...INITIAL_STATE })
 }
 
+/**
+ * Debug-only: substitutes a canned snapshot for `?weather=<state>` (see
+ * `lib/core/debug-params.ts` + `lib/weather/debug-snapshots.ts`) instead of
+ * a real fetch. Called from `App.svelte`'s `onMount` in place of
+ * `initWeather()` — never both — so this never races a real fetch
+ * overwriting it. Dead code in production (only reachable behind the debug
+ * query param at the call site).
+ */
+export function setDebugWeatherSnapshot(snapshot: WeatherSnapshot): void {
+  state.set({
+    snapshot,
+    status: 'idle',
+    lastUpdated: new Date(snapshot.fetchedAt)
+  })
+}
+
 function locationKey(location: Settings['location']): string | null {
   return location ? `${location.lat},${location.lon}` : null
 }

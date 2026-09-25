@@ -5,17 +5,26 @@
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
   import { t } from '../lib/ui/strings'
-  import { getTodayHolidays } from '../lib/date/holidays'
+  import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import { getSaintOfDay, type SaintTradition } from '../lib/date/saints'
+  import { debugParams } from '../lib/core/debug-params'
 
-  let now = $state(new Date())
+  // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
+  // instant directly since scheduler.start() is skipped while frozen.
+  let now = $state(debugParams.now ?? new Date())
   let unsubscribe: (() => void) | undefined
+  let holidaysApi = $state<HolidaysModule | null>(null)
 
   onMount(() => {
     // Minute resolution is enough for a date line; avoids 3600 useless
     // re-renders/hour that a `second` subscription here would cost.
     unsubscribe = scheduler.on('minute', (tickNow) => {
       now = tickNow
+    })
+    // See holidaysLazy.ts: keeps date-holidays' large bundled dataset out of
+    // the eagerly-parsed app chunk.
+    void loadHolidays().then((m) => {
+      holidaysApi = m
     })
   })
   onDestroy(() => unsubscribe?.())
@@ -51,7 +60,13 @@
       : null
   )
   let todaysHolidays = $derived(
-    getTodayHolidays(now, $settingsStore.holidays, $settingsStore.locale)
+    holidaysApi
+      ? holidaysApi.getTodayHolidays(
+          now,
+          $settingsStore.holidays,
+          $settingsStore.locale
+        )
+      : []
   )
   // Compact date-line item, not a list view: show up to 2 names, then a
   // "+N" overflow marker rather than growing the line unbounded (e.g. two

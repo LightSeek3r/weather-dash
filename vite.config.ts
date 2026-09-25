@@ -54,10 +54,22 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'terser',
+    // `date-holidays`'s bundled all-countries dataset is a single ~1.4MB
+    // chunk (see lib/date/holidaysLazy.ts) — it's reached only via dynamic
+    // import(), so it never blocks initial paint, but Rollup's default
+    // 500KB warning doesn't distinguish eager from lazy chunks and would
+    // still flag it. Raised just enough to silence that one known,
+    // deliberately-lazy chunk without hiding a real regression elsewhere
+    // (the next-largest chunk here is ~108KB).
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['svelte', 'valibot', 'idb-keyval', 'date-holidays']
+          // date-holidays is deliberately excluded here — it's now reached
+          // only via dynamic import() (see lib/date/holidaysLazy.ts), and
+          // forcing it into this eager chunk via manualChunks would put it
+          // straight back into the main bundle, undoing the split.
+          vendor: ['svelte', 'valibot', 'idb-keyval']
         }
       }
     }

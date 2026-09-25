@@ -3,20 +3,18 @@
   // quality, etc.) get their own section as each feature ships; this phase
   // just needs the open/close mechanics and a11y wiring in place so nothing
   // has to touch the sheet's container again.
-  import { onDestroy } from 'svelte'
+  import { onDestroy, onMount } from 'svelte'
   import {
     settingsStore,
-    PHOTO_ROTATION_VALUES
+    PHOTO_ROTATION_VALUES,
+    exportSettings,
+    importSettings
   } from '../lib/core/storage/settings'
   import type { Settings } from '../lib/core/storage/settings'
   import { t } from '../lib/ui/strings'
   import { geocode } from '../lib/weather/openMeteo'
   import type { GeocodeResult } from '../lib/weather/types'
-  import {
-    getSupportedCountries,
-    getRegions,
-    getYearHolidays
-  } from '../lib/date/holidays'
+  import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import type { SaintTradition } from '../lib/date/saints'
   import {
     listPhotos,
@@ -116,20 +114,37 @@
   }
 
   // --- holidays: country/region + extra countries + per-holiday toggles ---
-  const supportedCountries = getSupportedCountries()
+  // See lib/date/holidaysLazy.ts: date-holidays bundles one large all-countries
+  // dataset with no per-country lazy API, so the wrapper is dynamic-imported
+  // here rather than loaded eagerly with the rest of the sheet.
+  let holidaysApi = $state<HolidaysModule | null>(null)
   let extraCountryToAdd = $state('')
   let holidayYear = new Date().getFullYear()
 
   let baseCountry = $derived($settingsStore.holidays.baseCountry)
-  let regionOptions = $derived(getRegions(baseCountry))
-  let yearHolidays = $derived(
-    getYearHolidays(
-      holidayYear,
-      baseCountry,
-      $settingsStore.holidays.baseRegion,
-      $settingsStore.locale
-    )
+  let supportedCountries = $derived(
+    holidaysApi ? holidaysApi.getSupportedCountries() : []
   )
+  let regionOptions = $derived(
+    holidaysApi ? holidaysApi.getRegions(baseCountry) : []
+  )
+  let yearHolidays = $derived(
+    holidaysApi
+      ? holidaysApi.getYearHolidays(
+          holidayYear,
+          baseCountry,
+          $settingsStore.holidays.baseRegion,
+          $settingsStore.locale
+        )
+      : []
+  )
+
+  onMount(() => {
+    void loadHolidays().then((m) => {
+      holidaysApi = m
+    })
+  })
+
   // `date-holidays` can return two records sharing one rule (e.g. a
   // fixed-date holiday plus its weekend-observed substitute) — same id by
   // design (toggling disables both occurrences together, correctly, since
@@ -348,6 +363,48 @@
         ? s.settings.photos.unitMinute
         : s.settings.photos.unitMinutes
     return s.settings.photos.duration(n, unit)
+  }
+
+  // --- backup: full settings export/import (photos excluded — plan decision) ---
+  function handleExportSettings(): void {
+    const json = exportSettings()
+    const url = URL.createObjectURL(
+      new Blob([json], { type: 'application/json' })
+    )
+    // Object-URL lifecycle discipline: create, click, revoke immediately —
+    // same rule as the photo thumbnails above and Background.svelte.
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'wall-dashboard-settings.json'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    toast.success(s.settings.backup.exportSuccess)
+  }
+
+  let importBusy = $state(false)
+
+  async function handleImportSettings(e: Event): Promise<void> {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+
+    importBusy = true
+    try {
+      const json = await file.text()
+      const result = importSettings(json)
+      if ('error' in result) {
+        // importSettings() already leaves settingsStore untouched on failure
+        // (see storage/settings.ts) — nothing to roll back here.
+        toast.error(`${s.settings.backup.importErrorPrefix}: ${result.error}`)
+      } else {
+        toast.success(s.settings.backup.importSuccess)
+      }
+    } finally {
+      importBusy = false
+    }
   }
 
   // Photo list/storage estimate load whenever the sheet opens (covers the
@@ -669,16 +726,55 @@
         {/if}
       </section>
 
+      <section class="location-section">
+        <h3>{s.settings.backup.heading}</h3>
+
+        <button
+          type="button"
+          class="location-gps"
+          onclick={handleExportSettings}
+        >
+          {s.settings.backup.exportButton}
+        </button>
+
+        <label class="field">
+          <span>{s.settings.backup.importButton}</span>
+          <input
+            type="file"
+            accept="application/json,.json"
+            disabled={importBusy}
+            onchange={(e) => void handleImportSettings(e)}
+          />
+        </label>
+      </section>
+
       <!-- Open-Meteo's forecast/geocoding/air-quality data is CC BY 4.0 —
-           attribution required somewhere visible (plan premortem P10). No
-           dedicated About screen exists yet, so it lives here. -->
-      <p class="attribution">
-        Weather data © <a
-          href="https://open-meteo.com/"
-          target="_blank"
-          rel="noopener noreferrer">Open-Meteo.com</a
-        > (CC BY 4.0)
-      </p>
+           attribution required somewhere visible (plan premortem P10); the
+           self-hosted fonts (see design-tokens.css) are OFL and credited
+           here too. No dedicated About screen exists yet, so it lives here. -->
+      <div class="attribution">
+        <p class="attribution__app">Wall Dashboard</p>
+        <p>
+          Weather data © <a
+            href="https://open-meteo.com/"
+            target="_blank"
+            rel="noopener noreferrer">Open-Meteo.com</a
+          > (CC BY 4.0)
+        </p>
+        <p>
+          Typefaces: <a
+            href="https://fonts.google.com/specimen/Lexend"
+            target="_blank"
+            rel="noopener noreferrer">Lexend</a
+          >
+          &amp;
+          <a
+            href="https://fonts.google.com/specimen/Atkinson+Hyperlegible"
+            target="_blank"
+            rel="noopener noreferrer">Atkinson Hyperlegible</a
+          > (OFL)
+        </p>
+      </div>
     </div>
   </div>
 {/if}
@@ -917,6 +1013,20 @@
     border-top: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
     color: var(--color-text-2, rgba(238, 244, 251, 0.6));
     font-size: var(--font-size-sm, 0.8rem);
+  }
+
+  .attribution p {
+    margin: 0 0 0.35rem;
+    line-height: 1.5;
+  }
+
+  .attribution p:last-child {
+    margin-bottom: 0;
+  }
+
+  .attribution__app {
+    color: var(--color-text, #eef4fb);
+    font-weight: 600;
   }
 
   .attribution a {

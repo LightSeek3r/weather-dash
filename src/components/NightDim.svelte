@@ -9,8 +9,13 @@
   import { isNightMode } from '../lib/core/night-mode'
   import { settingsStore } from '../lib/core/storage/settings'
   import { reducedMotion } from '../lib/ui/reduced-motion'
+  import { debugParams } from '../lib/core/debug-params'
 
-  let now = $state(new Date())
+  // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
+  // instant so night-mode detection is deterministic under the debug flag
+  // instead of depending on the real wall-clock time the test happens to
+  // run at.
+  let now = $state(debugParams.now ?? new Date())
   const unsubscribe = scheduler.on('minute', (tickNow) => {
     now = tickNow
   })
