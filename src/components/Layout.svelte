@@ -78,10 +78,7 @@
     overflow: hidden;
     transition: opacity 0.6s linear;
   }
-  /* This gradient is fully opaque and sits above .bg-photo (z-index 1 vs 0)
-     — with no rule to hide it, it fully occludes any photo underneath no
-     matter what the scrim/dim settings are (confirmed live: a photo stayed
-     completely invisible even with every dimming knob at its minimum). */
+  /* Opaque and above .bg-photo, so it must go when a photo shows. */
   :global([data-photo]) .bg-sky {
     opacity: 0;
   }
@@ -129,24 +126,17 @@
       ),
       linear-gradient(180deg, rgb(10 23 38 / 0.2), rgb(10 23 38 / 0.35));
   }
-  /* `--photo-scrim` is pushed by Background.svelte from the user's dim
-     slider (settingsStore.photos.dimOpacity) — written when this file only
-     had to guarantee legibility against a hypothetical worst-case (pure
-     white) photo with no dim control at all, so it hardcoded a near-opaque
-     ceiling. Now that a real adjustable dim exists, that ceiling stayed as
-     the max of a floor..ceiling range instead of a fixed value, or the
-     slider has zero visible effect — the whole photo stays hidden under an
-     unconditional scrim regardless of what the user picks (confirmed live:
-     a photo was fully invisible even with dim set to its minimum). */
+  /* The only dim over a photo: its strength is the user's dim slider
+     (`--photo-scrim`, set by Background.svelte), slightly deeper behind the
+     clock, which has no glass panel of its own. Stacking a fixed floor or a
+     blur on top of the slider left photos barely visible at any setting. */
   :global([data-photo]) .scrim {
     opacity: 1;
     background: radial-gradient(
       120% 90% at 30% 35%,
-      rgb(10 23 38 / calc(0.3 + var(--photo-scrim, 0.55) * 0.6)),
-      rgb(10 23 38 / calc(0.4 + var(--photo-scrim, 0.55) * 0.55))
+      rgb(10 23 38 / min(1, calc(var(--photo-scrim, 0.55) + 0.1))),
+      rgb(10 23 38 / var(--photo-scrim, 0.55))
     );
-    -webkit-backdrop-filter: blur(6px) saturate(0.85);
-    backdrop-filter: blur(6px) saturate(0.85);
   }
 
   .page {

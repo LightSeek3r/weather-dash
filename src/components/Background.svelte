@@ -53,11 +53,7 @@
     else document.documentElement.removeAttribute('data-photo')
   }
 
-  // Layout.svelte's [data-photo] scrim reads this to scale its strength
-  // between a legibility floor and its original worst-case ceiling — see
-  // the comment there. Without this, the scrim stays at that fixed ceiling
-  // regardless of the slider below, and the photo never becomes visible
-  // even at dimOpacity: 0 (confirmed live before this was added).
+  // Layout.svelte's [data-photo] scrim is the photo's dim layer.
   $effect(() => {
     if (typeof document === 'undefined') return
     document.documentElement.style.setProperty(
@@ -196,9 +192,6 @@
     style="--kb-tx: {layer.kbTx}%; --kb-ty: {layer.kbTy}%; --kb-scale: {layer.kbScale}; --kb-duration: {durationMs}ms; filter: blur({blurPx}px);"
   />
 {/each}
-{#if layers.length > 0}
-  <div class="photo-dim" aria-hidden="true" style="opacity: {dimOpacity}"></div>
-{/if}
 
 <style>
   .photo-layer {
@@ -217,13 +210,6 @@
   .photo-layer.no-motion {
     transition: none;
     animation: none;
-  }
-
-  .photo-dim {
-    position: absolute;
-    inset: 0;
-    background: #000;
-    transition: opacity 0.3s linear;
   }
 
   @keyframes kenburns {

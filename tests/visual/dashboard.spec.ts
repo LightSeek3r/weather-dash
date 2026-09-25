@@ -195,6 +195,15 @@ test.describe('visual matrix', () => {
 
             if (hasPhoto) {
               await expect(page.locator('.photo-layer.visible')).toHaveCount(1)
+              // The dim slider is the photo's only dim: a second layer or a
+              // fixed scrim floor on top of it hid photos at any setting.
+              await expect(page.locator('.photo-dim')).toHaveCount(0)
+              const scrim = await page
+                .locator('.scrim')
+                .evaluate((el) => getComputedStyle(el).backgroundImage)
+              expect(scrim).toContain(
+                `rgba(10, 23, 38, ${SETTINGS_WITH_LOCATION.photos.dimOpacity})`
+              )
             }
 
             // No horizontal scroll at any viewport (plan premortem P9:

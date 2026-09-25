@@ -133,11 +133,8 @@ const DEFAULT_FULLSCREEN_SCENE: Settings['fullscreenScene'] = {
 }
 const DEFAULT_PHOTOS: Settings['photos'] = {
   rotationDuration: '10m',
-  // deliberate: dim/blur defaults tuned for legibility over an arbitrary
-  // photo, not a specific one — see Layout.svelte's [data-photo] scrim,
-  // which already assumes a worst-case bright image (see plan decision:
-  // "dim/blur slider" is there precisely because no single default suits
-  // every photo).
+  // deliberate: dim default is a middle ground for an arbitrary photo; no
+  // single value suits every image, hence the dim/blur sliders.
   dimOpacity: 0.55,
   blurPx: 0,
   shuffle: false
