@@ -102,6 +102,8 @@ export interface Dictionary {
       gusts: string
       sunrise: string
       sunset: string
+      daylight: string
+      moonPhase: string
       tomorrow: string
       noLocation: string
     }
@@ -113,6 +115,7 @@ export interface Dictionary {
       currentLocationName: string
       gpsUnavailable: string
       gpsDenied: string
+      gpsTimeout: string
     }
   }
 }
@@ -224,6 +227,8 @@ const en: Dictionary = {
       gusts: 'gusts',
       sunrise: 'Sunrise',
       sunset: 'Sunset',
+      daylight: 'Daylight',
+      moonPhase: 'Moon phase',
       tomorrow: 'Tomorrow',
       noLocation: 'Set a location to see the weather'
     },
@@ -233,7 +238,8 @@ const en: Dictionary = {
       useMyLocation: 'Use my location',
       currentLocationName: 'Current location',
       gpsUnavailable: 'Location is not available on this device',
-      gpsDenied: 'Location access was denied'
+      gpsDenied: 'Location access was denied',
+      gpsTimeout: 'Location request timed out'
     }
   }
 }
@@ -350,6 +356,8 @@ const fr: Dictionary = {
       gusts: 'rafales',
       sunrise: 'Lever du soleil',
       sunset: 'Coucher du soleil',
+      daylight: 'Ensoleillement',
+      moonPhase: 'Phase lunaire',
       tomorrow: 'Demain',
       noLocation: 'Définissez un lieu pour voir la météo'
     },
@@ -359,7 +367,8 @@ const fr: Dictionary = {
       useMyLocation: 'Utiliser ma position',
       currentLocationName: 'Position actuelle',
       gpsUnavailable: 'La localisation n’est pas disponible sur cet appareil',
-      gpsDenied: 'L’accès à la position a été refusé'
+      gpsDenied: 'L’accès à la position a été refusé',
+      gpsTimeout: 'La demande de localisation a expiré'
     }
   }
 }
@@ -478,6 +487,8 @@ const nl: Dictionary = {
       gusts: 'windstoten',
       sunrise: 'Zonsopgang',
       sunset: 'Zonsondergang',
+      daylight: 'Daglicht',
+      moonPhase: 'Maanfase',
       tomorrow: 'Morgen',
       noLocation: 'Stel een locatie in om het weer te zien'
     },
@@ -487,7 +498,8 @@ const nl: Dictionary = {
       useMyLocation: 'Mijn locatie gebruiken',
       currentLocationName: 'Huidige locatie',
       gpsUnavailable: 'Locatie is niet beschikbaar op dit apparaat',
-      gpsDenied: 'Toegang tot locatie is geweigerd'
+      gpsDenied: 'Toegang tot locatie is geweigerd',
+      gpsTimeout: 'Locatieverzoek is verlopen'
     }
   }
 }
@@ -603,6 +615,8 @@ const de: Dictionary = {
       gusts: 'Böen',
       sunrise: 'Sonnenaufgang',
       sunset: 'Sonnenuntergang',
+      daylight: 'Tageslicht',
+      moonPhase: 'Mondphase',
       tomorrow: 'Morgen',
       noLocation: 'Standort festlegen, um das Wetter zu sehen'
     },
@@ -612,7 +626,8 @@ const de: Dictionary = {
       useMyLocation: 'Meinen Standort verwenden',
       currentLocationName: 'Aktueller Standort',
       gpsUnavailable: 'Standort ist auf diesem Gerät nicht verfügbar',
-      gpsDenied: 'Standortzugriff wurde verweigert'
+      gpsDenied: 'Standortzugriff wurde verweigert',
+      gpsTimeout: 'Standortanfrage ist abgelaufen'
     }
   }
 }
@@ -724,6 +739,8 @@ const es: Dictionary = {
       gusts: 'rachas',
       sunrise: 'Amanecer',
       sunset: 'Atardecer',
+      daylight: 'Horas de luz',
+      moonPhase: 'Fase lunar',
       tomorrow: 'Mañana',
       noLocation: 'Configura una ubicación para ver el tiempo'
     },
@@ -733,7 +750,8 @@ const es: Dictionary = {
       useMyLocation: 'Usar mi ubicación',
       currentLocationName: 'Ubicación actual',
       gpsUnavailable: 'La ubicación no está disponible en este dispositivo',
-      gpsDenied: 'Se denegó el acceso a la ubicación'
+      gpsDenied: 'Se denegó el acceso a la ubicación',
+      gpsTimeout: 'La solicitud de ubicación caducó'
     }
   }
 }
@@ -850,6 +868,8 @@ const it: Dictionary = {
       gusts: 'raffiche',
       sunrise: 'Alba',
       sunset: 'Tramonto',
+      daylight: 'Ore di luce',
+      moonPhase: 'Fase lunare',
       tomorrow: 'Domani',
       noLocation: 'Imposta una posizione per vedere il meteo'
     },
@@ -859,7 +879,8 @@ const it: Dictionary = {
       useMyLocation: 'Usa la mia posizione',
       currentLocationName: 'Posizione attuale',
       gpsUnavailable: 'La posizione non è disponibile su questo dispositivo',
-      gpsDenied: 'Accesso alla posizione negato'
+      gpsDenied: 'Accesso alla posizione negato',
+      gpsTimeout: 'Richiesta di posizione scaduta'
     }
   }
 }
@@ -974,6 +995,8 @@ const pt: Dictionary = {
       gusts: 'rajadas',
       sunrise: 'Nascer do sol',
       sunset: 'Pôr do sol',
+      daylight: 'Luz do dia',
+      moonPhase: 'Fase da lua',
       tomorrow: 'Amanhã',
       noLocation: 'Defina uma localização para ver o tempo'
     },
@@ -983,7 +1006,8 @@ const pt: Dictionary = {
       useMyLocation: 'Usar a minha localização',
       currentLocationName: 'Localização atual',
       gpsUnavailable: 'A localização não está disponível neste dispositivo',
-      gpsDenied: 'O acesso à localização foi negado'
+      gpsDenied: 'O acesso à localização foi negado',
+      gpsTimeout: 'O pedido de localização expirou'
     }
   }
 }

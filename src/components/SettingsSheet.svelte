@@ -106,10 +106,19 @@
           }
         }))
       },
-      () => {
+      (err) => {
         gpsBusy = false
-        gpsError = s.weather.location.gpsDenied
-      }
+        // TIMEOUT (code 3) is real and common on desktop browsers with no
+        // hardware GPS and a flaky/absent OS location provider — without an
+        // explicit `timeout`, getCurrentPosition() can otherwise hang
+        // indefinitely with neither callback ever firing (confirmed: this
+        // read as "nothing happens" after granting permission, not a denial).
+        gpsError =
+          err.code === err.TIMEOUT
+            ? s.weather.location.gpsTimeout
+            : s.weather.location.gpsDenied
+      },
+      { timeout: 10000, maximumAge: 60000 }
     )
   }
 
@@ -445,13 +454,28 @@
 <svelte:window onkeydown={open ? handleKeydown : undefined} />
 
 {#if open}
+  <!-- role="presentation": this div is a click-to-dismiss convenience layer,
+       not itself a control an assistive-tech user needs to perceive — the
+       actual dialog semantics live on .sheet below, and the real
+       keyboard-accessible ways to close (Escape, the × button) already
+       exist independent of this click handler. -->
   <div
     class="sheet-backdrop"
-    role="dialog"
-    aria-modal="true"
-    aria-label={s.settings.title}
+    role="presentation"
+    onclick={(e) => {
+      // Only the backdrop itself, never a bubbled click from inside .sheet —
+      // e.target is the actual clicked element, e.currentTarget is always
+      // this div, so they're equal only when the click landed outside the
+      // panel.
+      if (e.target === e.currentTarget) onclose()
+    }}
   >
-    <div class="sheet">
+    <div
+      class="sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label={s.settings.title}
+    >
       <header class="sheet__header">
         <h2>{s.settings.title}</h2>
         <button
@@ -774,6 +798,11 @@
             rel="noopener noreferrer">Atkinson Hyperlegible</a
           > (OFL)
         </p>
+        <p>
+          Creator: unit42 · Report an issue: <a href="mailto:n.opal@unit42.fr"
+            >n.opal@unit42.fr</a
+          >
+        </p>
       </div>
     </div>
   </div>
@@ -792,7 +821,7 @@
   .sheet {
     width: min(28rem, 100vw);
     height: 100%;
-    padding: var(--space-md, 1.5rem);
+    padding: 0 var(--space-md, 1.5rem) var(--space-md, 1.5rem);
     background: var(--color-glass, rgba(196, 222, 255, 0.09));
     border-inline-start: 1px solid
       var(--color-glass-edge, rgba(222, 238, 255, 0.18));
@@ -801,13 +830,33 @@
     color: var(--color-text, #eef4fb);
     font-family: var(--font-body, sans-serif);
     overflow-y: auto;
+    /* Hints native form-control chrome (dropdown popups, scrollbars) toward
+       dark styling — without this, Chromium renders <option> lists with a
+       light default backdrop regardless of the <select>'s own color/
+       background (confirmed: showed as light-grey-on-white). */
+    color-scheme: dark;
   }
 
   .sheet__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-md, 1.5rem);
+    /* Sticky within .sheet's own scroll, not the page — stays on top and
+       visible while the settings content scrolls underneath it. Negative
+       inline margin + matching padding re-extends it edge-to-edge despite
+       .sheet's own inline padding (which the header would otherwise sit
+       inset from); a solid-ish background hides content scrolling behind
+       it (the blur/translucency further down is .sheet's own backdrop
+       against the *page*, not against this inner scroll). */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 calc(var(--space-md, 1.5rem) * -1) var(--space-md, 1.5rem);
+    padding: var(--space-md, 1.5rem) var(--space-md, 1.5rem)
+      var(--space-md, 0.75rem);
+    background: rgb(9 20 34 / 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .sheet__header h2 {
@@ -948,13 +997,31 @@
   }
 
   .field select {
-    padding: 0.5em 0.75em;
+    appearance: none;
+    /* extra right padding reserves room for the custom arrow so it never
+       crowds the text (was rendering with ~0 gap using the browser's own
+       native arrow) */
+    padding: 0.5em 2.25em 0.5em 0.75em;
     border-radius: var(--radius-sm, 0.4rem);
     border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
-    background: rgba(255, 255, 255, 0.05);
+    /* Opaque, not translucent: the <select>'s own closed-box background can
+       blend with the app behind it, but the popup <option> list renders in
+       a separate layer with no app content behind it to blend with — a
+       translucent background there shows through to the OS's own (light)
+       default instead. */
+    background-color: #10243a;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a6dcff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7em center;
+    background-size: 0.85em;
     color: var(--color-text, #eef4fb);
     font-family: var(--font-body, sans-serif);
     font-size: var(--font-size-md, 1rem);
+  }
+
+  .field select option {
+    background-color: #10243a;
+    color: var(--color-text, #eef4fb);
   }
 
   .field.checkbox-field {
@@ -1035,14 +1102,46 @@
   }
 
   .field input[type='file'] {
+    color: var(--color-text-2, rgba(238, 244, 251, 0.7));
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  /* The "Choose file(s)" part is a distinct pseudo-element the browser
+     renders as a native OS button — `color`/`background` on the input
+     itself (above) only ever reached the filename text next to it, never
+     this button, which is why it stayed unstyled. */
+  .field input[type='file']::file-selector-button {
+    margin-inline-end: 0.75em;
+    padding: 0.45em 0.9em;
+    border-radius: var(--radius-sm, 0.4rem);
+    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+    background: var(--color-glass, rgba(196, 222, 255, 0.09));
     color: var(--color-text, #eef4fb);
     font-family: var(--font-body, sans-serif);
     font-size: var(--font-size-sm, 0.875rem);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .field input[type='file']:hover::file-selector-button {
+    background: var(--color-glass-hi, rgba(255, 255, 255, 0.1));
   }
 
   .field input[type='range'] {
     width: 100%;
     accent-color: var(--color-accent, #a6dcff);
+  }
+
+  /* `accent-color` themes the checked fill/outline of native checkboxes
+     without needing a full custom-appearance rebuild — same approach
+     already used for the range sliders above. */
+  .field input[type='checkbox'],
+  .holiday-list input[type='checkbox'] {
+    width: 1.1em;
+    height: 1.1em;
+    accent-color: var(--color-accent, #a6dcff);
+    cursor: pointer;
   }
 
   .photo-grid {

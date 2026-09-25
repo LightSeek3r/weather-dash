@@ -10,7 +10,22 @@
   import { beaufortForce } from '../lib/weather/beaufort'
   import { displayTemperature } from '../lib/weather/units'
   import { compassDirection } from '../lib/weather/wind'
+  import type { MoonPhaseKey } from '../lib/weather/types'
   import WeatherIconSprite from './WeatherIconSprite.svelte'
+
+  // Decorative + always paired with the translated phase name below, not an
+  // icon-only control — the phase's actual shape (crescent/gibbous/etc.) is
+  // real information a generic dot/circle icon wouldn't convey as directly.
+  const MOON_GLYPH: Record<MoonPhaseKey, string> = {
+    newMoon: '🌑',
+    waxingCrescent: '🌒',
+    firstQuarter: '🌓',
+    waxingGibbous: '🌔',
+    fullMoon: '🌕',
+    waningGibbous: '🌖',
+    lastQuarter: '🌗',
+    waningCrescent: '🌘'
+  }
 
   let s = $derived(t($settingsStore.locale))
   let unit = $derived($settingsStore.weather.tempUnit)
@@ -48,6 +63,20 @@
   )
   let sunset = $derived(
     snapshot ? timeFormatter.format(new Date(snapshot.today.sunset)) : ''
+  )
+  let daylightDuration = $derived.by(() => {
+    if (!snapshot) return ''
+    const ms =
+      new Date(snapshot.today.sunset).getTime() -
+      new Date(snapshot.today.sunrise).getTime()
+    const totalMin = Math.max(0, Math.round(ms / 60000))
+    const h = Math.floor(totalMin / 60)
+    const m = totalMin % 60
+    return `${h}h ${m}m`
+  })
+  let moonGlyph = $derived(snapshot ? MOON_GLYPH[snapshot.moon.labelKey] : '')
+  let moonLabel = $derived(
+    snapshot ? s.weather.moonPhase[snapshot.moon.labelKey] : ''
   )
 </script>
 
@@ -124,6 +153,12 @@
         <small>{s.weather.panel.sunrise} / {s.weather.panel.sunset}</small>
         <b><svg aria-hidden="true"><use href="#i-rise" /></svg>{sunrise}</b>
         <b><svg aria-hidden="true"><use href="#i-set" /></svg>{sunset}</b>
+        <span class="q daylight" title={s.weather.panel.daylight}
+          >{daylightDuration} ·
+          <span class="moon-glyph" aria-label={s.weather.panel.moonPhase}
+            >{moonGlyph}</span
+          >{moonLabel}</span
+        >
       </div>
     </div>
   </div>
@@ -250,6 +285,21 @@
     width: 1em;
     height: 1em;
     color: var(--peach);
+  }
+  /* Kept as one extra inline line on the existing sun card rather than a
+     new grid row — .weather-panel/.reads sizes to a fixed-height glass
+     card (see Layout.svelte's `cap` grid area); a 6th `.read` item grew
+     past that budget and was clipped, invisible, off the bottom of the
+     card (confirmed live: present in the DOM, not on screen). */
+  .daylight {
+    display: block;
+    margin-top: 0.3em;
+    white-space: nowrap;
+  }
+  .moon-glyph {
+    font-size: 1.15em;
+    line-height: 1;
+    margin-inline-end: 0.15em;
   }
 
   @media (orientation: portrait) {
