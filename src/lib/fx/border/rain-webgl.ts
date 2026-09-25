@@ -158,9 +158,10 @@ void main() {
   vec2 frag = gl_FragCoord.xy;
   float shortSide = min(uRes.x, uRes.y);
   vec2 uv = frag / shortSide;
-  float edgeDist = min(min(frag.x, uRes.x - frag.x), min(frag.y, uRes.y - frag.y)) / shortSide;
+  vec2 edge2 = min(frag, uRes - frag) / shortSide;
   float band = uBand * (0.85 + 0.15 * sin(uv.x * 5.0 + uv.y * 3.0 + sin(uv.y * 4.0) * 2.0));
-  float mask = 1.0 - smoothstep(band * 0.3, band, edgeDist);
+  // Rounded-corner ring, same shape as common.ts edgeFactor().
+  float mask = smoothstep(0.0, band * 0.7, length(max(vec2(band) - edge2, 0.0)));
   if (mask <= 0.0) {
     gl_FragColor = vec4(0.0);
     return;

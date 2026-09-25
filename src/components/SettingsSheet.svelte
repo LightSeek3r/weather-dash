@@ -13,6 +13,7 @@
   import type { Settings } from '../lib/core/storage/settings'
   import { t } from '../lib/ui/strings'
   import { geocode } from '../lib/weather/openMeteo'
+  import { fetchApproxLocation } from '../lib/weather/approxLocation'
   import type { GeocodeResult } from '../lib/weather/types'
   import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import type { SaintTradition } from '../lib/date/saints'
@@ -63,6 +64,7 @@
   let searching = $state(false)
   let gpsBusy = $state(false)
   let gpsError = $state<string | null>(null)
+  let gpsNote = $state<string | null>(null)
 
   async function runSearch(): Promise<void> {
     const trimmed = query.trim()
@@ -102,10 +104,36 @@
 
   // Same capability-guarded, never-throwing shape as lib/core/fullscreen.ts —
   // a kiosk settings sheet must not break just because GPS is unavailable or denied.
+  function setLocation(lat: number, lon: number, name: string): void {
+    settingsStore.update((current) => ({
+      ...current,
+      location: { lat, lon, name }
+    }))
+  }
+
+  // Network (IP) position when the browser can't get a fix. Never used
+  // after an explicit denial — that's the user saying no, not a failure.
+  async function useApproximateLocation(): Promise<void> {
+    gpsBusy = true
+    const approx = await fetchApproxLocation()
+    gpsBusy = false
+    if (!approx) {
+      gpsError = s.weather.location.gpsFailed
+      return
+    }
+    setLocation(
+      approx.lat,
+      approx.lon,
+      approx.city ?? s.weather.location.currentLocationName
+    )
+    gpsNote = s.weather.location.approximate
+  }
+
   function useMyLocation(): void {
     gpsError = null
+    gpsNote = null
     if (!isGeolocationSupported()) {
-      gpsError = s.weather.location.gpsUnavailable
+      void useApproximateLocation()
       return
     }
     gpsBusy = true
@@ -116,14 +144,11 @@
         // currentLocationName), so raw GPS coords carry no country code —
         // holidays.baseCountry can't be auto-set here and is left as-is;
         // the user can still pick it manually in the holidays section.
-        settingsStore.update((current) => ({
-          ...current,
-          location: {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            name: s.weather.location.currentLocationName
-          }
-        }))
+        setLocation(
+          position.coords.latitude,
+          position.coords.longitude,
+          s.weather.location.currentLocationName
+        )
       },
       (err) => {
         gpsBusy = false
@@ -132,10 +157,11 @@
         // explicit `timeout`, getCurrentPosition() can otherwise hang
         // indefinitely with neither callback ever firing (confirmed: this
         // read as "nothing happens" after granting permission, not a denial).
-        gpsError =
-          err.code === err.TIMEOUT
-            ? s.weather.location.gpsTimeout
-            : s.weather.location.gpsDenied
+        if (err.code === err.PERMISSION_DENIED) {
+          gpsError = s.weather.location.gpsDenied
+        } else {
+          void useApproximateLocation()
+        }
       },
       { timeout: 10000, maximumAge: 60000 }
     )
@@ -567,6 +593,8 @@
         </button>
         {#if gpsError}
           <p class="location-error">{gpsError}</p>
+        {:else if gpsNote}
+          <p class="location-note">{gpsNote}</p>
         {/if}
 
         {#if $settingsStore.location}
@@ -835,7 +863,11 @@
           > (OFL)
         </p>
         <p>
-          Creator: unit42 · Report an issue: <a href="mailto:n.opal@unit42.fr"
+          Created by: <a
+            href="https://unit42.fr/"
+            target="_blank"
+            rel="noopener noreferrer">Unit42</a
+          > · Report an issue: <a href="mailto:n.opal@unit42.fr"
             >n.opal@unit42.fr</a
           >
         </p>
@@ -1001,6 +1033,12 @@
   .location-error {
     margin-top: 0.5rem;
     color: var(--color-error, #ff9a86);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .location-note {
+    margin-top: 0.5rem;
+    color: var(--color-text-2, rgba(238, 244, 251, 0.7));
     font-size: var(--font-size-sm, 0.875rem);
   }
 

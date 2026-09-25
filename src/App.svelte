@@ -35,6 +35,7 @@
     type DebugWeatherState
   } from './lib/weather/debug-snapshots'
   import { debugParams } from './lib/core/debug-params'
+  import { mapWmoCode } from './lib/weather/mapWmo'
   import {
     scheduleNightlyReload,
     consumeNightlyReloadMarker
@@ -62,6 +63,23 @@
   // lib/weather/store.ts, which also keeps the last-good snapshot visible
   // through subsequent failures rather than clearing it.
   let lastUpdated = $derived($weatherStore.lastUpdated)
+
+  // Sky mood for the [data-sky] token overrides in design-tokens.css. Only
+  // sunlit daytime states get one; everything else keeps Blue Hour, which
+  // already suits night, rain, fog and snow.
+  let skyMood = $derived.by(() => {
+    const c = $weatherStore.snapshot?.current
+    if (!c?.isDay) return null
+    const key = mapWmoCode(c.weatherCode, c.isDay).conditionKey
+    if (key === 'clearSky' || key === 'mainlyClear') return 'sunny'
+    if (key === 'partlyCloudy') return 'partly'
+    return null
+  })
+  $effect(() => {
+    const root = document.documentElement
+    if (skyMood) root.dataset.sky = skyMood
+    else delete root.dataset.sky
+  })
 
   // Gear fades in on any activity, hides after 5s idle (plan decision) —
   // keeps the screen free of always-visible chrome on a 24/7 wall display.
@@ -163,7 +181,20 @@
   aria-label={s.kiosk.openSettings}
   onclick={() => (settingsOpen = true)}
 >
-  ⚙
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path
+      d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+    />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
 </button>
 
 <SettingsSheet open={settingsOpen} onclose={() => (settingsOpen = false)} />
@@ -219,12 +250,17 @@
     background: var(--color-glass, rgba(196, 222, 255, 0.09));
     border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
     color: var(--color-text-2, rgba(238, 244, 251, 0.75));
-    font-size: 1.3rem;
+    padding: 0;
     cursor: pointer;
     backdrop-filter: blur(16px);
     transition:
       opacity 0.4s var(--ease-standard, ease),
       transform 0.4s var(--ease-standard, ease);
+  }
+
+  .gear svg {
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .gear--hidden {

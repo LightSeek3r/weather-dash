@@ -48,6 +48,8 @@
   --sky-0: #0a1726;
   --sky-1: #10243a;
   --sky-2: #1a2e46;
+  --pool-low: rgb(255 150 118 / 0.16); /* street glow */
+  --pool-high: rgb(92 170 210 / 0.14); /* cold sky */
 
   --text: #eef4fb; /* primary */
   --text-2: #bdcddd; /* secondary */
@@ -114,4 +116,25 @@
   --radius-md: var(--r);
   --radius-full: 999px;
   --ease-standard: var(--ease);
+}
+
+/* Sky moods, set on <html> by App.svelte from the current weather. A navy
+   dusk under a "Clear sky" label reads as evening, not sunshine, so sunlit
+   daytime warms the sky, light pools and glass. Base text colours are kept
+   and must stay >=4.5:1 on these (checked by tests/visual). */
+:root[data-sky='sunny'] {
+  --sky-0: #1a4a76;
+  --sky-1: #2d5677;
+  --sky-2: #66564c;
+  --pool-low: rgb(255 176 112 / 0.36);
+  --pool-high: rgb(255 210 130 / 0.5);
+  --glass: rgb(255 236 214 / 0.09);
+  --glass-edge: rgb(255 228 196 / 0.22);
+}
+:root[data-sky='partly'] {
+  --sky-0: #133452;
+  --sky-1: #22405a;
+  --sky-2: #3f3a3c;
+  --pool-low: rgb(255 164 118 / 0.22);
+  --pool-high: rgb(255 204 140 / 0.24);
 }

@@ -7,6 +7,31 @@ import {
 } from '../../../src/lib/fx/border'
 import type { ActiveTier } from '../../../src/lib/fx/border/types'
 import { scheduler } from '../../../src/lib/core/scheduler'
+import { edgeFactor } from '../../../src/lib/fx/border/common'
+
+describe('edgeFactor', () => {
+  const W = 1000
+  const H = 600
+  const B = 100
+
+  it('is 1 at the edge and 0 past the band', () => {
+    expect(edgeFactor(0, 300, W, H, B)).toBe(1)
+    expect(edgeFactor(500, 300, W, H, B)).toBe(0)
+    expect(edgeFactor(500, B + 1, W, H, B)).toBe(0)
+  })
+
+  it('rounds the inner corner instead of meeting at a right angle', () => {
+    // On the inner rect's corner diagonal, a nearest-edge ring would still
+    // be at its band-edge value (0); the rounded ring must be too, and a
+    // point just inside the corner's arc must be lit less than the same
+    // depth along a straight edge.
+    expect(edgeFactor(B, B, W, H, B)).toBe(0)
+    const straight = edgeFactor(500, B * 0.6, W, H, B)
+    const corner = edgeFactor(B * 0.72, B * 0.72, W, H, B)
+    expect(corner).toBeGreaterThan(0)
+    expect(Math.abs(corner - straight)).toBeLessThan(0.05)
+  })
+})
 
 describe('pickEffect', () => {
   it('clear splits by day/night', () => {

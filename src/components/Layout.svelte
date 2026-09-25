@@ -85,7 +85,7 @@
   :global([data-photo]) .bg-sky {
     opacity: 0;
   }
-  /* Two slow light pools: street glow low-left, cold sky high-right. */
+  /* Two slow light pools, low-left and high-right (colors per sky mood). */
   .bg-sky::before,
   .bg-sky::after {
     content: '';
@@ -100,7 +100,7 @@
     bottom: -55vmax;
     background: radial-gradient(
       circle,
-      rgb(255 150 118 / 0.16),
+      var(--pool-low),
       transparent 62%
     );
   }
@@ -109,7 +109,7 @@
     top: -50vmax;
     background: radial-gradient(
       circle,
-      rgb(92 170 210 / 0.14),
+      var(--pool-high),
       transparent 60%
     );
     animation-delay: -45s;

@@ -21,7 +21,13 @@ export function smoothstep(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t)
 }
 
-/** 1 at the screen edge, easing to 0 at `band` px inward. */
+/**
+ * 1 at the screen edge, easing to 0 at `band` px inward. Measured as the
+ * Euclidean distance *outside* the inner rect (inset by `band`), not the
+ * nearest-edge distance: nearest-edge contours meet at hard 90° corners,
+ * which any soft glow clipped by this ring rendered as visible squares in
+ * all four corners.
+ */
 export function edgeFactor(
   x: number,
   y: number,
@@ -29,8 +35,9 @@ export function edgeFactor(
   h: number,
   band: number
 ): number {
-  const d = Math.min(x, w - x, y, h - y)
-  return 1 - smoothstep(band * 0.3, band, d)
+  const qx = Math.max(0, band - Math.min(x, w - x))
+  const qy = Math.max(0, band - Math.min(y, h - y))
+  return smoothstep(0, band * 0.7, Math.hypot(qx, qy))
 }
 
 /** Uniform-ish random point inside the border ring (rejection sampling, bounded). */
@@ -161,6 +168,8 @@ export interface Scene2d {
   resize(w: number, h: number, band: number): void
   /** `t`/`dt` in seconds. The canvas is already cleared. */
   draw(ctx: CanvasRenderingContext2D, t: number, dt: number): void
+  /** Drawn after the ring mask, for shapes that must keep their own silhouette (a round sun bloom clipped by the ring reads as a box). */
+  drawOver?(ctx: CanvasRenderingContext2D, t: number): void
 }
 
 export interface Canvas2dSpec {
@@ -211,6 +220,7 @@ export function createCanvas2dEffect(
           ctx.drawImage(mask, 0, 0)
           ctx.globalCompositeOperation = 'source-over'
         }
+        scene.drawOver?.(ctx, t)
       })
       loop.start()
       teardown = () => {

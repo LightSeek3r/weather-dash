@@ -123,9 +123,11 @@ export interface Dictionary {
       useMyLocation: string
       /** Location name stored after a successful GPS lookup (no reverse geocoding in v1). */
       currentLocationName: string
-      gpsUnavailable: string
       gpsDenied: string
-      gpsTimeout: string
+      /** GPS and the network fallback both failed. */
+      gpsFailed: string
+      /** Shown after falling back to the network (IP) position. */
+      approximate: string
     }
   }
 }
@@ -248,9 +250,11 @@ const en: Dictionary = {
       searchButton: 'Search',
       useMyLocation: 'Use my location',
       currentLocationName: 'Current location',
-      gpsUnavailable: 'Location is not available on this device',
       gpsDenied: 'Location access was denied',
-      gpsTimeout: 'Location request timed out'
+      gpsFailed:
+        'Couldn’t determine your position — search for your city instead',
+      approximate:
+        'Approximate location from your network — search your city for precision'
     }
   }
 }
@@ -378,9 +382,10 @@ const fr: Dictionary = {
       searchButton: 'Rechercher',
       useMyLocation: 'Utiliser ma position',
       currentLocationName: 'Position actuelle',
-      gpsUnavailable: 'La localisation n’est pas disponible sur cet appareil',
       gpsDenied: 'L’accès à la position a été refusé',
-      gpsTimeout: 'La demande de localisation a expiré'
+      gpsFailed: 'Position introuvable — recherchez plutôt votre ville',
+      approximate:
+        'Position approximative d’après votre réseau — recherchez votre ville pour plus de précision'
     }
   }
 }
@@ -510,9 +515,10 @@ const nl: Dictionary = {
       searchButton: 'Zoeken',
       useMyLocation: 'Mijn locatie gebruiken',
       currentLocationName: 'Huidige locatie',
-      gpsUnavailable: 'Locatie is niet beschikbaar op dit apparaat',
       gpsDenied: 'Toegang tot locatie is geweigerd',
-      gpsTimeout: 'Locatieverzoek is verlopen'
+      gpsFailed: 'Positie niet gevonden — zoek in plaats daarvan je stad',
+      approximate:
+        'Geschatte locatie via je netwerk — zoek je stad voor meer precisie'
     }
   }
 }
@@ -639,9 +645,10 @@ const de: Dictionary = {
       searchButton: 'Suchen',
       useMyLocation: 'Meinen Standort verwenden',
       currentLocationName: 'Aktueller Standort',
-      gpsUnavailable: 'Standort ist auf diesem Gerät nicht verfügbar',
       gpsDenied: 'Standortzugriff wurde verweigert',
-      gpsTimeout: 'Standortanfrage ist abgelaufen'
+      gpsFailed: 'Standort nicht ermittelbar — bitte nach der Stadt suchen',
+      approximate:
+        'Ungefährer Standort über das Netzwerk — für mehr Genauigkeit die Stadt suchen'
     }
   }
 }
@@ -764,9 +771,10 @@ const es: Dictionary = {
       searchButton: 'Buscar',
       useMyLocation: 'Usar mi ubicación',
       currentLocationName: 'Ubicación actual',
-      gpsUnavailable: 'La ubicación no está disponible en este dispositivo',
       gpsDenied: 'Se denegó el acceso a la ubicación',
-      gpsTimeout: 'La solicitud de ubicación caducó'
+      gpsFailed: 'No se pudo determinar la ubicación: busca tu ciudad',
+      approximate:
+        'Ubicación aproximada según tu red: busca tu ciudad para mayor precisión'
     }
   }
 }
@@ -894,9 +902,10 @@ const it: Dictionary = {
       searchButton: 'Cerca',
       useMyLocation: 'Usa la mia posizione',
       currentLocationName: 'Posizione attuale',
-      gpsUnavailable: 'La posizione non è disponibile su questo dispositivo',
       gpsDenied: 'Accesso alla posizione negato',
-      gpsTimeout: 'Richiesta di posizione scaduta'
+      gpsFailed: 'Impossibile determinare la posizione: cerca la tua città',
+      approximate:
+        'Posizione approssimativa dalla rete: cerca la tua città per maggiore precisione'
     }
   }
 }
@@ -1022,9 +1031,11 @@ const pt: Dictionary = {
       searchButton: 'Pesquisar',
       useMyLocation: 'Usar a minha localização',
       currentLocationName: 'Localização atual',
-      gpsUnavailable: 'A localização não está disponível neste dispositivo',
       gpsDenied: 'O acesso à localização foi negado',
-      gpsTimeout: 'O pedido de localização expirou'
+      gpsFailed:
+        'Não foi possível determinar a localização — pesquise a sua cidade',
+      approximate:
+        'Localização aproximada pela rede — pesquise a sua cidade para maior precisão'
     }
   }
 }
@@ -1158,9 +1169,11 @@ const ru: Dictionary = {
       searchButton: 'Поиск',
       useMyLocation: 'Использовать моё местоположение',
       currentLocationName: 'Текущее местоположение',
-      gpsUnavailable: 'Геолокация недоступна на этом устройстве',
       gpsDenied: 'Доступ к местоположению запрещён',
-      gpsTimeout: 'Время запроса местоположения истекло'
+      gpsFailed:
+        'Не удалось определить местоположение — найдите свой город через поиск',
+      approximate:
+        'Приблизительное местоположение по сети — для точности найдите свой город'
     }
   }
 }
@@ -1294,9 +1307,9 @@ const zh: Dictionary = {
       searchButton: '搜索',
       useMyLocation: '使用我的位置',
       currentLocationName: '当前位置',
-      gpsUnavailable: '此设备不支持定位',
       gpsDenied: '位置访问被拒绝',
-      gpsTimeout: '位置请求超时'
+      gpsFailed: '无法确定您的位置，请改为搜索城市',
+      approximate: '根据网络估算的大致位置，搜索城市可获得精确位置'
     }
   }
 }
@@ -1427,9 +1440,10 @@ const hi: Dictionary = {
       searchButton: 'खोजें',
       useMyLocation: 'मेरा स्थान उपयोग करें',
       currentLocationName: 'वर्तमान स्थान',
-      gpsUnavailable: 'इस डिवाइस पर स्थान उपलब्ध नहीं है',
       gpsDenied: 'स्थान की अनुमति अस्वीकार कर दी गई',
-      gpsTimeout: 'स्थान अनुरोध का समय समाप्त हो गया'
+      gpsFailed: 'आपका स्थान निर्धारित नहीं हो सका — इसके बजाय अपना शहर खोजें',
+      approximate:
+        'आपके नेटवर्क से अनुमानित स्थान — सटीकता के लिए अपना शहर खोजें'
     }
   }
 }

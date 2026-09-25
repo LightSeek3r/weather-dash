@@ -93,10 +93,16 @@
       </svg>
     </div>
     <div class="cap-cond">
-      <p class="cond">{conditionLabel}</p>
-      <p class="rain">
-        <svg class="ic-inline" aria-hidden="true"><use href="#i-drop" /></svg>
-        {current.precipitationProbability}% · {current.precipitationMm} mm
+      <div>
+        <p class="cond">{conditionLabel}</p>
+        <p class="rain">
+          <svg class="ic-inline" aria-hidden="true"><use href="#i-drop" /></svg>
+          {current.precipitationProbability}% · {current.precipitationMm} mm
+        </p>
+      </div>
+      <p class="moon" title={s.weather.panel.moonPhase}>
+        <span class="moon-glyph" aria-hidden="true">{moonGlyph}</span
+        >{moonLabel}
       </p>
     </div>
     <div class="reads">
@@ -154,10 +160,8 @@
         <b><svg aria-hidden="true"><use href="#i-rise" /></svg>{sunrise}</b>
         <b><svg aria-hidden="true"><use href="#i-set" /></svg>{sunset}</b>
         <span class="q daylight" title={s.weather.panel.daylight}
-          >{daylightDuration} ·
-          <span class="moon-glyph" aria-label={s.weather.panel.moonPhase}
-            >{moonGlyph}</span
-          >{moonLabel}</span
+          ><span class="sr-only">{s.weather.panel.daylight}</span
+          >{daylightDuration}</span
         >
       </div>
     </div>
@@ -286,20 +290,41 @@
     height: 1em;
     color: var(--peach);
   }
-  /* Kept as one extra inline line on the existing sun card rather than a
-     new grid row — .weather-panel/.reads sizes to a fixed-height glass
-     card (see Layout.svelte's `cap` grid area); a 6th `.read` item grew
-     past that budget and was clipped, invisible, off the bottom of the
-     card (confirmed live: present in the DOM, not on screen). */
+  /* Daylight and moon live in existing free space, not a new grid row or
+     line — the `cap` card is fixed-height (Layout.svelte), and extra rows
+     were clipped off its bottom, while a daylight+moon line overflowed the
+     narrow sun card sideways. */
   .daylight {
     display: block;
     margin-top: 0.3em;
     white-space: nowrap;
   }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .cap-cond {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: calc(var(--u) * 0.6) calc(var(--u) * 1.5);
+  }
+  .moon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    color: var(--text-2);
+    font-size: var(--fs-s);
+    white-space: nowrap;
+  }
   .moon-glyph {
-    font-size: 1.15em;
+    font-size: 1.3em;
     line-height: 1;
-    margin-inline-end: 0.15em;
   }
 
   @media (orientation: portrait) {
