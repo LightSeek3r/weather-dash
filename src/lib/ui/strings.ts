@@ -46,6 +46,25 @@ export interface Dictionary {
       traditionRomanCatholic: string
       traditionFrenchCivil: string
     }
+    photos: {
+      heading: string
+      addPhotos: string
+      /** Aria-label for a thumbnail's delete button, e.g. "Delete photo". */
+      deletePhoto: string
+      empty: string
+      rotation: string
+      /** Composes a duration label, e.g. `{n} {unit}` -> "5 minutes" / "1 hour". */
+      duration: (n: number, unit: string) => string
+      unitMinute: string
+      unitMinutes: string
+      unitHour: string
+      unitHours: string
+      dim: string
+      blur: string
+      shuffle: string
+      /** `{used} MB of {quota} MB used`, composed not hardcoded per-value. */
+      storageUsage: (usedMB: number, quotaMB: number) => string
+    }
   }
   status: {
     offline: string
@@ -116,6 +135,22 @@ const en: Dictionary = {
       tradition: 'Tradition',
       traditionRomanCatholic: 'Roman Catholic',
       traditionFrenchCivil: 'French civil calendar'
+    },
+    photos: {
+      heading: 'Photos',
+      addPhotos: 'Add photos',
+      deletePhoto: 'Delete photo',
+      empty: 'No photos yet',
+      rotation: 'Rotation',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'minute',
+      unitMinutes: 'minutes',
+      unitHour: 'hour',
+      unitHours: 'hours',
+      dim: 'Dim',
+      blur: 'Blur',
+      shuffle: 'Shuffle photos',
+      storageUsage: (used, quota) => `${used} MB of ${quota} MB used`
     }
   },
   status: {
@@ -215,6 +250,22 @@ const fr: Dictionary = {
       tradition: 'Tradition',
       traditionRomanCatholic: 'Catholique romain',
       traditionFrenchCivil: 'Calendrier civil français'
+    },
+    photos: {
+      heading: 'Photos',
+      addPhotos: 'Ajouter des photos',
+      deletePhoto: 'Supprimer la photo',
+      empty: 'Aucune photo pour l’instant',
+      rotation: 'Rotation',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'minute',
+      unitMinutes: 'minutes',
+      unitHour: 'heure',
+      unitHours: 'heures',
+      dim: 'Assombrir',
+      blur: 'Flou',
+      shuffle: 'Lecture aléatoire des photos',
+      storageUsage: (used, quota) => `${used} Mo sur ${quota} Mo utilisés`
     }
   },
   status: {
@@ -316,6 +367,25 @@ const nl: Dictionary = {
       tradition: 'Traditie',
       traditionRomanCatholic: 'Rooms-katholiek',
       traditionFrenchCivil: 'Franse burgerlijke kalender'
+    },
+    photos: {
+      heading: 'Foto’s',
+      addPhotos: 'Foto’s toevoegen',
+      deletePhoto: 'Foto verwijderen',
+      empty: 'Nog geen foto’s',
+      rotation: 'Rotatie',
+      duration: (n, unit) => `${n} ${unit}`,
+      // Dutch: "minuut" pluralizes irregularly to "minuten"; "uur" stays
+      // invariant after a number ("2 uur", not "2 uren") — not a simple +s
+      // either direction, so both need their own word per plan's i18n note.
+      unitMinute: 'minuut',
+      unitMinutes: 'minuten',
+      unitHour: 'uur',
+      unitHours: 'uur',
+      dim: 'Dimmen',
+      blur: 'Vervagen',
+      shuffle: 'Willekeurige volgorde',
+      storageUsage: (used, quota) => `${used} MB van ${quota} MB gebruikt`
     }
   },
   status: {
@@ -416,6 +486,22 @@ const de: Dictionary = {
       tradition: 'Tradition',
       traditionRomanCatholic: 'Römisch-katholisch',
       traditionFrenchCivil: 'Französischer Zivilkalender'
+    },
+    photos: {
+      heading: 'Fotos',
+      addPhotos: 'Fotos hinzufügen',
+      deletePhoto: 'Foto löschen',
+      empty: 'Noch keine Fotos',
+      rotation: 'Rotation',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'Minute',
+      unitMinutes: 'Minuten',
+      unitHour: 'Stunde',
+      unitHours: 'Stunden',
+      dim: 'Abdunkeln',
+      blur: 'Unschärfe',
+      shuffle: 'Zufällige Reihenfolge',
+      storageUsage: (used, quota) => `${used} MB von ${quota} MB verwendet`
     }
   },
   status: {
@@ -513,6 +599,22 @@ const es: Dictionary = {
       tradition: 'Tradición',
       traditionRomanCatholic: 'Católico romano',
       traditionFrenchCivil: 'Calendario civil francés'
+    },
+    photos: {
+      heading: 'Fotos',
+      addPhotos: 'Añadir fotos',
+      deletePhoto: 'Eliminar foto',
+      empty: 'Aún no hay fotos',
+      rotation: 'Rotación',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'minuto',
+      unitMinutes: 'minutos',
+      unitHour: 'hora',
+      unitHours: 'horas',
+      dim: 'Oscurecer',
+      blur: 'Desenfoque',
+      shuffle: 'Orden aleatorio',
+      storageUsage: (used, quota) => `${used} MB de ${quota} MB usados`
     }
   },
   status: {
@@ -612,6 +714,24 @@ const it: Dictionary = {
       tradition: 'Tradizione',
       traditionRomanCatholic: 'Cattolico romano',
       traditionFrenchCivil: 'Calendario civile francese'
+    },
+    photos: {
+      heading: 'Foto',
+      addPhotos: 'Aggiungi foto',
+      deletePhoto: 'Elimina foto',
+      empty: 'Nessuna foto ancora',
+      rotation: 'Rotazione',
+      duration: (n, unit) => `${n} ${unit}`,
+      // Italian pluralizes both irregularly (minuto->minuti, ora->ore), not
+      // with a suffix -s, so each needs its own word (per plan's i18n note).
+      unitMinute: 'minuto',
+      unitMinutes: 'minuti',
+      unitHour: 'ora',
+      unitHours: 'ore',
+      dim: 'Oscuramento',
+      blur: 'Sfocatura',
+      shuffle: 'Ordine casuale',
+      storageUsage: (used, quota) => `${used} MB di ${quota} MB utilizzati`
     }
   },
   status: {
@@ -711,6 +831,22 @@ const pt: Dictionary = {
       tradition: 'Tradição',
       traditionRomanCatholic: 'Católico romano',
       traditionFrenchCivil: 'Calendário civil francês'
+    },
+    photos: {
+      heading: 'Fotos',
+      addPhotos: 'Adicionar fotos',
+      deletePhoto: 'Eliminar foto',
+      empty: 'Ainda sem fotos',
+      rotation: 'Rotação',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'minuto',
+      unitMinutes: 'minutos',
+      unitHour: 'hora',
+      unitHours: 'horas',
+      dim: 'Escurecer',
+      blur: 'Desfoque',
+      shuffle: 'Ordem aleatória',
+      storageUsage: (used, quota) => `${used} MB de ${quota} MB utilizados`
     }
   },
   status: {

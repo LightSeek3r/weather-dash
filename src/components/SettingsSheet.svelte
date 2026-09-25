@@ -4,7 +4,11 @@
   // just needs the open/close mechanics and a11y wiring in place so nothing
   // has to touch the sheet's container again.
   import { onDestroy } from 'svelte'
-  import { settingsStore } from '../lib/core/storage/settings'
+  import {
+    settingsStore,
+    PHOTO_ROTATION_VALUES
+  } from '../lib/core/storage/settings'
+  import type { Settings } from '../lib/core/storage/settings'
   import { t } from '../lib/ui/strings'
   import { geocode } from '../lib/weather/openMeteo'
   import type { GeocodeResult } from '../lib/weather/types'
@@ -14,6 +18,17 @@
     getYearHolidays
   } from '../lib/date/holidays'
   import type { SaintTradition } from '../lib/date/saints'
+  import {
+    listPhotos,
+    addPhotos,
+    removePhoto,
+    getStorageEstimate,
+    requestPersistentStorage
+  } from '../lib/photos/store'
+  import type { StorageEstimate } from '../lib/photos/store'
+  import { notifyPhotosChanged } from '../lib/photos/notify'
+  import type { StoredPhoto } from '../lib/photos/types'
+  import { toast } from '../lib/ui/toast'
 
   interface Props {
     open: boolean
@@ -215,6 +230,142 @@
       saints: { ...current.saints, enabled }
     }))
   }
+
+  // --- photos: import/thumbnail grid/rotation/dim/blur/shuffle ---
+  // deliberate: 2560 = plan's "resize to screen size" (largest realistic
+  // kiosk display), not user-configurable — see the photos-section brief.
+  const PHOTO_MAX_DIM = 2560
+
+  let photoList = $state<StoredPhoto[]>([])
+  let storageEstimate = $state<StorageEstimate | null>(null)
+  let filePickerBusy = $state(false)
+  let persistentStorageRequested = false
+
+  // Thumbnail object URLs, keyed by photo id — plain (non-reactive) map so
+  // repeated template reads of `thumbUrl()` don't recreate a URL every
+  // render; only `refreshPhotos()` ever adds/revokes entries, same lifecycle
+  // discipline as Background.svelte (plan premortem P2: no accumulating
+  // object URLs).
+  const thumbUrls = new Map<string, string>()
+
+  function thumbUrl(photo: StoredPhoto): string {
+    let url = thumbUrls.get(photo.id)
+    if (!url) {
+      url = URL.createObjectURL(photo.blob)
+      thumbUrls.set(photo.id, url)
+    }
+    return url
+  }
+
+  function pruneThumbUrls(current: StoredPhoto[]): void {
+    const liveIds = new Set(current.map((p) => p.id))
+    for (const [id, url] of thumbUrls) {
+      if (!liveIds.has(id)) {
+        URL.revokeObjectURL(url)
+        thumbUrls.delete(id)
+      }
+    }
+  }
+
+  async function refreshPhotos(): Promise<void> {
+    const photos = await listPhotos()
+    pruneThumbUrls(photos)
+    photoList = photos
+    storageEstimate = await getStorageEstimate()
+  }
+
+  async function handleFilesSelected(e: Event): Promise<void> {
+    const input = e.currentTarget as HTMLInputElement
+    const files = input.files ? Array.from(input.files) : []
+    input.value = ''
+    if (files.length === 0) return
+
+    filePickerBusy = true
+    try {
+      const { failed } = await addPhotos(files, PHOTO_MAX_DIM)
+      for (const failure of failed) {
+        toast.error(`${failure.file.name}: ${failure.error}`)
+      }
+      notifyPhotosChanged()
+      await refreshPhotos()
+    } finally {
+      filePickerBusy = false
+    }
+  }
+
+  async function handleDeletePhoto(id: string): Promise<void> {
+    await removePhoto(id)
+    const url = thumbUrls.get(id)
+    if (url) {
+      URL.revokeObjectURL(url)
+      thumbUrls.delete(id)
+    }
+    notifyPhotosChanged()
+    await refreshPhotos()
+  }
+
+  function setRotationDuration(
+    value: Settings['photos']['rotationDuration']
+  ): void {
+    settingsStore.update((current) => ({
+      ...current,
+      photos: { ...current.photos, rotationDuration: value }
+    }))
+  }
+
+  function setDimOpacity(value: number): void {
+    settingsStore.update((current) => ({
+      ...current,
+      photos: { ...current.photos, dimOpacity: value }
+    }))
+  }
+
+  function setBlurPx(value: number): void {
+    settingsStore.update((current) => ({
+      ...current,
+      photos: { ...current.photos, blurPx: value }
+    }))
+  }
+
+  function setShuffle(value: boolean): void {
+    settingsStore.update((current) => ({
+      ...current,
+      photos: { ...current.photos, shuffle: value }
+    }))
+  }
+
+  /** e.g. "5 minutes" / "1 hour" — composes from the dictionary's unit words rather than 10 fully separate translated phrases (see photos-section brief). */
+  function rotationLabel(
+    value: (typeof PHOTO_ROTATION_VALUES)[number]
+  ): string {
+    const n = parseInt(value, 10)
+    const isHour = value.endsWith('h')
+    const unit = isHour
+      ? n === 1
+        ? s.settings.photos.unitHour
+        : s.settings.photos.unitHours
+      : n === 1
+        ? s.settings.photos.unitMinute
+        : s.settings.photos.unitMinutes
+    return s.settings.photos.duration(n, unit)
+  }
+
+  // Photo list/storage estimate load whenever the sheet opens (covers the
+  // very first open and any later reopen); persistent-storage permission is
+  // only ever requested once per session, fire-and-forget per the brief.
+  $effect(() => {
+    if (!open) return
+    void refreshPhotos()
+    if (!persistentStorageRequested) {
+      persistentStorageRequested = true
+      void requestPersistentStorage()
+    }
+  })
+
+  onDestroy(() => {
+    for (const url of thumbUrls.values()) URL.revokeObjectURL(url)
+    thumbUrls.clear()
+  })
 
   $effect(() => {
     if (open) {
@@ -425,6 +576,97 @@
             {/each}
           </select>
         </label>
+      </section>
+
+      <section class="location-section">
+        <h3>{s.settings.photos.heading}</h3>
+
+        <label class="field">
+          <span>{s.settings.photos.addPhotos}</span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={filePickerBusy}
+            onchange={(e) => void handleFilesSelected(e)}
+          />
+        </label>
+
+        {#if photoList.length > 0}
+          <ul class="photo-grid">
+            {#each photoList as photo (photo.id)}
+              <li class="photo-thumb">
+                <img src={thumbUrl(photo)} alt="" />
+                <button
+                  type="button"
+                  aria-label={s.settings.photos.deletePhoto}
+                  onclick={() => void handleDeletePhoto(photo.id)}
+                >
+                  ×
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <p class="sheet__placeholder">{s.settings.photos.empty}</p>
+        {/if}
+
+        <label class="field">
+          <span>{s.settings.photos.rotation}</span>
+          <select
+            value={$settingsStore.photos.rotationDuration}
+            onchange={(e) =>
+              setRotationDuration(
+                e.currentTarget.value as Settings['photos']['rotationDuration']
+              )}
+          >
+            {#each PHOTO_ROTATION_VALUES as value (value)}
+              <option {value}>{rotationLabel(value)}</option>
+            {/each}
+          </select>
+        </label>
+
+        <label class="field">
+          <span>{s.settings.photos.dim}</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={$settingsStore.photos.dimOpacity}
+            oninput={(e) => setDimOpacity(Number(e.currentTarget.value))}
+          />
+        </label>
+
+        <label class="field">
+          <span>{s.settings.photos.blur}</span>
+          <input
+            type="range"
+            min="0"
+            max="20"
+            step="1"
+            value={$settingsStore.photos.blurPx}
+            oninput={(e) => setBlurPx(Number(e.currentTarget.value))}
+          />
+        </label>
+
+        <label class="field checkbox-field">
+          <input
+            type="checkbox"
+            checked={$settingsStore.photos.shuffle}
+            onchange={(e) => setShuffle(e.currentTarget.checked)}
+          />
+          {s.settings.photos.shuffle}
+        </label>
+
+        {#if storageEstimate}
+          <p class="location-current">
+            {s.settings.photos.storageUsage(
+              Math.round(storageEstimate.usageMB),
+              Math.round(storageEstimate.quotaMB)
+            )}
+          </p>
+        {/if}
       </section>
 
       <!-- Open-Meteo's forecast/geocoding/air-quality data is CC BY 4.0 —
@@ -680,5 +922,59 @@
   .attribution a {
     color: inherit;
     text-decoration: underline;
+  }
+
+  .field input[type='file'] {
+    color: var(--color-text, #eef4fb);
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .field input[type='range'] {
+    width: 100%;
+    accent-color: var(--color-accent, #a6dcff);
+  }
+
+  .photo-grid {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: 0.5rem;
+  }
+
+  .photo-thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm, 0.4rem);
+    overflow: hidden;
+    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+  }
+
+  .photo-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .photo-thumb button {
+    position: absolute;
+    top: 0.15rem;
+    right: 0.15rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    line-height: 1;
+    border: none;
+    border-radius: var(--radius-full, 999px);
+    background: rgb(10 23 38 / 0.65);
+    color: var(--color-text, #eef4fb);
+    cursor: pointer;
+  }
+
+  .photo-thumb button:hover,
+  .photo-thumb button:focus-visible {
+    background: rgb(10 23 38 / 0.85);
   }
 </style>

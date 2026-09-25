@@ -2,6 +2,7 @@
   import { registerSW } from 'virtual:pwa-register'
   import { onMount, onDestroy } from 'svelte'
   import Layout from './components/Layout.svelte'
+  import Background from './components/Background.svelte'
   import HeroClock from './components/HeroClock.svelte'
   import DateLine from './components/DateLine.svelte'
   import StatusPill from './components/StatusPill.svelte'
@@ -68,6 +69,9 @@
 </script>
 
 <Layout>
+  {#snippet bg()}
+    <Background />
+  {/snippet}
   {#snippet hero()}
     <HeroClock />
     <DateLine />

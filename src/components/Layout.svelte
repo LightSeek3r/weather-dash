@@ -10,18 +10,25 @@
     tl?: Snippet
     /** Tomorrow strip (phase 2). */
     tm?: Snippet
+    /** Rotating photo background (phase 4) — projected into the bg-photo slot below. */
+    bg?: Snippet
   }
 
-  let { hero, cap, tl, tm }: Props = $props()
+  let { hero, cap, tl, tm, bg }: Props = $props()
 </script>
 
 <!--
   Background stack, back to front: gradient sky, a slot phase 4 (photos)
   drops a rotating <img> into, and a scrim that keeps text readable over
-  either. The slot exists now (even though it's empty) so later work never
-  has to touch this layout to wire a background image in.
+  either. The slot exists now (rendering the `bg` snippet, empty when no
+  Background component is passed) so later work never has to touch this
+  layout to wire a background image in.
 -->
-<div class="layer bg-photo" data-bg-slot="photo" aria-hidden="true"></div>
+<div class="layer bg-photo" data-bg-slot="photo" aria-hidden="true">
+  {#if bg}
+    {@render bg()}
+  {/if}
+</div>
 <div class="layer bg-sky" aria-hidden="true"></div>
 <div class="layer scrim" aria-hidden="true"></div>
 
@@ -69,6 +76,14 @@
       var(--sky-2) 100%
     );
     overflow: hidden;
+    transition: opacity 0.6s linear;
+  }
+  /* This gradient is fully opaque and sits above .bg-photo (z-index 1 vs 0)
+     — with no rule to hide it, it fully occludes any photo underneath no
+     matter what the scrim/dim settings are (confirmed live: a photo stayed
+     completely invisible even with every dimming knob at its minimum). */
+  :global([data-photo]) .bg-sky {
+    opacity: 0;
   }
   /* Two slow light pools: street glow low-left, cold sky high-right. */
   .bg-sky::before,
@@ -122,12 +137,21 @@
       ),
       linear-gradient(180deg, rgb(10 23 38 / 0.2), rgb(10 23 38 / 0.35));
   }
+  /* `--photo-scrim` is pushed by Background.svelte from the user's dim
+     slider (settingsStore.photos.dimOpacity) — written when this file only
+     had to guarantee legibility against a hypothetical worst-case (pure
+     white) photo with no dim control at all, so it hardcoded a near-opaque
+     ceiling. Now that a real adjustable dim exists, that ceiling stayed as
+     the max of a floor..ceiling range instead of a fixed value, or the
+     slider has zero visible effect — the whole photo stays hidden under an
+     unconditional scrim regardless of what the user picks (confirmed live:
+     a photo was fully invisible even with dim set to its minimum). */
   :global([data-photo]) .scrim {
     opacity: 1;
     background: radial-gradient(
       120% 90% at 30% 35%,
-      rgb(10 23 38 / 0.89),
-      rgb(10 23 38 / 0.94)
+      rgb(10 23 38 / calc(0.3 + var(--photo-scrim, 0.55) * 0.6)),
+      rgb(10 23 38 / calc(0.4 + var(--photo-scrim, 0.55) * 0.55))
     );
     -webkit-backdrop-filter: blur(6px) saturate(0.85);
     backdrop-filter: blur(6px) saturate(0.85);
