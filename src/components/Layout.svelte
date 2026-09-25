@@ -98,20 +98,12 @@
   .bg-sky::before {
     left: -35vmax;
     bottom: -55vmax;
-    background: radial-gradient(
-      circle,
-      var(--pool-low),
-      transparent 62%
-    );
+    background: radial-gradient(circle, var(--pool-low), transparent 62%);
   }
   .bg-sky::after {
     right: -40vmax;
     top: -50vmax;
-    background: radial-gradient(
-      circle,
-      var(--pool-high),
-      transparent 60%
-    );
+    background: radial-gradient(circle, var(--pool-high), transparent 60%);
     animation-delay: -45s;
   }
   @keyframes pool {
@@ -190,6 +182,18 @@
     grid-area: cap;
     padding: calc(var(--u) * 2.4);
     min-width: 0;
+  }
+  @media (max-height: 820px) {
+    .cap {
+      padding: calc(var(--u) * 1.7);
+    }
+  }
+  /* Text floors (design-tokens.css) keep the cap's copy from shrinking with
+     --u here, while the clock does; hand it the width the clock gave up. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .page {
+      grid-template-columns: minmax(0, 1fr) calc(var(--u) * 46);
+    }
   }
   .tl {
     grid-area: tl;

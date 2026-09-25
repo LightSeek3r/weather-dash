@@ -147,6 +147,13 @@
       visibility: hidden;
     }
   }
+  /* Too short for labels above the bars without colliding with the curve;
+     bar height alone still reads as the chance of rain. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .rain span {
+      visibility: hidden;
+    }
+  }
   .row {
     display: grid;
     grid-template-columns: repeat(24, minmax(0, 1fr));

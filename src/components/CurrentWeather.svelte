@@ -101,8 +101,9 @@
         </p>
       </div>
       <p class="moon" title={s.weather.panel.moonPhase}>
-        <span class="moon-glyph" aria-hidden="true">{moonGlyph}</span
-        >{moonLabel}
+        <span class="moon-glyph" aria-hidden="true">{moonGlyph}</span><span
+          class="moon-label">{moonLabel}</span
+        >
       </p>
     </div>
     <div class="reads">
@@ -156,7 +157,9 @@
         </div>
       </div>
       <div class="read sun">
-        <small>{s.weather.panel.sunrise} / {s.weather.panel.sunset}</small>
+        <small class="sr-only"
+          >{s.weather.panel.sunrise} / {s.weather.panel.sunset}</small
+        >
         <b><svg aria-hidden="true"><use href="#i-rise" /></svg>{sunrise}</b>
         <b><svg aria-hidden="true"><use href="#i-set" /></svg>{sunset}</b>
         <span class="q daylight" title={s.weather.panel.daylight}
@@ -276,9 +279,6 @@
     height: calc(var(--u) * 4.4);
     flex: none;
   }
-  .read.sun small {
-    margin-bottom: 0.2em;
-  }
   .read.sun b {
     font-size: calc(var(--u) * 1.7);
     display: flex;
@@ -325,6 +325,55 @@
   .moon-glyph {
     font-size: 1.3em;
     line-height: 1;
+  }
+
+  /* Short screens: the cap card's height is the hero row's, so every line
+     here competes with the clock. The moon glyph already shows the phase;
+     its name stays in the title and for screen readers. */
+  @media (max-height: 820px) {
+    .weather-panel {
+      gap: calc(var(--u) * 0.9);
+    }
+    .reads {
+      gap: calc(var(--u) * 0.6);
+    }
+    .read {
+      padding: calc(var(--u) * 0.6) calc(var(--u) * 0.9);
+    }
+    .moon-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* Phone landscape: the condition moves beside the temperature instead of
+     under it. The compass letters already carry the wind direction, and the
+     dial's width is what pushes the gusts onto a line of their own. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .weather-panel {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-rows: auto 1fr;
+      column-gap: calc(var(--u) * 1.6);
+    }
+    .cap-now {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .cap-cond {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+    }
+    .reads {
+      grid-column: 1 / -1;
+    }
+    .dial {
+      display: none;
+    }
   }
 
   @media (orientation: portrait) {

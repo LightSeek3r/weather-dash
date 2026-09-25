@@ -87,6 +87,18 @@
   }
 }
 
+/* Phone-landscape heights: the px floors on small text (sized for reading
+   across a room) stop scaling while --u keeps shrinking, so the text alone
+   outgrows its cards. A phone held sideways is read at arm's length. */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root {
+    --fs-clock: calc(var(--u) * 16);
+    --fs-m: max(14px, calc(var(--u) * 1.55));
+    --fs-s: max(12px, calc(var(--u) * 1.2));
+    --fs-xs: max(11px, calc(var(--u) * 1));
+  }
+}
+
 /* Compatibility aliases — components built in parallel (StatusPill,
    ToastStack, SettingsSheet) were written against a `--color-*`/`--space-*`
    naming convention before this file existed, each with a matching fallback
