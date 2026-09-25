@@ -1,0 +1,260 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+  densityFor,
+  loadEffect,
+  pickEffect,
+  type EffectId
+} from '../../../src/lib/fx/border'
+import type { ActiveTier } from '../../../src/lib/fx/border/types'
+import { scheduler } from '../../../src/lib/core/scheduler'
+
+describe('pickEffect', () => {
+  it('clear splits by day/night', () => {
+    expect(pickEffect('clear', true, 'high')).toBe('sun')
+    expect(pickEffect('clear', false, 'eco')).toBe('stars')
+  })
+
+  it('rain and drizzle use the WebGL drops only on the high tier', () => {
+    expect(pickEffect('rain', true, 'high')).toBe('rain-webgl')
+    expect(pickEffect('drizzle', false, 'high')).toBe('rain-webgl')
+    expect(pickEffect('rain', true, 'eco')).toBe('rain-eco')
+    expect(pickEffect('drizzle', true, 'eco')).toBe('rain-eco')
+  })
+
+  it('maps the remaining categories one-to-one regardless of tier', () => {
+    for (const tier of ['high', 'eco'] as const) {
+      expect(pickEffect('cloudy', true, tier)).toBe('cloudy')
+      expect(pickEffect('fog', false, tier)).toBe('fog')
+      expect(pickEffect('snow', true, tier)).toBe('snow')
+      expect(pickEffect('storm', false, tier)).toBe('storm')
+    }
+  })
+})
+
+describe('densityFor', () => {
+  it('scales with intensity and keeps drizzle lighter than rain', () => {
+    expect(densityFor('rain', 'light')).toBeLessThan(
+      densityFor('rain', 'heavy')
+    )
+    expect(densityFor('drizzle', 'heavy')).toBeLessThan(
+      densityFor('rain', 'heavy')
+    )
+    expect(densityFor('rain', 'heavy')).toBe(1)
+  })
+
+  it('storms are always near-full density; no intensity → moderate', () => {
+    expect(densityFor('storm', 'light')).toBeGreaterThanOrEqual(0.85)
+    expect(densityFor('snow', undefined)).toBe(densityFor('snow', 'moderate'))
+  })
+})
+
+// --- Mount/unmount lifecycle against stubbed canvas contexts --------------
+
+/** Accepts any property read/call/write — stands in for a 2D context or gradient. */
+function universalStub(overrides: Record<string, unknown> = {}): unknown {
+  const fn = function () {}
+  return new Proxy(fn, {
+    get(_t, prop) {
+      if (prop in overrides) return overrides[prop as string]
+      if (prop === 'then') return undefined
+      return () => universalStub()
+    },
+    set: () => true
+  })
+}
+
+function fakeRaf() {
+  let nextId = 1
+  const pending = new Map<number, FrameRequestCallback>()
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    const id = nextId++
+    pending.set(id, cb)
+    return id
+  })
+  vi.stubGlobal('cancelAnimationFrame', (id: number) => pending.delete(id))
+  let now = 0
+  return {
+    pendingCount: () => pending.size,
+    frames(count: number, ms: number) {
+      for (let i = 0; i < count; i++) {
+        now += ms
+        const cbs = [...pending.values()]
+        pending.clear()
+        for (const cb of cbs) cb(now)
+      }
+    }
+  }
+}
+
+const loseContext = vi.fn()
+let webglAvailable = true
+
+function installCanvasStubs(): void {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((
+    kind: string
+  ) => {
+    if (kind === '2d') return universalStub()
+    if (!webglAvailable) return null
+    return universalStub({
+      isContextLost: () => false,
+      getShaderParameter: () => true,
+      getProgramParameter: () => true,
+      getAttribLocation: () => 0,
+      getExtension: (name: string) =>
+        name === 'WEBGL_lose_context' ? { loseContext } : null
+    })
+  }) as never)
+}
+
+const ALL: EffectId[] = [
+  'sun',
+  'stars',
+  'cloudy',
+  'fog',
+  'rain-webgl',
+  'rain-eco',
+  'snow',
+  'storm'
+]
+
+describe('border effect lifecycle', () => {
+  let host: HTMLDivElement
+
+  beforeEach(() => {
+    Object.defineProperty(document, 'hidden', {
+      value: false,
+      configurable: true
+    })
+    webglAvailable = true
+    loseContext.mockClear()
+    installCanvasStubs()
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    host.remove()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  for (const id of ALL) {
+    for (const tier of ['high', 'eco'] as ActiveTier[]) {
+      it(`${id} (${tier}) draws, then unmount leaves nothing behind`, async () => {
+        const raf = fakeRaf()
+        const addWin = vi.spyOn(window, 'addEventListener')
+        const removeWin = vi.spyOn(window, 'removeEventListener')
+        const addDoc = vi.spyOn(document, 'addEventListener')
+        const removeDoc = vi.spyOn(document, 'removeEventListener')
+
+        const fx = (await loadEffect(id))()
+        fx.mount(host, { tier, density: 0.8 })
+        expect(host.querySelector('canvas')).not.toBeNull()
+        expect(raf.pendingCount()).toBe(1)
+        expect(() => raf.frames(90, 1000 / 60)).not.toThrow()
+
+        fx.unmount()
+        expect(host.childElementCount).toBe(0)
+        expect(raf.pendingCount()).toBe(0)
+        expect(removeWin.mock.calls.length).toBe(addWin.mock.calls.length)
+        // jsdom lazily adds its own mouseover/mouseout document listeners on first use.
+        const visibility = (spy: typeof addDoc) =>
+          spy.mock.calls.filter((c) => c[0] === 'visibilitychange').length
+        expect(visibility(addDoc)).toBeGreaterThan(0)
+        expect(visibility(removeDoc)).toBe(visibility(addDoc))
+        if (id === 'rain-webgl' || (id === 'storm' && tier === 'high')) {
+          expect(loseContext).toHaveBeenCalledTimes(1)
+        }
+        // Idempotent: a second unmount (e.g. racing teardown) is harmless.
+        expect(() => fx.unmount()).not.toThrow()
+      })
+    }
+  }
+
+  it('rain-webgl falls back to Canvas2D when no WebGL context exists', async () => {
+    webglAvailable = false
+    const raf = fakeRaf()
+    const fx = (await loadEffect('rain-webgl'))()
+    fx.mount(host, { tier: 'high', density: 1 })
+    const canvases = host.querySelectorAll('canvas')
+    expect(canvases).toHaveLength(1)
+    expect(canvases[0].dataset.renderer).toBe('2d')
+    fx.unmount()
+    expect(host.childElementCount).toBe(0)
+    expect(raf.pendingCount()).toBe(0)
+  })
+
+  it('rain-webgl degrades to Canvas2D under sustained slow frames, releasing its context', async () => {
+    const raf = fakeRaf()
+    const fx = (await loadEffect('rain-webgl'))()
+    fx.mount(host, { tier: 'high', density: 1 })
+    expect(host.querySelector('canvas')?.dataset.renderer).toBe('webgl')
+
+    raf.frames(60, 1000 / 60) // healthy: stays on WebGL
+    expect(host.querySelector('canvas')?.dataset.renderer).toBe('webgl')
+
+    raf.frames(150, 100) // ~10fps for 15s
+    const canvases = host.querySelectorAll('canvas')
+    expect(canvases).toHaveLength(1)
+    expect(canvases[0].dataset.renderer).toBe('2d')
+    expect(loseContext).toHaveBeenCalledTimes(1)
+    expect(raf.pendingCount()).toBe(1) // only the eco loop remains
+
+    fx.unmount()
+    expect(host.childElementCount).toBe(0)
+    expect(raf.pendingCount()).toBe(0)
+  })
+
+  it('storm strikes via the scheduler second tick and unsubscribes on unmount', async () => {
+    fakeRaf()
+    let tick: (() => void) | null = null
+    const unsubscribe = vi.fn()
+    vi.spyOn(scheduler, 'on').mockImplementation((kind, fn) => {
+      expect(kind).toBe('second')
+      tick = () => fn(new Date())
+      return unsubscribe
+    })
+    const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation)
+    const proto = HTMLElement.prototype as unknown as { animate?: unknown }
+    const hadAnimate = 'animate' in proto
+    proto.animate = animate
+
+    const fx = (await loadEffect('storm'))()
+    fx.mount(host, { tier: 'eco', density: 1 })
+    expect(host.querySelector('[data-fx-flash]')).not.toBeNull()
+    const ticksUntilStrike = (max: number): number => {
+      const before = animate.mock.calls.length
+      for (let i = 1; i <= max; i++) {
+        tick!()
+        if (animate.mock.calls.length > before) return i
+      }
+      return Infinity
+    }
+    const first = ticksUntilStrike(20)
+    expect(first).toBeGreaterThanOrEqual(6)
+    expect(first).toBeLessThanOrEqual(14)
+    const second = ticksUntilStrike(40)
+    expect(second).toBeGreaterThanOrEqual(12)
+    expect(second).toBeLessThanOrEqual(35)
+
+    fx.unmount()
+    expect(unsubscribe).toHaveBeenCalledTimes(1)
+    expect(host.childElementCount).toBe(0)
+    if (!hadAnimate) delete proto.animate
+  })
+
+  it('repeated mount/unmount cycles never accumulate canvases or loops', async () => {
+    const raf = fakeRaf()
+    for (let i = 0; i < 40; i++) {
+      const id = ALL[i % ALL.length]
+      const fx = (await loadEffect(id))()
+      fx.mount(host, { tier: i % 2 ? 'eco' : 'high', density: 0.6 })
+      raf.frames(3, 1000 / 60)
+      expect(host.querySelectorAll('canvas').length).toBe(1)
+      fx.unmount()
+    }
+    expect(host.childElementCount).toBe(0)
+    expect(raf.pendingCount()).toBe(0)
+  })
+})

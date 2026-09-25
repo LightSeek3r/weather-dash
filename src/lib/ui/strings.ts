@@ -24,6 +24,8 @@ export interface Dictionary {
     more: (n: number) => string
   }
   kiosk: { tapToStart: string; openSettings: string }
+  /** Fullscreen anti-burn-in scene overlay. */
+  scene: { tapToDismiss: string }
   settings: {
     title: string
     placeholder: string
@@ -114,6 +116,7 @@ const en: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: { tapToStart: 'Tap to start', openSettings: 'Open settings' },
+  scene: { tapToDismiss: 'Tap to dismiss' },
   settings: {
     title: 'Settings',
     placeholder:
@@ -229,6 +232,7 @@ const fr: Dictionary = {
     tapToStart: 'Toucher pour démarrer',
     openSettings: 'Ouvrir les réglages'
   },
+  scene: { tapToDismiss: 'Toucher pour fermer' },
   settings: {
     title: 'Réglages',
     placeholder:
@@ -346,6 +350,7 @@ const nl: Dictionary = {
     tapToStart: 'Tik om te starten',
     openSettings: 'Instellingen openen'
   },
+  scene: { tapToDismiss: 'Tik om te sluiten' },
   settings: {
     title: 'Instellingen',
     placeholder:
@@ -465,6 +470,7 @@ const de: Dictionary = {
     tapToStart: 'Zum Starten tippen',
     openSettings: 'Einstellungen öffnen'
   },
+  scene: { tapToDismiss: 'Zum Schließen tippen' },
   settings: {
     title: 'Einstellungen',
     placeholder:
@@ -578,6 +584,7 @@ const es: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: { tapToStart: 'Toca para empezar', openSettings: 'Abrir ajustes' },
+  scene: { tapToDismiss: 'Toca para cerrar' },
   settings: {
     title: 'Ajustes',
     placeholder:
@@ -693,6 +700,7 @@ const it: Dictionary = {
     tapToStart: 'Tocca per iniziare',
     openSettings: 'Apri impostazioni'
   },
+  scene: { tapToDismiss: 'Tocca per chiudere' },
   settings: {
     title: 'Impostazioni',
     placeholder:
@@ -810,6 +818,7 @@ const pt: Dictionary = {
     tapToStart: 'Toque para começar',
     openSettings: 'Abrir configurações'
   },
+  scene: { tapToDismiss: 'Toque para fechar' },
   settings: {
     title: 'Configurações',
     placeholder:

@@ -11,12 +11,24 @@
   import CurrentWeather from './components/CurrentWeather.svelte'
   import Timeline24h from './components/Timeline24h.svelte'
   import Tomorrow from './components/Tomorrow.svelte'
-  import { startKiosk, watchVisibilityForWakeLock } from './lib/core/fullscreen'
+  import BorderFx from './components/BorderFx.svelte'
+  import NightDim from './components/NightDim.svelte'
+  import PixelShift from './components/PixelShift.svelte'
+  import FullscreenScene from './components/FullscreenScene.svelte'
+  import {
+    startKiosk,
+    watchVisibilityForWakeLock,
+    acquireWakeLock
+  } from './lib/core/fullscreen'
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
   import { settingsStore } from './lib/core/storage/settings'
   import { t } from './lib/ui/strings'
   import { weatherStore, initWeather } from './lib/weather/store'
+  import {
+    scheduleNightlyReload,
+    consumeNightlyReloadMarker
+  } from './lib/core/nightly-reload'
 
   let s = $derived(t($settingsStore.locale))
 
@@ -24,8 +36,12 @@
 
   // Fullscreen requires a user gesture on most browsers (and iOS Safari has
   // no Fullscreen API at all), so the dashboard starts behind a "tap to
-  // start" overlay rather than requesting it unprompted on load.
-  let started = $state(false)
+  // start" overlay rather than requesting it unprompted on load — except
+  // right after the nightly 03:30 reload (see lib/core/nightly-reload.ts):
+  // that reload is not a real "someone walked up to the kiosk" moment, so
+  // it skips the overlay and re-requests the wake lock immediately instead
+  // of leaving the screen able to sleep until someone happens to tap it.
+  let started = $state(consumeNightlyReloadMarker())
   let stopWatchingVisibility: (() => void) | undefined
 
   let online = $state(getOnlineStatus())
@@ -51,9 +67,12 @@
       (v) => (gearVisible = v)
     )
     const stopWeather = initWeather()
+    const stopNightlyReload = scheduleNightlyReload('03:30')
+    if (started) void acquireWakeLock()
     return () => {
       unsubscribe()
       stopWeather()
+      stopNightlyReload()
     }
   })
   onDestroy(() => {
@@ -88,7 +107,13 @@
   {/snippet}
 </Layout>
 
+<BorderFx />
+
 <ToastStack />
+
+<NightDim />
+<PixelShift />
+<FullscreenScene />
 
 <button
   type="button"

@@ -167,6 +167,7 @@
     grid-template-rows: minmax(0, 1fr) auto auto;
     grid-template-areas: 'hero cap' 'tl tl' 'tm tm';
     gap: calc(var(--u) * 1.6) calc(var(--u) * 4);
+    transform: translate(var(--pixel-shift-x, 0px), var(--pixel-shift-y, 0px));
   }
 
   @media (orientation: portrait) {
