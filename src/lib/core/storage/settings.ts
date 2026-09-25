@@ -12,7 +12,7 @@
 import * as v from 'valibot'
 import { writable, get, type Writable } from 'svelte/store'
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 export const STORAGE_KEY = 'wall-dashboard:settings:v1'
 
 export const LOCALES = ['fr', 'en', 'nl', 'de', 'es', 'it', 'pt'] as const
@@ -55,6 +55,9 @@ const timeOfDayInner = v.pipe(v.string(), v.regex(/^([01]\d|2[0-3]):[0-5]\d$/))
 const intervalSecondsInner = v.pipe(v.number(), v.minValue(0))
 const durationSecondsInner = v.pipe(v.number(), v.minValue(0))
 const photoRotationInner = v.picklist(PHOTO_ROTATION_VALUES)
+const dimOpacityInner = v.pipe(v.number(), v.minValue(0), v.maxValue(1))
+const blurPxInner = v.pipe(v.number(), v.minValue(0), v.maxValue(20))
+const shuffleInner = v.boolean()
 const reducedMotionInner = v.picklist(['auto', 'on', 'off'])
 const fxQualityInner = v.picklist(['auto', 'high', 'eco', 'off'])
 
@@ -81,7 +84,12 @@ export const StrictSettingsSchema = v.object({
     intervalSeconds: intervalSecondsInner,
     durationSeconds: durationSecondsInner
   }),
-  photoRotation: photoRotationInner,
+  photos: v.object({
+    rotationDuration: photoRotationInner,
+    dimOpacity: dimOpacityInner,
+    blurPx: blurPxInner,
+    shuffle: shuffleInner
+  }),
   reducedMotion: reducedMotionInner,
   fxQuality: fxQualityInner
 })
@@ -111,6 +119,17 @@ const DEFAULT_NIGHT_MODE: Settings['nightMode'] = {
 const DEFAULT_FULLSCREEN_SCENE: Settings['fullscreenScene'] = {
   intervalSeconds: 1800,
   durationSeconds: 20
+}
+const DEFAULT_PHOTOS: Settings['photos'] = {
+  rotationDuration: '10m',
+  // deliberate: dim/blur defaults tuned for legibility over an arbitrary
+  // photo, not a specific one — see Layout.svelte's [data-photo] scrim,
+  // which already assumes a worst-case bright image (see plan decision:
+  // "dim/blur slider" is there precisely because no single default suits
+  // every photo).
+  dimOpacity: 0.55,
+  blurPx: 0,
+  shuffle: false
 }
 
 // --- Lenient (per-field fallback) schema, used by migrate() ----------------
@@ -179,7 +198,18 @@ const SettingsSchema = v.object({
     }),
     DEFAULT_FULLSCREEN_SCENE
   ),
-  photoRotation: v.fallback(photoRotationInner, '10m'),
+  photos: v.fallback(
+    v.object({
+      rotationDuration: v.fallback(
+        photoRotationInner,
+        DEFAULT_PHOTOS.rotationDuration
+      ),
+      dimOpacity: v.fallback(dimOpacityInner, DEFAULT_PHOTOS.dimOpacity),
+      blurPx: v.fallback(blurPxInner, DEFAULT_PHOTOS.blurPx),
+      shuffle: v.fallback(shuffleInner, DEFAULT_PHOTOS.shuffle)
+    }),
+    DEFAULT_PHOTOS
+  ),
   reducedMotion: v.fallback(reducedMotionInner, 'auto'),
   fxQuality: v.fallback(fxQualityInner, 'auto')
 })
@@ -196,10 +226,12 @@ function isPlainObject(x: unknown): x is RawRecord {
 
 /**
  * Pre-v1 blobs stored locale/clock flat (`lang`, `clockFormat`,
- * `clockSeconds`) instead of nested under `clock`. Remap known legacy shapes
- * onto current field names before validation — `v.fallback` only recovers
- * *invalid* values, it can't know an old key was renamed, so without this a
- * valid old blob would silently lose the user's choices to defaults.
+ * `clockSeconds`) instead of nested under `clock`; pre-v2 blobs stored a
+ * top-level `photoRotation` instead of nesting it under `photos`. Remap
+ * known legacy shapes onto current field names before validation —
+ * `v.fallback` only recovers *invalid* values, it can't know an old key was
+ * renamed, so without this a valid old blob would silently lose the user's
+ * choices to defaults.
  */
 function upgradeLegacyShape(raw: RawRecord): RawRecord {
   const version = typeof raw.version === 'number' ? raw.version : 0
@@ -209,6 +241,7 @@ function upgradeLegacyShape(raw: RawRecord): RawRecord {
     lang?: unknown
     clockFormat?: unknown
     clockSeconds?: unknown
+    photoRotation?: unknown
   }
   return {
     ...raw,
@@ -217,7 +250,8 @@ function upgradeLegacyShape(raw: RawRecord): RawRecord {
     clock: raw.clock ?? {
       format: legacy.clockFormat,
       showSeconds: legacy.clockSeconds
-    }
+    },
+    photos: raw.photos ?? { rotationDuration: legacy.photoRotation }
   }
 }
 
