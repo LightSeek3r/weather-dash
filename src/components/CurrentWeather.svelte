@@ -5,7 +5,7 @@
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
-  import { t } from '../lib/ui/strings'
+  import { conditionLabel, t } from '../lib/ui/strings'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import { beaufortForce } from '../lib/weather/beaufort'
   import { displayTemperature } from '../lib/weather/units'
@@ -39,18 +39,7 @@
     return Math.round(displayTemperature(celsius, unit))
   }
 
-  // Condition label composes the parallel agent's Dictionary.weather.condition
-  // name with this component's own intensity/hail modifiers, e.g.
-  // "Heavy" + "Rain" or "Thunderstorm" + "with hail".
-  let conditionLabel = $derived.by(() => {
-    if (!visual) return ''
-    const condition = s.weather.condition[visual.conditionKey]
-    const intensity = visual.intensity
-      ? s.weather.intensity[visual.intensity]
-      : undefined
-    const hail = visual.hail ? s.weather.hail : undefined
-    return [intensity, condition, hail].filter(Boolean).join(' ')
-  })
+  let conditionText = $derived(visual ? conditionLabel(s.weather, visual) : '')
 
   let timeFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
@@ -94,7 +83,7 @@
     </div>
     <div class="cap-cond">
       <div>
-        <p class="cond">{conditionLabel}</p>
+        <p class="cond">{conditionText}</p>
         <p class="rain">
           <svg class="ic-inline" aria-hidden="true"><use href="#i-drop" /></svg>
           {current.precipitationProbability}% · {current.precipitationMm} mm
@@ -224,7 +213,6 @@
     font-size: var(--fs-l);
     font-weight: 400;
     line-height: 1.15;
-    text-transform: capitalize;
   }
   .rain {
     margin-top: calc(var(--u) * 0.5);

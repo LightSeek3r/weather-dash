@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getSaintOfDay } from '../../../src/lib/date/saints'
 import romanCatholic from '../../../src/lib/date/data/saints/roman-catholic.json'
+import romanCatholicFr from '../../../src/lib/date/data/saints/roman-catholic.fr.json'
 import frenchCivil from '../../../src/lib/date/data/saints/french-civil.json'
 
 describe('getSaintOfDay', () => {
@@ -59,5 +60,31 @@ describe('getSaintOfDay', () => {
     }
     expect(Object.keys(romanCatholic)).toHaveLength(366)
     expect(Object.keys(frenchCivil)).toHaveLength(366)
+  })
+
+  it('reads the French roman-catholic edition for the fr locale', () => {
+    const date = new Date(2026, 8, 24)
+    expect(getSaintOfDay(date, 'roman-catholic', 'fr')).toBe(
+      'Notre-Dame de la Merci'
+    )
+    expect(getSaintOfDay(date, 'roman-catholic', 'en')).toBe(
+      'Our Lady of Ransom'
+    )
+  })
+
+  it('falls back to the base dataset for a locale with no edition', () => {
+    expect(getSaintOfDay(new Date(2026, 8, 24), 'roman-catholic', 'de')).toBe(
+      'Our Lady of Ransom'
+    )
+    expect(getSaintOfDay(new Date(2026, 0, 3), 'french-civil', 'en')).toBe(
+      'Geneviève'
+    )
+  })
+
+  it('the French edition translates every entry, in the same key order', () => {
+    expect(Object.keys(romanCatholicFr)).toEqual(Object.keys(romanCatholic))
+    for (const value of Object.values(romanCatholicFr)) {
+      expect((value as string).length).toBeGreaterThan(0)
+    }
   })
 })

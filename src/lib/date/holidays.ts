@@ -121,6 +121,25 @@ export function getHolidaysForDate(
     .map((h) => toHolidayInfo(h, countryCode))
 }
 
+/**
+ * An `extraCountries` entry: a country code, or `CC-REGION` (ISO 3166-2
+ * style, e.g. `CH-GE`) when a region was picked. Country codes never contain
+ * a dash, so plain entries saved before regions existed parse unchanged.
+ */
+export function parseCountryEntry(entry: string): {
+  country: string
+  region: string | null
+} {
+  const dash = entry.indexOf('-')
+  return dash < 0
+    ? { country: entry, region: null }
+    : { country: entry.slice(0, dash), region: entry.slice(dash + 1) }
+}
+
+export function countryEntry(country: string, region: string | null): string {
+  return region ? `${country}-${region}` : country
+}
+
 export interface TodayHolidaysSettings {
   baseCountry: string
   baseRegion: string | null
@@ -130,8 +149,7 @@ export interface TodayHolidaysSettings {
 
 /**
  * Union of today's holidays from `baseCountry`+`baseRegion` and every
- * `extraCountries` entry (extra countries have no region of their own in
- * the settings schema, so they're queried nationwide), deduped by id, with
+ * `extraCountries` entry (see `parseCountryEntry`), deduped by id, with
  * anything in `disabledHolidayIds` filtered out.
  */
 export function getTodayHolidays(
@@ -146,9 +164,10 @@ export function getTodayHolidays(
       settings.baseRegion,
       language
     ),
-    ...settings.extraCountries.flatMap((cc) =>
-      getHolidaysForDate(now, cc, null, language)
-    )
+    ...settings.extraCountries.flatMap((entry) => {
+      const { country, region } = parseCountryEntry(entry)
+      return getHolidaysForDate(now, country, region, language)
+    })
   ]
 
   const seen = new Set<string>()
@@ -162,26 +181,57 @@ export function getTodayHolidays(
   return deduped.filter((h) => !settings.disabledHolidayIds.includes(h.id))
 }
 
-/** Every country `date-holidays` has data for, named in English (this signature takes no language — the settings UI's country picker list is locale-stable by design). */
-export function getSupportedCountries(): CountryOption[] {
-  const hd = new Holidays()
-  return Object.entries(hd.getCountries('en')).map(([code, name]) => ({
-    code,
-    name
-  }))
+function byName(options: CountryOption[], language: string): CountryOption[] {
+  const collator = new Intl.Collator(language)
+  return options.sort((a, b) => collator.compare(a.name, b.name))
+}
+
+function regionNames(language: string): Intl.DisplayNames | null {
+  try {
+    return new Intl.DisplayNames([language], {
+      type: 'region',
+      fallback: 'none'
+    })
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Every country `date-holidays` has data for, named in `language` and sorted
+ * by that name. Names come from `Intl.DisplayNames`: the library's own list
+ * mixes English with native-script names ("Հայաստան"), which sorts into
+ * nonsense.
+ */
+export function getSupportedCountries(language = 'en'): CountryOption[] {
+  const names = regionNames(language)
+  return byName(
+    Object.entries(new Holidays().getCountries('en')).map(([code, name]) => ({
+      code,
+      name: names?.of(code) ?? name
+    })),
+    language
+  )
 }
 
 /**
  * A country's first-level subdivisions (`date-holidays` calls this "state",
- * ISO 3166-2) — this app's settings schema only has one region field, so a
- * country's rare second-level "region" subdivisions aren't exposed here.
+ * ISO 3166-2), named in `language` where the library has a translation and
+ * sorted by name. This app's settings only carry one region per country, so
+ * a country's rare second-level "region" subdivisions aren't exposed here.
  * Returns `[]` for a country with no subdivisions in the library's data.
  */
-export function getRegions(countryCode: string): CountryOption[] {
+export function getRegions(
+  countryCode: string,
+  language = 'en'
+): CountryOption[] {
   try {
     const hd = new Holidays()
-    return Object.entries(hd.getStates(countryCode, 'en')).map(
-      ([code, name]) => ({ code, name })
+    return byName(
+      Object.entries(hd.getStates(countryCode, language)).map(
+        ([code, name]) => ({ code, name })
+      ),
+      language
     )
   } catch (err) {
     console.warn(`[holidays] failed to load regions for ${countryCode}`, err)

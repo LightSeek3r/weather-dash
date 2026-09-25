@@ -1,21 +1,29 @@
 /**
  * Static saint-of-the-day lookup. Bundled JSON, not an API — there is no
  * saints API, and this is a decorative wall-display label, not a liturgical
- * reference (see plan premortem P11). Each dataset is monolingual by
- * design: the French civil calendar's names ARE French given names, and the
- * Roman Catholic set here uses common English-language saint names — do NOT
- * add per-locale translations of these names, that's explicitly out of
- * scope (flagged in the plan as a later concern, if ever). Translating only
- * some entries would be worse than translating none.
+ * reference (see plan premortem P11). The French civil calendar's names ARE
+ * French given names, so it has no other editions. The Roman Catholic set is
+ * written in English, with per-locale editions where one exists; a locale
+ * without one falls back to English. An edition must translate every entry
+ * (saints.test.ts checks key parity): translating only some entries would be
+ * worse than translating none.
  */
 import romanCatholic from './data/saints/roman-catholic.json'
+import romanCatholicFr from './data/saints/roman-catholic.fr.json'
 import frenchCivil from './data/saints/french-civil.json'
+import type { Locale } from '../core/storage/settings'
 
 export type SaintTradition = 'roman-catholic' | 'french-civil'
 
 const DATASETS: Record<SaintTradition, Record<string, string>> = {
   'roman-catholic': romanCatholic,
   'french-civil': frenchCivil
+}
+
+const EDITIONS: Partial<
+  Record<SaintTradition, Partial<Record<Locale, Record<string, string>>>>
+> = {
+  'roman-catholic': { fr: romanCatholicFr }
 }
 
 /**
@@ -28,9 +36,11 @@ const DATASETS: Record<SaintTradition, Record<string, string>> = {
  */
 export function getSaintOfDay(
   date: Date,
-  tradition: SaintTradition
+  tradition: SaintTradition,
+  locale?: Locale
 ): string | null {
-  const dataset = DATASETS[tradition]
+  const dataset =
+    (locale && EDITIONS[tradition]?.[locale]) || DATASETS[tradition]
   if (!dataset) return null
 
   const month = String(date.getMonth() + 1).padStart(2, '0')

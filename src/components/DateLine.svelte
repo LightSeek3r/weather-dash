@@ -57,7 +57,11 @@
 
   let saintName = $derived(
     $settingsStore.saints.enabled
-      ? getSaintOfDay(now, $settingsStore.saints.tradition as SaintTradition)
+      ? getSaintOfDay(
+          now,
+          $settingsStore.saints.tradition as SaintTradition,
+          $settingsStore.locale
+        )
       : null
   )
   let todaysHolidays = $derived(

@@ -169,14 +169,22 @@
   // here rather than loaded eagerly with the rest of the sheet.
   let holidaysApi = $state<HolidaysModule | null>(null)
   let extraCountryToAdd = $state('')
+  let extraRegionToAdd = $state('')
   let holidayYear = new Date().getFullYear()
 
   let baseCountry = $derived($settingsStore.holidays.baseCountry)
   let supportedCountries = $derived(
-    holidaysApi ? holidaysApi.getSupportedCountries() : []
+    holidaysApi ? holidaysApi.getSupportedCountries($settingsStore.locale) : []
   )
   let regionOptions = $derived(
-    holidaysApi ? holidaysApi.getRegions(baseCountry) : []
+    holidaysApi
+      ? holidaysApi.getRegions(baseCountry, $settingsStore.locale)
+      : []
+  )
+  let extraRegionOptions = $derived(
+    holidaysApi && extraCountryToAdd
+      ? holidaysApi.getRegions(extraCountryToAdd, $settingsStore.locale)
+      : []
   )
   let yearHolidays = $derived(
     holidaysApi
@@ -210,13 +218,35 @@
     }
     return out
   })
+  let extraCountryChips = $derived.by(() => {
+    const api = holidaysApi
+    if (!api) return []
+    const collator = new Intl.Collator($settingsStore.locale)
+    return $settingsStore.holidays.extraCountries
+      .map((entry) => {
+        const { country, region } = api.parseCountryEntry(entry)
+        const name =
+          supportedCountries.find((c) => c.code === country)?.name ?? country
+        const regionName = region
+          ? (api
+              .getRegions(country, $settingsStore.locale)
+              .find((r) => r.code === region)?.name ?? region)
+          : null
+        return {
+          entry,
+          country,
+          label: regionName ? `${name} · ${regionName}` : name
+        }
+      })
+      .sort((a, b) => collator.compare(a.label, b.label))
+  })
   // Countries not already the base or an added extra — keeps the "add"
   // dropdown from offering a country that's already covered.
   let addableCountries = $derived(
     supportedCountries.filter(
       (c) =>
         c.code !== baseCountry &&
-        !$settingsStore.holidays.extraCountries.includes(c.code)
+        !extraCountryChips.some((chip) => chip.country === c.code)
     )
   )
 
@@ -235,8 +265,11 @@
   }
 
   function addExtraCountry(): void {
-    const code = extraCountryToAdd
-    if (!code) return
+    if (!extraCountryToAdd || !holidaysApi) return
+    const code = holidaysApi.countryEntry(
+      extraCountryToAdd,
+      extraRegionToAdd || null
+    )
     settingsStore.update((current) => ({
       ...current,
       holidays: {
@@ -247,6 +280,7 @@
       }
     }))
     extraCountryToAdd = ''
+    extraRegionToAdd = ''
   }
 
   function removeExtraCountry(code: string): void {
@@ -619,7 +653,7 @@
               value={$settingsStore.holidays.baseRegion ?? ''}
               onchange={(e) => setBaseRegion(e.currentTarget.value)}
             >
-              <option value="">{s.settings.holidays.allRegions}</option>
+              <option value="">{s.settings.holidays.nationalOnly}</option>
               {#each regionOptions as region (region.code)}
                 <option value={region.code}>{region.name}</option>
               {/each}
@@ -630,7 +664,10 @@
         <div class="field">
           <span>{s.settings.holidays.extraCountries}</span>
           <div class="location-search">
-            <select bind:value={extraCountryToAdd}>
+            <select
+              bind:value={extraCountryToAdd}
+              onchange={() => (extraRegionToAdd = '')}
+            >
               <option value="" disabled>
                 {s.settings.holidays.addCountry}
               </option>
@@ -638,6 +675,17 @@
                 <option value={country.code}>{country.name}</option>
               {/each}
             </select>
+            {#if extraRegionOptions.length > 0}
+              <select
+                bind:value={extraRegionToAdd}
+                aria-label={s.settings.holidays.region}
+              >
+                <option value="">{s.settings.holidays.nationalOnly}</option>
+                {#each extraRegionOptions as region (region.code)}
+                  <option value={region.code}>{region.name}</option>
+                {/each}
+              </select>
+            {/if}
             <button
               type="button"
               disabled={!extraCountryToAdd}
@@ -648,18 +696,15 @@
           </div>
         </div>
 
-        {#if $settingsStore.holidays.extraCountries.length > 0}
+        {#if extraCountryChips.length > 0}
           <ul class="location-results chips">
-            {#each $settingsStore.holidays.extraCountries as code (code)}
+            {#each extraCountryChips as chip (chip.entry)}
               <li>
-                <span
-                  >{supportedCountries.find((c) => c.code === code)?.name ??
-                    code}</span
-                >
+                <span>{chip.label}</span>
                 <button
                   type="button"
                   aria-label={s.settings.holidays.removeCountry}
-                  onclick={() => removeExtraCountry(code)}
+                  onclick={() => removeExtraCountry(chip.entry)}
                 >
                   ×
                 </button>
@@ -960,7 +1005,13 @@
 
   .location-search {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .location-search select {
+    flex: 1 1 12rem;
+    min-width: 0;
   }
 
   .location-search input {

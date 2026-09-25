@@ -20,8 +20,21 @@
  */
 import type { Locale } from '../core/storage/settings'
 import type { RelativeTimeLabels } from './status'
-import type { ConditionKey } from '../weather/mapWmo'
+import type { ConditionKey, WeatherVisual } from '../weather/mapWmo'
 import type { MoonPhaseKey } from '../weather/types'
+
+type Intensity = NonNullable<WeatherVisual['intensity']>
+
+/** Exactly the condition/intensity pairs `mapWmoCode` emits. */
+interface IntensifiedConditions {
+  drizzle: Record<Intensity, string>
+  freezingDrizzle: Record<'light' | 'heavy', string>
+  rain: Record<Intensity, string>
+  freezingRain: Record<'light' | 'heavy', string>
+  snow: Record<Intensity, string>
+  rainShowers: Record<Intensity, string>
+  snowShowers: Record<'light' | 'heavy', string>
+}
 
 export interface Dictionary {
   dateLine: {
@@ -43,7 +56,8 @@ export interface Dictionary {
       heading: string
       country: string
       region: string
-      allRegions: string
+      /** The region picker's empty choice: without a region, only country-wide holidays apply. */
+      nationalOnly: string
       extraCountries: string
       addCountry: string
       /** Aria-label for the remove button on an extra-country chip. */
@@ -98,10 +112,13 @@ export interface Dictionary {
     fetchError: string
     condition: Record<ConditionKey, string>
     moonPhase: Record<MoonPhaseKey, string>
-    /** Modifiers composed onto `condition[key]` by CurrentWeather, e.g. "Heavy" + "Rain". */
-    intensity: { light: string; moderate: string; heavy: string }
-    /** Appended when `WeatherVisual.hail` is true, e.g. "Thunderstorm" + "with hail". */
-    hail: string
+    /**
+     * Whole phrases rather than a modifier composed onto `condition[key]`:
+     * word order and agreement differ by language ("Pluie modérée",
+     * "Leichter Regen", "小雨").
+     */
+    intensified: IntensifiedConditions
+    thunderstormHail: string
     panel: {
       feelsLike: string
       humidity: string
@@ -150,7 +167,7 @@ const en: Dictionary = {
       heading: 'Holidays',
       country: 'Country',
       region: 'Region',
-      allRegions: 'All regions',
+      nationalOnly: 'National holidays only',
       extraCountries: 'Extra countries',
       addCountry: 'Add country',
       removeCountry: 'Remove country',
@@ -228,8 +245,38 @@ const en: Dictionary = {
       lastQuarter: 'Last quarter',
       waningCrescent: 'Waning crescent'
     },
-    intensity: { light: 'Light', moderate: 'Moderate', heavy: 'Heavy' },
-    hail: 'with hail',
+    intensified: {
+      drizzle: {
+        light: 'Light drizzle',
+        moderate: 'Moderate drizzle',
+        heavy: 'Heavy drizzle'
+      },
+      freezingDrizzle: {
+        light: 'Light freezing drizzle',
+        heavy: 'Heavy freezing drizzle'
+      },
+      rain: {
+        light: 'Light rain',
+        moderate: 'Moderate rain',
+        heavy: 'Heavy rain'
+      },
+      freezingRain: {
+        light: 'Light freezing rain',
+        heavy: 'Heavy freezing rain'
+      },
+      snow: {
+        light: 'Light snow',
+        moderate: 'Moderate snow',
+        heavy: 'Heavy snow'
+      },
+      rainShowers: {
+        light: 'Light rain showers',
+        moderate: 'Moderate rain showers',
+        heavy: 'Heavy rain showers'
+      },
+      snowShowers: { light: 'Light snow showers', heavy: 'Heavy snow showers' }
+    },
+    thunderstormHail: 'Thunderstorm with hail',
     panel: {
       feelsLike: 'Feels like',
       humidity: 'Humidity',
@@ -279,7 +326,7 @@ const fr: Dictionary = {
       heading: 'Jours fériés',
       country: 'Pays',
       region: 'Région',
-      allRegions: 'Toutes les régions',
+      nationalOnly: 'Jours fériés nationaux uniquement',
       extraCountries: 'Pays supplémentaires',
       addCountry: 'Ajouter un pays',
       removeCountry: 'Retirer le pays',
@@ -359,8 +406,41 @@ const fr: Dictionary = {
       lastQuarter: 'Dernier quartier',
       waningCrescent: 'Dernier croissant'
     },
-    intensity: { light: 'Léger', moderate: 'Modéré', heavy: 'Fort' },
-    hail: 'avec grêle',
+    intensified: {
+      drizzle: {
+        light: 'Bruine faible',
+        moderate: 'Bruine modérée',
+        heavy: 'Forte bruine'
+      },
+      freezingDrizzle: {
+        light: 'Bruine verglaçante faible',
+        heavy: 'Forte bruine verglaçante'
+      },
+      rain: {
+        light: 'Pluie faible',
+        moderate: 'Pluie modérée',
+        heavy: 'Forte pluie'
+      },
+      freezingRain: {
+        light: 'Pluie verglaçante faible',
+        heavy: 'Forte pluie verglaçante'
+      },
+      snow: {
+        light: 'Neige faible',
+        moderate: 'Neige modérée',
+        heavy: 'Forte neige'
+      },
+      rainShowers: {
+        light: 'Averses faibles',
+        moderate: 'Averses modérées',
+        heavy: 'Fortes averses'
+      },
+      snowShowers: {
+        light: 'Faibles averses de neige',
+        heavy: 'Fortes averses de neige'
+      }
+    },
+    thunderstormHail: 'Orage avec grêle',
     panel: {
       feelsLike: 'Ressenti',
       humidity: 'Humidité',
@@ -409,7 +489,7 @@ const nl: Dictionary = {
       heading: 'Feestdagen',
       country: 'Land',
       region: 'Regio',
-      allRegions: 'Alle regio’s',
+      nationalOnly: 'Alleen nationale feestdagen',
       extraCountries: 'Extra landen',
       addCountry: 'Land toevoegen',
       removeCountry: 'Land verwijderen',
@@ -491,8 +571,38 @@ const nl: Dictionary = {
       lastQuarter: 'Laatste kwartier',
       waningCrescent: 'Afnemende maansikkel'
     },
-    intensity: { light: 'Licht', moderate: 'Matig', heavy: 'Zwaar' },
-    hail: 'met hagel',
+    intensified: {
+      drizzle: {
+        light: 'Lichte motregen',
+        moderate: 'Matige motregen',
+        heavy: 'Zware motregen'
+      },
+      freezingDrizzle: {
+        light: 'Lichte onderkoelde motregen',
+        heavy: 'Zware onderkoelde motregen'
+      },
+      rain: {
+        light: 'Lichte regen',
+        moderate: 'Matige regen',
+        heavy: 'Zware regen'
+      },
+      freezingRain: {
+        light: 'Lichte onderkoelde regen',
+        heavy: 'Zware onderkoelde regen'
+      },
+      snow: {
+        light: 'Lichte sneeuw',
+        moderate: 'Matige sneeuw',
+        heavy: 'Zware sneeuw'
+      },
+      rainShowers: {
+        light: 'Lichte regenbuien',
+        moderate: 'Matige regenbuien',
+        heavy: 'Zware regenbuien'
+      },
+      snowShowers: { light: 'Lichte sneeuwbuien', heavy: 'Zware sneeuwbuien' }
+    },
+    thunderstormHail: 'Onweer met hagel',
     panel: {
       feelsLike: 'Voelt als',
       humidity: 'Vochtigheid',
@@ -541,7 +651,7 @@ const de: Dictionary = {
       heading: 'Feiertage',
       country: 'Land',
       region: 'Region',
-      allRegions: 'Alle Regionen',
+      nationalOnly: 'Nur landesweite Feiertage',
       extraCountries: 'Zusätzliche Länder',
       addCountry: 'Land hinzufügen',
       removeCountry: 'Land entfernen',
@@ -620,8 +730,41 @@ const de: Dictionary = {
       lastQuarter: 'Letztes Viertel',
       waningCrescent: 'Abnehmende Sichel'
     },
-    intensity: { light: 'Leicht', moderate: 'Mäßig', heavy: 'Stark' },
-    hail: 'mit Hagel',
+    intensified: {
+      drizzle: {
+        light: 'Leichter Sprühregen',
+        moderate: 'Mäßiger Sprühregen',
+        heavy: 'Starker Sprühregen'
+      },
+      freezingDrizzle: {
+        light: 'Leichter gefrierender Sprühregen',
+        heavy: 'Starker gefrierender Sprühregen'
+      },
+      rain: {
+        light: 'Leichter Regen',
+        moderate: 'Mäßiger Regen',
+        heavy: 'Starker Regen'
+      },
+      freezingRain: {
+        light: 'Leichter gefrierender Regen',
+        heavy: 'Starker gefrierender Regen'
+      },
+      snow: {
+        light: 'Leichter Schneefall',
+        moderate: 'Mäßiger Schneefall',
+        heavy: 'Starker Schneefall'
+      },
+      rainShowers: {
+        light: 'Leichter Regenschauer',
+        moderate: 'Mäßiger Regenschauer',
+        heavy: 'Starker Regenschauer'
+      },
+      snowShowers: {
+        light: 'Leichter Schneeschauer',
+        heavy: 'Starker Schneeschauer'
+      }
+    },
+    thunderstormHail: 'Gewitter mit Hagel',
     panel: {
       feelsLike: 'Gefühlt',
       humidity: 'Luftfeuchtigkeit',
@@ -667,7 +810,7 @@ const es: Dictionary = {
       heading: 'Días festivos',
       country: 'País',
       region: 'Región',
-      allRegions: 'Todas las regiones',
+      nationalOnly: 'Solo festivos nacionales',
       extraCountries: 'Países adicionales',
       addCountry: 'Añadir país',
       removeCountry: 'Quitar país',
@@ -745,8 +888,41 @@ const es: Dictionary = {
       lastQuarter: 'Cuarto menguante',
       waningCrescent: 'Creciente menguante'
     },
-    intensity: { light: 'Ligero', moderate: 'Moderado', heavy: 'Fuerte' },
-    hail: 'con granizo',
+    intensified: {
+      drizzle: {
+        light: 'Llovizna ligera',
+        moderate: 'Llovizna moderada',
+        heavy: 'Llovizna fuerte'
+      },
+      freezingDrizzle: {
+        light: 'Llovizna helada ligera',
+        heavy: 'Llovizna helada fuerte'
+      },
+      rain: {
+        light: 'Lluvia ligera',
+        moderate: 'Lluvia moderada',
+        heavy: 'Lluvia fuerte'
+      },
+      freezingRain: {
+        light: 'Lluvia helada ligera',
+        heavy: 'Lluvia helada fuerte'
+      },
+      snow: {
+        light: 'Nieve ligera',
+        moderate: 'Nieve moderada',
+        heavy: 'Nieve fuerte'
+      },
+      rainShowers: {
+        light: 'Chubascos ligeros',
+        moderate: 'Chubascos moderados',
+        heavy: 'Chubascos fuertes'
+      },
+      snowShowers: {
+        light: 'Chubascos de nieve ligeros',
+        heavy: 'Chubascos de nieve fuertes'
+      }
+    },
+    thunderstormHail: 'Tormenta con granizo',
     panel: {
       feelsLike: 'Sensación',
       humidity: 'Humedad',
@@ -795,7 +971,7 @@ const it: Dictionary = {
       heading: 'Festività',
       country: 'Paese',
       region: 'Regione',
-      allRegions: 'Tutte le regioni',
+      nationalOnly: 'Solo festività nazionali',
       extraCountries: 'Paesi aggiuntivi',
       addCountry: 'Aggiungi paese',
       removeCountry: 'Rimuovi paese',
@@ -875,8 +1051,41 @@ const it: Dictionary = {
       lastQuarter: 'Ultimo quarto',
       waningCrescent: 'Luna calante'
     },
-    intensity: { light: 'Leggera', moderate: 'Moderata', heavy: 'Forte' },
-    hail: 'con grandine',
+    intensified: {
+      drizzle: {
+        light: 'Pioviggine leggera',
+        moderate: 'Pioviggine moderata',
+        heavy: 'Pioviggine forte'
+      },
+      freezingDrizzle: {
+        light: 'Pioviggine gelata leggera',
+        heavy: 'Pioviggine gelata forte'
+      },
+      rain: {
+        light: 'Pioggia leggera',
+        moderate: 'Pioggia moderata',
+        heavy: 'Pioggia forte'
+      },
+      freezingRain: {
+        light: 'Pioggia gelata leggera',
+        heavy: 'Pioggia gelata forte'
+      },
+      snow: {
+        light: 'Neve leggera',
+        moderate: 'Neve moderata',
+        heavy: 'Neve forte'
+      },
+      rainShowers: {
+        light: 'Rovesci di pioggia leggeri',
+        moderate: 'Rovesci di pioggia moderati',
+        heavy: 'Rovesci di pioggia forti'
+      },
+      snowShowers: {
+        light: 'Rovesci di neve leggeri',
+        heavy: 'Rovesci di neve forti'
+      }
+    },
+    thunderstormHail: 'Temporale con grandine',
     panel: {
       feelsLike: 'Percepita',
       humidity: 'Umidità',
@@ -925,7 +1134,7 @@ const pt: Dictionary = {
       heading: 'Feriados',
       country: 'País',
       region: 'Região',
-      allRegions: 'Todas as regiões',
+      nationalOnly: 'Apenas feriados nacionais',
       extraCountries: 'Países adicionais',
       addCountry: 'Adicionar país',
       removeCountry: 'Remover país',
@@ -1003,8 +1212,41 @@ const pt: Dictionary = {
       lastQuarter: 'Quarto minguante',
       waningCrescent: 'Minguante côncava'
     },
-    intensity: { light: 'Fraca', moderate: 'Moderada', heavy: 'Forte' },
-    hail: 'com granizo',
+    intensified: {
+      drizzle: {
+        light: 'Chuvisco fraco',
+        moderate: 'Chuvisco moderado',
+        heavy: 'Chuvisco forte'
+      },
+      freezingDrizzle: {
+        light: 'Chuvisco gelado fraco',
+        heavy: 'Chuvisco gelado forte'
+      },
+      rain: {
+        light: 'Chuva fraca',
+        moderate: 'Chuva moderada',
+        heavy: 'Chuva forte'
+      },
+      freezingRain: {
+        light: 'Chuva gelada fraca',
+        heavy: 'Chuva gelada forte'
+      },
+      snow: {
+        light: 'Neve fraca',
+        moderate: 'Neve moderada',
+        heavy: 'Neve forte'
+      },
+      rainShowers: {
+        light: 'Aguaceiros fracos',
+        moderate: 'Aguaceiros moderados',
+        heavy: 'Aguaceiros fortes'
+      },
+      snowShowers: {
+        light: 'Aguaceiros de neve fracos',
+        heavy: 'Aguaceiros de neve fortes'
+      }
+    },
+    thunderstormHail: 'Trovoada com granizo',
     panel: {
       feelsLike: 'Sensação',
       humidity: 'Humidade',
@@ -1054,7 +1296,7 @@ const ru: Dictionary = {
       heading: 'Праздники',
       country: 'Страна',
       region: 'Регион',
-      allRegions: 'Все регионы',
+      nationalOnly: 'Только общенациональные праздники',
       extraCountries: 'Дополнительные страны',
       addCountry: 'Добавить страну',
       removeCountry: 'Удалить страну',
@@ -1140,8 +1382,41 @@ const ru: Dictionary = {
       lastQuarter: 'Последняя четверть',
       waningCrescent: 'Убывающий серп'
     },
-    intensity: { light: 'Слабый', moderate: 'Умеренный', heavy: 'Сильный' },
-    hail: 'с градом',
+    intensified: {
+      drizzle: {
+        light: 'Слабая морось',
+        moderate: 'Умеренная морось',
+        heavy: 'Сильная морось'
+      },
+      freezingDrizzle: {
+        light: 'Слабая ледяная морось',
+        heavy: 'Сильная ледяная морось'
+      },
+      rain: {
+        light: 'Слабый дождь',
+        moderate: 'Умеренный дождь',
+        heavy: 'Сильный дождь'
+      },
+      freezingRain: {
+        light: 'Слабый ледяной дождь',
+        heavy: 'Сильный ледяной дождь'
+      },
+      snow: {
+        light: 'Слабый снег',
+        moderate: 'Умеренный снег',
+        heavy: 'Сильный снег'
+      },
+      rainShowers: {
+        light: 'Слабый ливень',
+        moderate: 'Умеренный ливень',
+        heavy: 'Сильный ливень'
+      },
+      snowShowers: {
+        light: 'Слабый снежный ливень',
+        heavy: 'Сильный снежный ливень'
+      }
+    },
+    thunderstormHail: 'Гроза с градом',
     panel: {
       feelsLike: 'Ощущается как',
       humidity: 'Влажность',
@@ -1193,7 +1468,7 @@ const zh: Dictionary = {
       heading: '节假日',
       country: '国家',
       region: '地区',
-      allRegions: '所有地区',
+      nationalOnly: '仅全国性节假日',
       extraCountries: '其他国家',
       addCountry: '添加国家',
       removeCountry: '移除国家',
@@ -1274,11 +1549,16 @@ const zh: Dictionary = {
       lastQuarter: '下弦月',
       waningCrescent: '残月'
     },
-    // Chinese forecasts naturally prefix intensity onto the condition word
-    // (小雨/中雨/大雨), so this composes more idiomatically than most
-    // locales' intensity+condition pairing.
-    intensity: { light: '小', moderate: '中', heavy: '大' },
-    hail: '伴有冰雹',
+    intensified: {
+      drizzle: { light: '小毛毛雨', moderate: '中毛毛雨', heavy: '大毛毛雨' },
+      freezingDrizzle: { light: '小冻毛毛雨', heavy: '大冻毛毛雨' },
+      rain: { light: '小雨', moderate: '中雨', heavy: '大雨' },
+      freezingRain: { light: '小冻雨', heavy: '大冻雨' },
+      snow: { light: '小雪', moderate: '中雪', heavy: '大雪' },
+      rainShowers: { light: '小阵雨', moderate: '中阵雨', heavy: '大阵雨' },
+      snowShowers: { light: '小阵雪', heavy: '大阵雪' }
+    },
+    thunderstormHail: '雷暴伴有冰雹',
     panel: {
       feelsLike: '体感温度',
       humidity: '湿度',
@@ -1326,7 +1606,7 @@ const hi: Dictionary = {
       heading: 'छुट्टियाँ',
       country: 'देश',
       region: 'क्षेत्र',
-      allRegions: 'सभी क्षेत्र',
+      nationalOnly: 'केवल राष्ट्रीय अवकाश',
       extraCountries: 'अतिरिक्त देश',
       addCountry: 'देश जोड़ें',
       removeCountry: 'देश हटाएं',
@@ -1409,8 +1689,41 @@ const hi: Dictionary = {
       lastQuarter: 'आखिरी चौथाई चाँद',
       waningCrescent: 'घटता हुआ अर्धचंद्र'
     },
-    intensity: { light: 'हल्की', moderate: 'मध्यम', heavy: 'भारी' },
-    hail: 'ओलों के साथ',
+    intensified: {
+      drizzle: {
+        light: 'हल्की बूंदाबांदी',
+        moderate: 'मध्यम बूंदाबांदी',
+        heavy: 'भारी बूंदाबांदी'
+      },
+      freezingDrizzle: {
+        light: 'हल्की जमने वाली बूंदाबांदी',
+        heavy: 'भारी जमने वाली बूंदाबांदी'
+      },
+      rain: {
+        light: 'हल्की बारिश',
+        moderate: 'मध्यम बारिश',
+        heavy: 'भारी बारिश'
+      },
+      freezingRain: {
+        light: 'हल्की जमने वाली बारिश',
+        heavy: 'भारी जमने वाली बारिश'
+      },
+      snow: {
+        light: 'हल्की बर्फ़',
+        moderate: 'मध्यम बर्फ़',
+        heavy: 'भारी बर्फ़'
+      },
+      rainShowers: {
+        light: 'हल्की बारिश की बौछारें',
+        moderate: 'मध्यम बारिश की बौछारें',
+        heavy: 'भारी बारिश की बौछारें'
+      },
+      snowShowers: {
+        light: 'हल्की बर्फ़ की बौछारें',
+        heavy: 'भारी बर्फ़ की बौछारें'
+      }
+    },
+    thunderstormHail: 'गरज और ओलों के साथ तूफ़ान',
     panel: {
       feelsLike: 'अनुभव तापमान',
       humidity: 'नमी',
@@ -1454,4 +1767,18 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
 
 export function t(locale: Locale): Dictionary {
   return DICTIONARIES[locale]
+}
+
+export function conditionLabel(
+  weather: Dictionary['weather'],
+  visual: WeatherVisual
+): string {
+  if (visual.hail) return weather.thunderstormHail
+  const phrases: Partial<
+    Record<ConditionKey, Partial<Record<Intensity, string>>>
+  > = weather.intensified
+  const phrase = visual.intensity
+    ? phrases[visual.conditionKey]?.[visual.intensity]
+    : undefined
+  return phrase ?? weather.condition[visual.conditionKey]
 }

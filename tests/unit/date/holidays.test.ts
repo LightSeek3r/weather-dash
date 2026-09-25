@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
+  countryEntry,
   getHolidaysForDate,
+  getRegions,
+  getSupportedCountries,
   getTodayHolidays,
-  getYearHolidays
+  getYearHolidays,
+  parseCountryEntry
 } from '../../../src/lib/date/holidays'
 
 describe('getHolidaysForDate', () => {
@@ -163,5 +167,48 @@ describe('getYearHolidays', () => {
     expect(result.some((h) => h.name === 'Fête Nationale de la France')).toBe(
       true
     )
+  })
+})
+
+describe('extra country regions', () => {
+  const settings = (extraCountries: string[]) => ({
+    baseCountry: 'BE',
+    baseRegion: null,
+    extraCountries,
+    disabledHolidayIds: []
+  })
+  // Jeûne genevois: Geneva only, the Thursday after the first Sunday of September.
+  const jeuneGenevois = new Date(2026, 8, 10)
+
+  it('round-trips country and region through one entry', () => {
+    expect(parseCountryEntry(countryEntry('CH', 'GE'))).toEqual({
+      country: 'CH',
+      region: 'GE'
+    })
+    expect(parseCountryEntry('CH')).toEqual({ country: 'CH', region: null })
+  })
+
+  it("queries an extra country's region, not just its national holidays", () => {
+    expect(
+      getTodayHolidays(jeuneGenevois, settings(['CH-GE']), 'fr').map(
+        (h) => h.name
+      )
+    ).toContain('Jeûne Genevois')
+    expect(getTodayHolidays(jeuneGenevois, settings(['CH']), 'fr')).toEqual([])
+  })
+})
+
+describe('country and region pickers', () => {
+  it('names countries in the requested language, sorted by that name', () => {
+    const fr = getSupportedCountries('fr')
+    expect(fr.find((c) => c.code === 'CH')?.name).toBe('Suisse')
+    const names = fr.map((c) => c.name)
+    expect(names).toEqual([...names].sort(new Intl.Collator('fr').compare))
+  })
+
+  it('sorts regions by name', () => {
+    const names = getRegions('CH', 'fr').map((r) => r.name)
+    expect(names.length).toBeGreaterThan(20)
+    expect(names).toEqual([...names].sort(new Intl.Collator('fr').compare))
   })
 })
