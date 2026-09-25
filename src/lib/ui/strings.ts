@@ -36,7 +36,6 @@ export interface Dictionary {
   scene: { tapToDismiss: string }
   settings: {
     title: string
-    placeholder: string
     close: string
     /** Language picker section — the <select>'s own options are each locale's native name for itself (never translated), only this heading is. */
     language: { heading: string }
@@ -145,8 +144,6 @@ const en: Dictionary = {
   scene: { tapToDismiss: 'Tap to dismiss' },
   settings: {
     title: 'Settings',
-    placeholder:
-      'Location, units, holidays, photos and effects arrive here as each feature ships.',
     close: 'Close settings',
     language: { heading: 'Language' },
     holidays: {
@@ -276,8 +273,6 @@ const fr: Dictionary = {
   scene: { tapToDismiss: 'Toucher pour fermer' },
   settings: {
     title: 'Réglages',
-    placeholder:
-      'La localisation, les unités, les jours fériés, les photos et les effets arriveront ici au fil des fonctionnalités.',
     close: 'Fermer les réglages',
     language: { heading: 'Langue' },
     holidays: {
@@ -408,8 +403,6 @@ const nl: Dictionary = {
   scene: { tapToDismiss: 'Tik om te sluiten' },
   settings: {
     title: 'Instellingen',
-    placeholder:
-      'Locatie, eenheden, feestdagen, foto’s en effecten komen hier terwijl elke functie wordt uitgebracht.',
     close: 'Instellingen sluiten',
     language: { heading: 'Taal' },
     holidays: {
@@ -542,8 +535,6 @@ const de: Dictionary = {
   scene: { tapToDismiss: 'Zum Schließen tippen' },
   settings: {
     title: 'Einstellungen',
-    placeholder:
-      'Standort, Einheiten, Feiertage, Fotos und Effekte erscheinen hier, sobald die jeweilige Funktion fertig ist.',
     close: 'Einstellungen schließen',
     language: { heading: 'Sprache' },
     holidays: {
@@ -670,8 +661,6 @@ const es: Dictionary = {
   scene: { tapToDismiss: 'Toca para cerrar' },
   settings: {
     title: 'Ajustes',
-    placeholder:
-      'La ubicación, las unidades, los días festivos, las fotos y los efectos llegarán aquí con cada función.',
     close: 'Cerrar ajustes',
     language: { heading: 'Idioma' },
     holidays: {
@@ -800,8 +789,6 @@ const it: Dictionary = {
   scene: { tapToDismiss: 'Tocca per chiudere' },
   settings: {
     title: 'Impostazioni',
-    placeholder:
-      'Posizione, unità, festività, foto ed effetti arriveranno qui non appena ogni funzione sarà pronta.',
     close: 'Chiudi impostazioni',
     language: { heading: 'Lingua' },
     holidays: {
@@ -932,8 +919,6 @@ const pt: Dictionary = {
   scene: { tapToDismiss: 'Toque para fechar' },
   settings: {
     title: 'Configurações',
-    placeholder:
-      'Localização, unidades, feriados, fotos e efeitos chegarão aqui conforme cada funcionalidade for lançada.',
     close: 'Fechar configurações',
     language: { heading: 'Idioma' },
     holidays: {
@@ -1063,8 +1048,6 @@ const ru: Dictionary = {
   scene: { tapToDismiss: 'Нажмите, чтобы закрыть' },
   settings: {
     title: 'Настройки',
-    placeholder:
-      'Местоположение, единицы измерения, праздники, фото и эффекты появятся здесь по мере выхода каждой функции.',
     close: 'Закрыть настройки',
     language: { heading: 'Язык' },
     holidays: {
@@ -1204,8 +1187,6 @@ const zh: Dictionary = {
   scene: { tapToDismiss: '轻触关闭' },
   settings: {
     title: '设置',
-    placeholder:
-      '位置、单位、节假日、照片和效果将随着每项功能上线逐步在此显示。',
     close: '关闭设置',
     language: { heading: '语言' },
     holidays: {
@@ -1339,8 +1320,6 @@ const hi: Dictionary = {
   scene: { tapToDismiss: 'बंद करने के लिए टैप करें' },
   settings: {
     title: 'सेटिंग्स',
-    placeholder:
-      'स्थान, इकाइयाँ, छुट्टियाँ, फ़ोटो और प्रभाव हर सुविधा के लॉन्च होने पर यहाँ दिखाई देंगे।',
     close: 'सेटिंग्स बंद करें',
     language: { heading: 'भाषा' },
     holidays: {

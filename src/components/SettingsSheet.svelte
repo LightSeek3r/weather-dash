@@ -1,8 +1,4 @@
 <script lang="ts">
-  // Shell only — per-feature settings (weather units, holidays, photos, fx
-  // quality, etc.) get their own section as each feature ships; this phase
-  // just needs the open/close mechanics and a11y wiring in place so nothing
-  // has to touch the sheet's container again.
   import { onDestroy, onMount } from 'svelte'
   import {
     settingsStore,
@@ -533,7 +529,6 @@
           ×
         </button>
       </header>
-      <p class="sheet__placeholder">{s.settings.placeholder}</p>
 
       <section class="location-section">
         <h3>{s.settings.language.heading}</h3>
@@ -867,9 +862,9 @@
             href="https://unit42.fr/"
             target="_blank"
             rel="noopener noreferrer">Unit42</a
-          > · Report an issue: <a href="mailto:n.opal@unit42.fr"
-            >n.opal@unit42.fr</a
           >
+          · Report an issue:
+          <a href="mailto:n.opal@unit42.fr">n.opal@unit42.fr</a>
         </p>
       </div>
     </div>
@@ -957,6 +952,9 @@
   .location-section {
     margin-top: var(--space-md, 1.5rem);
     padding-top: var(--space-md, 1.5rem);
+  }
+
+  .location-section + .location-section {
     border-top: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
   }
 
