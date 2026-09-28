@@ -260,11 +260,11 @@ describe('border effect lifecycle', () => {
       return Infinity
     }
     const first = ticksUntilStrike(20)
-    expect(first).toBeGreaterThanOrEqual(6)
-    expect(first).toBeLessThanOrEqual(14)
+    expect(first).toBeGreaterThanOrEqual(3)
+    expect(first).toBeLessThanOrEqual(8)
     const second = ticksUntilStrike(40)
-    expect(second).toBeGreaterThanOrEqual(12)
-    expect(second).toBeLessThanOrEqual(35)
+    expect(second).toBeGreaterThanOrEqual(6)
+    expect(second).toBeLessThanOrEqual(20)
 
     fx.unmount()
     expect(unsubscribe).toHaveBeenCalledTimes(1)

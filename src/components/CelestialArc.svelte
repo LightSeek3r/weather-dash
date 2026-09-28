@@ -8,10 +8,12 @@
    *
    * Static by design: it moves with the minute tick (a fraction of a percent
    * of the screen per minute), and nothing pulses, so there's no motion to
-   * reduce. Behind text (the clock, the tomorrow strip) it dims to the same
-   * calm-zone level the FX use, so a bright disc never sits under a digit.
+   * reduce. Behind text (the clock, the tomorrow strip) the disc dims
+   * partway toward the calm-zone level the FX use, and the halo barely at
+   * all: the glow is what makes the sky read sunlit, the crisp disc is what
+   * would fight a digit.
    */
-  import { onDestroy } from 'svelte'
+  import { onMount } from 'svelte'
   import { weatherStore } from '../lib/weather/store'
   import { celestialStore } from '../lib/weather/celestial-store'
   import { celestialVisibility } from '../lib/weather/celestialPosition'
@@ -43,23 +45,21 @@
     viewport = { w: window.innerWidth, h: window.innerHeight }
     layoutVersion++
   }
-  if (typeof window !== 'undefined') {
-    onResize()
+  if (typeof window !== 'undefined') onResize()
+  // onMount, not setup: Layout renders this sky layer before the page's
+  // tagged sections exist, so a watcher started here would observe nothing.
+  onMount(() => {
     window.addEventListener('resize', onResize)
-  }
-  const unwatch =
-    typeof window !== 'undefined'
-      ? watchCalmZones(() => layoutVersion++)
-      : () => {}
-  onDestroy(() => {
-    unwatch()
-    if (typeof window !== 'undefined') {
+    const unwatch = watchCalmZones(() => layoutVersion++)
+    layoutVersion++
+    return () => {
+      unwatch()
       window.removeEventListener('resize', onResize)
     }
   })
 
   let size = $derived(
-    Math.min(140, Math.max(44, 0.08 * Math.min(viewport.w, viewport.h)))
+    Math.min(170, Math.max(52, 0.095 * Math.min(viewport.w, viewport.h)))
   )
 
   let calm = $state(1)
@@ -115,7 +115,9 @@
     style:left="{(pos.x * 100).toFixed(3)}%"
     style:top="{(pos.y * 100).toFixed(3)}%"
     style:--size="{size.toFixed(1)}px"
-    style:opacity={(visibility * calm * (isSun ? 1 : 0.92)).toFixed(3)}
+    style:--disc-calm={(0.4 + 0.6 * calm).toFixed(3)}
+    style:--halo-calm={(0.75 + 0.25 * calm).toFixed(3)}
+    style:opacity={visibility.toFixed(3)}
   >
     <div class="halo"></div>
     {#if isSun}
@@ -157,70 +159,77 @@
     border-radius: 50%;
   }
   .halo {
-    width: calc(var(--size) * 6);
-    height: calc(var(--size) * 6);
+    width: calc(var(--size) * 9);
+    height: calc(var(--size) * 9);
+    opacity: var(--halo-calm, 1);
   }
   .disc {
     width: var(--size);
     height: var(--size);
+    opacity: var(--disc-calm, 1);
   }
 
   .sun .halo {
     background: radial-gradient(
       circle,
-      rgb(255 246 222 / 0.6) 0,
-      rgb(255 226 170 / 0.28) 14%,
-      rgb(255 206 140 / 0.1) 36%,
-      transparent 70%
+      rgb(255 250 232 / 1) 0,
+      rgb(255 236 190 / 0.85) 9%,
+      rgb(255 222 160 / 0.45) 20%,
+      rgb(255 206 140 / 0.2) 38%,
+      rgb(255 196 130 / 0.07) 56%,
+      transparent 72%
     );
   }
   .sun .disc {
     background: radial-gradient(
       circle at 45% 42%,
-      #fffef8 0,
-      #fff6d8 55%,
-      #ffe2a0 100%
+      #ffffff 0,
+      #fffbea 60%,
+      #fff0c4 100%
     );
     box-shadow:
-      0 0 calc(var(--size) * 0.35) calc(var(--size) * 0.08)
-        rgb(255 240 200 / 0.9),
-      0 0 calc(var(--size) * 1.2) calc(var(--size) * 0.2)
-        rgb(255 214 150 / 0.45);
+      0 0 calc(var(--size) * 0.4) calc(var(--size) * 0.18) rgb(255 250 230 / 1),
+      0 0 calc(var(--size) * 1.4) calc(var(--size) * 0.5) rgb(255 228 170 / 0.8),
+      0 0 calc(var(--size) * 3) calc(var(--size) * 0.8) rgb(255 208 140 / 0.4);
   }
   .sun.low .halo {
     background: radial-gradient(
       circle,
-      rgb(255 214 170 / 0.6) 0,
-      rgb(255 170 110 / 0.3) 16%,
-      rgb(255 140 90 / 0.12) 40%,
-      transparent 72%
+      rgb(255 226 190 / 1) 0,
+      rgb(255 184 120 / 0.85) 10%,
+      rgb(255 156 96 / 0.45) 22%,
+      rgb(255 132 84 / 0.2) 40%,
+      rgb(255 120 80 / 0.07) 58%,
+      transparent 74%
     );
   }
   .sun.low .disc {
     background: radial-gradient(
       circle at 45% 42%,
-      #fff4e0 0,
-      #ffd29a 55%,
-      #ffa866 100%
+      #fff8ea 0,
+      #ffdcaa 55%,
+      #ffb070 100%
     );
     box-shadow:
-      0 0 calc(var(--size) * 0.35) calc(var(--size) * 0.08)
-        rgb(255 200 150 / 0.85),
-      0 0 calc(var(--size) * 1.2) calc(var(--size) * 0.2) rgb(255 150 100 / 0.4);
+      0 0 calc(var(--size) * 0.4) calc(var(--size) * 0.18) rgb(255 214 170 / 1),
+      0 0 calc(var(--size) * 1.4) calc(var(--size) * 0.5)
+        rgb(255 160 104 / 0.75),
+      0 0 calc(var(--size) * 3) calc(var(--size) * 0.8) rgb(255 130 84 / 0.35);
   }
 
   .moon .halo {
-    width: calc(var(--size) * 4.5);
-    height: calc(var(--size) * 4.5);
+    width: calc(var(--size) * 6);
+    height: calc(var(--size) * 6);
     background: radial-gradient(
       circle,
-      rgb(214 226 246 / 0.32) 0,
-      rgb(180 200 236 / 0.12) 26%,
+      rgb(226 236 255 / 0.7) 0,
+      rgb(196 214 246 / 0.32) 18%,
+      rgb(180 200 236 / 0.12) 38%,
       transparent 68%
     );
   }
   .moon .disc {
     overflow: visible;
-    filter: drop-shadow(0 0 calc(var(--size) * 0.12) rgb(226 236 255 / 0.55));
+    filter: drop-shadow(0 0 calc(var(--size) * 0.2) rgb(236 244 255 / 0.9));
   }
 </style>

@@ -7,6 +7,7 @@ import {
   celestialVisibility,
   celestialWindow,
   clamp01,
+  locationNow,
   transitFraction,
   type ArcBox
 } from '../../../src/lib/weather/celestialPosition'
@@ -197,5 +198,27 @@ describe('celestialVisibility', () => {
     expect(celestialVisibility('storm')).toBeLessThan(
       celestialVisibility('rain')
     )
+  })
+})
+
+describe('locationNow', () => {
+  it("reads the location's wall clock the way offset-less API times are parsed", () => {
+    // 03:00 UTC is noon in Tokyo, whatever zone the test runner is in.
+    const now = at('2026-09-28T03:00:00Z')
+    const shifted = locationNow(now, 'Asia/Tokyo', '2026-09-28T05:30')
+    expect(shifted.getTime()).toBe(Date.parse('2026-09-28T12:00:00'))
+    // So a Tokyo noon sits mid-arc against Tokyo's own sunrise/sunset.
+    const pos = celestialPosition(shifted, {
+      sunrise: '2026-09-28T05:30',
+      sunset: '2026-09-28T18:30'
+    })
+    expect(pos?.body).toBe('sun')
+    expect(pos?.fraction).toBeCloseTo(0.5, 5)
+  })
+
+  it('passes absolute times and unknown zones through unchanged', () => {
+    const now = at('2026-09-28T03:00:00Z')
+    expect(locationNow(now, 'Asia/Tokyo', TODAY.sunrise)).toBe(now)
+    expect(locationNow(now, 'Not/AZone', '2026-09-28T05:30')).toBe(now)
   })
 })

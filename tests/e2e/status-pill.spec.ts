@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 
 /**
  * Status pill redesign (plan: "live-usage fixes" #6) — the always-visible
@@ -89,4 +90,42 @@ test('Escape dismisses the open detail popover', async ({ page }) => {
 
   await page.keyboard.press('Escape')
   await expect(page.locator('.status-pill__detail')).toHaveCount(0)
+})
+
+test('dot turns stale once the last good update is over two hours old', async ({
+  browser
+}) => {
+  const page = await browser.newPage()
+  await page.clock.install({ time: new Date('2026-09-24T17:30:00') })
+  const forecast = readFileSync(
+    'tests/fixtures/open-meteo/forecast-brussels.json',
+    'utf8'
+  )
+  let fail = false
+  await page.route('https://api.open-meteo.com/**', (route) =>
+    fail
+      ? route.abort()
+      : route.fulfill({ contentType: 'application/json', body: forecast })
+  )
+  await page.route('https://air-quality-api.open-meteo.com/**', (route) =>
+    route.abort()
+  )
+  await page.addInitScript(
+    ({ key, value }) => {
+      window.localStorage.setItem(key, JSON.stringify(value))
+    },
+    { key: STORAGE_KEY, value: SETTINGS_WITH_LOCATION }
+  )
+  await page.goto('/')
+  await page.locator('.start-overlay').click()
+  const dot = page.locator('.status-pill__dot')
+  await expect(page.locator('.temp')).toBeVisible()
+  await expect(dot).not.toHaveClass(/--stale/)
+
+  fail = true
+  // fastForward, not runFor: stepping through 2.5h of second ticks and
+  // frames one by one outlasts the test timeout.
+  await page.clock.fastForward(2.5 * 60 * 60 * 1000)
+  await expect(dot).toHaveClass(/status-pill__dot--stale/)
+  await page.close()
 })

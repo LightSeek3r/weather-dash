@@ -13,6 +13,7 @@ import { weatherStore } from './store'
 import {
   arcForLatitude,
   celestialPosition,
+  locationNow,
   type CelestialPosition
 } from './celestialPosition'
 
@@ -30,7 +31,7 @@ export const celestialStore: Readable<CelestialPosition | null> = derived(
     const snap = $weather.snapshot
     return snap
       ? celestialPosition(
-          $now,
+          locationNow($now, snap.location.timezone, snap.today.sunrise),
           snap.today,
           snap.tomorrow,
           arcForLatitude(snap.location.lat)

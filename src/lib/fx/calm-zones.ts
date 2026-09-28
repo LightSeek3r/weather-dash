@@ -8,9 +8,11 @@
  *   back out over a wide, round-cornered falloff. Measured per text node
  *   via Range rects, so the empty space around a short date line stays
  *   mostly alive;
- * - `glass` (the frosted cap/timeline panels): the panel rect gets moderate
+ * - `glass` (the frosted cap/timeline panels): the panel rect gets strong
  *   attenuation, ramping *inside* the panel border so the falloff is hidden
- *   under the glass's own blur and the sky outside it isn't dented.
+ *   under the glass's own blur and the sky outside it isn't dented. As
+ *   strong as `text`: the translucent glass passes a bright sun straight
+ *   through to its small secondary labels.
  *
  * Rects are CSS px (viewport space); callers scale to their backing store.
  */
@@ -27,8 +29,8 @@ export interface CalmZone {
 
 /** Presence multiplier deep inside each kind of zone. */
 export const CALM_ATTENUATION: Record<CalmKind, number> = {
-  text: 0.15,
-  glass: 0.5
+  text: 0.3,
+  glass: 0.3
 }
 
 /** Falloff width as a fraction of the viewport's short side. */

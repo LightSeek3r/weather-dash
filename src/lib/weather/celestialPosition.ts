@@ -133,6 +133,40 @@ export function celestialWindow(
   return { body: 'moon', start: sunset, end: nextSunrise }
 }
 
+const HAS_OFFSET = /(?:[zZ]|[+-]\d\d:?\d\d)$/
+
+/**
+ * `now` re-expressed so it compares correctly against `sample`-style times.
+ * Open-Meteo (`timezone=auto`) sends offset-less local times for the
+ * *location*, which Date.parse reads in the *device's* zone; parsing the
+ * location's wall clock the same way puts both on one footing, whatever
+ * the device is set to. Times that carry an offset (and an unknown zone)
+ * are already absolute and pass through.
+ */
+export function locationNow(now: Date, timeZone: string, sample: string): Date {
+  if (HAS_OFFSET.test(sample)) return now
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).formatToParts(now)
+    const get = (type: Intl.DateTimeFormatPartTypes): string =>
+      parts.find((p) => p.type === type)?.value ?? '00'
+    const wall = Date.parse(
+      `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`
+    )
+    return Number.isFinite(wall) ? new Date(wall) : now
+  } catch {
+    return now
+  }
+}
+
 export function celestialPosition(
   now: Date,
   today: SunTimes,

@@ -29,6 +29,14 @@
     return () => clearInterval(refreshTimer)
   })
 
+  // Hourly refresh, so two missed ones (or a days-old cached snapshot at
+  // boot) means the numbers on screen can't be trusted — the dot must say
+  // so without anyone tapping it.
+  const STALE_MS = 2 * 60 * 60 * 1000
+  let stale = $derived(
+    !lastUpdated || now.getTime() - lastUpdated.getTime() > STALE_MS
+  )
+
   let label = $derived(
     !online
       ? s.status.offline
@@ -74,7 +82,7 @@
     type="button"
     class="status-pill__dot"
     class:status-pill__dot--offline={!online}
-    class:status-pill__dot--stale={online && !lastUpdated}
+    class:status-pill__dot--stale={online && stale}
     aria-label={label}
     aria-haspopup="true"
     aria-expanded={detailOpen}
@@ -86,11 +94,12 @@
 </div>
 
 <style>
+  /* Last item of Layout's `.tm` flex row, pushed to its right end, so the
+     dot shares the Tomorrow strip's vertical centre (and its pixel shift). */
   .status-pill {
-    position: fixed;
-    right: calc(var(--space-md, 1.5rem) * 2 + 2.75rem);
-    bottom: var(--space-md, 1.5rem);
-    z-index: 5;
+    position: relative;
+    flex: none;
+    margin-left: auto;
   }
 
   .status-pill__dot {

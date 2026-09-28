@@ -184,6 +184,7 @@
   {/snippet}
   {#snippet tm()}
     <Tomorrow />
+    <StatusPill {lastUpdated} {online} />
   {/snippet}
 </Layout>
 
@@ -194,8 +195,6 @@
 <NightDim />
 <PixelShift />
 <FullscreenScene />
-
-<StatusPill {lastUpdated} {online} />
 
 <button
   type="button"

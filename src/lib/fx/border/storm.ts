@@ -1,10 +1,10 @@
 /**
- * Storm: the tier's rain effect at full density, plus an occasional
- * lightning flash — a soft cold glow along the top edge and around the
- * frame, one or two quick flickers then a slow fade. Deliberately gentle
- * for a screen people live next to: peak opacity ~0.5, edges only, at most
- * two flickers per strike and strikes 12–35s apart (well under the WCAG
- * three-flashes-per-second threshold).
+ * Storm: the tier's rain effect at full density, plus lightning — a real
+ * flash that lights the whole screen, brightest where the bolt struck: a
+ * near-white burst, a few return-stroke flickers, then a fast fade. Product
+ * decision: full-strength flashes are the point of the effect, so there is
+ * no flash-rate/opacity cap; strikes stay seconds apart, and reduced motion
+ * or `fxQuality: 'off'` still turns the whole effect off (tiers.ts).
  *
  * Strike timing rides the shared scheduler's `second` tick (which already
  * pauses while the tab is hidden) and the flash itself is a Web Animations
@@ -16,19 +16,31 @@ import { createEffect as createEcoRain } from './rain-eco'
 import { createEffect as createWebglRain } from './rain-webgl'
 import type { BorderEffect } from './types'
 
-const SINGLE: Keyframe[] = [
-  { opacity: 0 },
-  { opacity: 0.5, offset: 0.06 },
-  { opacity: 0.18, offset: 0.3 },
-  { opacity: 0 }
-]
-const DOUBLE: Keyframe[] = [
-  { opacity: 0 },
-  { opacity: 0.45, offset: 0.05 },
-  { opacity: 0.08, offset: 0.14 },
-  { opacity: 0.5, offset: 0.22 },
-  { opacity: 0.15, offset: 0.45 },
-  { opacity: 0 }
+const STRIKES: Keyframe[][] = [
+  [
+    { opacity: 0 },
+    { opacity: 1, offset: 0.03 },
+    { opacity: 0.35, offset: 0.12 },
+    { opacity: 0 }
+  ],
+  [
+    { opacity: 0 },
+    { opacity: 0.9, offset: 0.03 },
+    { opacity: 0.1, offset: 0.09 },
+    { opacity: 1, offset: 0.15 },
+    { opacity: 0.4, offset: 0.3 },
+    { opacity: 0 }
+  ],
+  [
+    { opacity: 0 },
+    { opacity: 1, offset: 0.02 },
+    { opacity: 0.15, offset: 0.07 },
+    { opacity: 0.85, offset: 0.12 },
+    { opacity: 0.1, offset: 0.18 },
+    { opacity: 1, offset: 0.24 },
+    { opacity: 0.45, offset: 0.4 },
+    { opacity: 0 }
+  ]
 ]
 
 export function createEffect(): BorderEffect {
@@ -41,10 +53,10 @@ export function createEffect(): BorderEffect {
     if (!flash || typeof flash.animate !== 'function') return
     flash.style.setProperty('--strike-x', `${Math.round(rand(15, 85))}%`)
     animation?.cancel()
-    animation = flash.animate(Math.random() < 0.4 ? DOUBLE : SINGLE, {
-      duration: rand(900, 1400),
-      easing: 'ease-out'
-    })
+    animation = flash.animate(
+      STRIKES[Math.floor(rand(0, STRIKES.length))] ?? STRIKES[0],
+      { duration: rand(900, 1500), easing: 'ease-out' }
+    )
   }
 
   return {
@@ -61,17 +73,18 @@ export function createEffect(): BorderEffect {
         'inset:0',
         'opacity:0',
         'pointer-events:none',
-        'background:radial-gradient(55% 22vmin at var(--strike-x, 50%) 0,' +
-          'rgb(226 238 252 / 0.9),rgb(166 220 255 / 0.25) 55%,transparent 80%)',
-        'box-shadow:inset 0 0 12vmin rgb(200 225 255 / 0.55)'
+        'background:radial-gradient(90% 75% at var(--strike-x, 50%) 0,' +
+          'rgb(250 252 255 / 0.97),rgb(214 230 255 / 0.75) 40%,' +
+          'rgb(170 196 240 / 0.5) 100%)',
+        'box-shadow:inset 0 0 18vmin rgb(226 238 255 / 0.8)'
       ].join(';')
       host.appendChild(flash)
 
-      let countdown = Math.round(rand(6, 14))
+      let countdown = Math.round(rand(3, 8))
       stopTicks = scheduler.on('second', () => {
         countdown -= 1
         if (countdown > 0) return
-        countdown = Math.round(rand(12, 35))
+        countdown = Math.round(rand(6, 20))
         strike()
       })
     },

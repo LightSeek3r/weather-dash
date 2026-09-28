@@ -119,7 +119,7 @@ function sunScene(opts: EffectOptions): Scene2d {
       if (typeof ctx.createConicGradient === 'function') {
         const cg = ctx.createConicGradient(t / 90, sx, sy)
         for (const [at, strength] of rays) {
-          const a = 0.3 * strength * breathe
+          const a = 0.6 * strength * breathe
           cg.addColorStop(at, 'rgba(255, 226, 176, 0)')
           cg.addColorStop(Math.min(1, at + 0.009), `rgba(255, 226, 176, ${a})`)
           cg.addColorStop(Math.min(1, at + 0.022), 'rgba(255, 226, 176, 0)')
@@ -140,20 +140,20 @@ function sunScene(opts: EffectOptions): Scene2d {
       // The light field: strong around the sun, still a warm tint by the
       // far corner so the whole frame reads sunlit.
       ctx.fillStyle = radial(ctx, sx, sy, reach, [
-        [0, `rgba(255, 242, 214, ${0.75 * breathe})`],
-        [0.1, `rgba(255, 220, 168, ${0.5 * breathe})`],
-        [0.32, `rgba(${warmRgb}, ${0.24 * breathe})`],
-        [0.65, `rgba(${warmRgb}, ${0.1 * breathe})`],
-        [1, `rgba(${warmRgb}, 0.04)`]
+        [0, `rgba(255, 244, 220, ${0.95 * breathe})`],
+        [0.1, `rgba(255, 224, 172, ${0.75 * breathe})`],
+        [0.32, `rgba(${warmRgb}, ${0.4 * breathe})`],
+        [0.65, `rgba(${warmRgb}, ${0.18 * breathe})`],
+        [1, `rgba(${warmRgb}, 0.08)`]
       ])
       ctx.fillRect(0, 0, w, h)
 
       // Bloom on the sun itself.
-      glow(ctx, sx, sy, band * 3 * (0.95 + 0.05 * breathe), [
+      glow(ctx, sx, sy, band * 4 * (0.95 + 0.05 * breathe), [
         [0, 'rgba(255, 252, 240, 0.9)'],
         [0.08, `rgba(255, 240, 204, ${0.7 * breathe})`],
-        [0.25, `rgba(255, 214, 160, ${0.3 * breathe})`],
-        [0.6, `rgba(255, 196, 136, ${0.08 * breathe})`],
+        [0.25, `rgba(255, 220, 166, ${0.55 * breathe})`],
+        [0.6, `rgba(255, 200, 140, ${0.18 * breathe})`],
         [1, 'rgba(255, 196, 136, 0)']
       ])
 
@@ -162,7 +162,7 @@ function sunScene(opts: EffectOptions): Scene2d {
       ctx.translate(sx, sy)
       ctx.scale(7, 0.22)
       glow(ctx, 0, 0, band * 1.2, [
-        [0, `rgba(255, 244, 222, ${0.55 * breathe})`],
+        [0, `rgba(255, 246, 226, ${0.85 * breathe})`],
         [0.3, `rgba(255, 220, 176, ${0.2 * breathe})`],
         [1, 'rgba(255, 210, 160, 0)']
       ])

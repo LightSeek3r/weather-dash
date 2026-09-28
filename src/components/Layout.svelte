@@ -29,10 +29,10 @@
   Full stacking order (z-index; same z paints in DOM order):
     0  .bg-photo      rotating photo (bg slot)
     1  .bg-sky        gradient sky, transparent while a photo shows
-    1  .bg-celestial  sun/moon (sky slot) — after .bg-sky in the DOM, so
-                      above both sky and photo
-    2  .scrim         readability dim; also dims the sun/moon with the
-                      photo dim slider
+    2  .scrim         readability dim (the photo dim slider)
+    2  .bg-celestial  sun/moon (sky slot) — after .scrim in the DOM, so the
+                      photo dim never mutes the sun; it's a light source,
+                      not part of the picture
     3  .border-fx     weather FX (BorderFx.svelte, mounted by App) — veils
                       the sun/moon in bad weather, stays quiet behind the
                       `data-fx-calm` regions below (lib/fx/calm-zones.ts)
@@ -46,12 +46,12 @@
   {/if}
 </div>
 <div class="layer bg-sky" aria-hidden="true"></div>
+<div class="layer scrim" aria-hidden="true"></div>
 <div class="layer bg-celestial" aria-hidden="true">
   {#if sky}
     {@render sky()}
   {/if}
 </div>
-<div class="layer scrim" aria-hidden="true"></div>
 
 <main class="page">
   {#if hero}
@@ -104,7 +104,7 @@
     transition: opacity 0.6s linear;
   }
   .bg-celestial {
-    z-index: 1;
+    z-index: 2;
     overflow: hidden;
   }
   /* Opaque and above .bg-photo, so it must go when a photo shows. */
@@ -218,11 +218,15 @@
     grid-area: tl;
     padding: calc(var(--u) * 1.4) calc(var(--u) * 2.2) calc(var(--u) * 1.2);
   }
+  /* Right padding keeps the row (and the status dot at its end) clear of
+     App's fixed gear button; wraps rather than running off narrow phones. */
   .tm {
     grid-area: tm;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: calc(var(--u) * 2);
+    gap: calc(var(--u) * 0.8) calc(var(--u) * 2);
+    padding-right: 3.5rem;
   }
 
   .glass {
