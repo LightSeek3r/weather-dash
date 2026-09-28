@@ -1,7 +1,8 @@
 <script lang="ts">
   // Renders into Layout's `tl` slot. Rolling next-24h strip, following
   // design/mockups/02-blue-hour.html's .chart structure (hours row, icons
-  // row, temperature curve, rain-probability bars, midnight marker).
+  // row, temperature curve, rain-probability bars). No midnight marker: a
+  // vertical rule mid-strip reads as "now", not as the day change.
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
@@ -61,17 +62,6 @@
   }
 
   let paths = $derived(buildPaths(hourly))
-
-  // First index whose local day differs from the first point's — the
-  // "midnight crossing" marker. `>1` check avoids a spurious marker if the
-  // rolling window happens to start exactly at midnight (index 0 IS the new
-  // day, nothing to mark).
-  let midnightIndex = $derived.by(() => {
-    if (hourly.length < 2) return -1
-    const firstDay = new Date(hourly[0].time).getDate()
-    const idx = hourly.findIndex((h) => new Date(h.time).getDate() !== firstDay)
-    return idx > 0 ? idx : -1
-  })
 </script>
 
 <div class="chart">
@@ -122,12 +112,6 @@
       </div>
     {/each}
   </div>
-  {#if midnightIndex >= 0}
-    <div
-      class="midnight"
-      style="left:{(midnightIndex / hourly.length) * 100}%"
-    ></div>
-  {/if}
 </div>
 
 <style>
@@ -252,11 +236,5 @@
     translate: -50% -0.25em;
     font-size: var(--fs-xs);
     color: var(--ice);
-  }
-  .midnight {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-left: 1.5px dashed rgb(222 238 255 / 0.35);
   }
 </style>
