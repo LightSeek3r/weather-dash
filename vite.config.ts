@@ -45,20 +45,12 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.open-meteo\.com\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'open-meteo-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 3600
-              }
-            }
-          }
-        ]
+        // No runtime caching of Open-Meteo: lib/weather/cache.ts already keeps
+        // the last snapshot for offline boot. A SW cache in front of the API
+        // served the first response forever (the CORS response hides its Date
+        // header, so workbox's maxAge check can't expire it) while the store
+        // stamped each replay as freshly fetched.
+        globPatterns: ['**/*.{js,css,html,svg,woff2}']
       }
     })
   ],
