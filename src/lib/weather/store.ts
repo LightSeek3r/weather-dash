@@ -1,8 +1,9 @@
 /**
  * The weather integration point the UI layer consumes. Reuses the app's
- * single tick source (`scheduler.on('hour', ...)`, plan decision: hourly
- * refresh) instead of a second timer, and the shared deduped/rate-limited
- * `toast.error` (plan premortem P6) instead of a bespoke notification path.
+ * single tick source (`scheduler.on('hour'|'midnight', ...)`, plan
+ * decision: hourly refresh) instead of a second timer, and the shared
+ * deduped/rate-limited `toast.error` (plan premortem P6) instead of a
+ * bespoke notification path.
  *
  * On a failed refresh the last-good `snapshot` is deliberately left in
  * place (only `status` flips to `'error'`) — plan premortem P6: a stale
@@ -124,13 +125,28 @@ export function initWeather(): () => void {
     }
   })
 
-  const unsubscribeScheduler = scheduler.on('hour', () => {
+  // Refetch on every hour tick, and also on midnight — the two ticks
+  // usually coincide, but subscribing to both matches the scheduler's own
+  // documented contract (midnight exists precisely so day-rollover-
+  // sensitive data, like `tomorrow`, isn't left waiting on the coarser
+  // hourly cadence) and is what actually makes `tomorrow` catch up the
+  // instant local midnight ticks even if an hour tick were ever missed.
+  // scheduler.ts's `tick()` passes the *same* Date instance to both the
+  // `hour` and `midnight` emit when they coincide (real local midnight) —
+  // comparing timestamps collapses that into a single fetch, not two.
+  let lastRefetchTick = -1
+  function refetchIfLocated(now: Date): void {
+    if (now.getTime() === lastRefetchTick) return
+    lastRefetchTick = now.getTime()
     const { location } = get(settingsStore)
     if (location) void runFetch(location)
-  })
+  }
+  const unsubscribeHour = scheduler.on('hour', refetchIfLocated)
+  const unsubscribeMidnight = scheduler.on('midnight', refetchIfLocated)
 
   return () => {
     unsubscribeSettings()
-    unsubscribeScheduler()
+    unsubscribeHour()
+    unsubscribeMidnight()
   }
 }

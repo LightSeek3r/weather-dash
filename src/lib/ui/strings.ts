@@ -44,9 +44,9 @@ export interface Dictionary {
     /** Overflow marker for the compact holiday item, e.g. "Christmas, Boxing Day" + "+1" more. */
     more: (n: number) => string
   }
-  kiosk: { tapToStart: string; openSettings: string }
+  kiosk: { tapToStart: string; openSettings: string; installTip: string }
   /** Fullscreen anti-burn-in scene overlay. */
-  scene: { tapToDismiss: string }
+  scene: { tapToReturn: string }
   settings: {
     title: string
     close: string
@@ -157,8 +157,12 @@ const en: Dictionary = {
     of: 'of',
     more: (n) => `+${n}`
   },
-  kiosk: { tapToStart: 'Tap to start', openSettings: 'Open settings' },
-  scene: { tapToDismiss: 'Tap to dismiss' },
+  kiosk: {
+    tapToStart: 'Tap to go fullscreen',
+    openSettings: 'Open settings',
+    installTip: 'Tip: add to your home screen to stay fullscreen after a reload'
+  },
+  scene: { tapToReturn: 'Tap to return to the dashboard' },
   settings: {
     title: 'Settings',
     close: 'Close settings',
@@ -314,10 +318,12 @@ const fr: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Toucher pour démarrer',
-    openSettings: 'Ouvrir les réglages'
+    tapToStart: 'Toucher pour passer en plein écran',
+    openSettings: 'Ouvrir les réglages',
+    installTip:
+      "Astuce : ajoutez l'app à l'écran d'accueil pour garder le plein écran après un rechargement"
   },
-  scene: { tapToDismiss: 'Toucher pour fermer' },
+  scene: { tapToReturn: 'Toucher pour revenir au tableau de bord' },
   settings: {
     title: 'Réglages',
     close: 'Fermer les réglages',
@@ -477,10 +483,12 @@ const nl: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Tik om te starten',
-    openSettings: 'Instellingen openen'
+    tapToStart: 'Tik om volledig scherm te openen',
+    openSettings: 'Instellingen openen',
+    installTip:
+      'Tip: voeg toe aan je startscherm om volledig scherm te behouden na een herlaad'
   },
-  scene: { tapToDismiss: 'Tik om te sluiten' },
+  scene: { tapToReturn: 'Tik om terug te gaan naar het dashboard' },
   settings: {
     title: 'Instellingen',
     close: 'Instellingen sluiten',
@@ -639,10 +647,12 @@ const de: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Zum Starten tippen',
-    openSettings: 'Einstellungen öffnen'
+    tapToStart: 'Für Vollbild tippen',
+    openSettings: 'Einstellungen öffnen',
+    installTip:
+      'Tipp: Zum Startbildschirm hinzufügen, damit Vollbild nach einem Neuladen erhalten bleibt'
   },
-  scene: { tapToDismiss: 'Zum Schließen tippen' },
+  scene: { tapToReturn: 'Tippen, um zum Dashboard zurückzukehren' },
   settings: {
     title: 'Einstellungen',
     close: 'Einstellungen schließen',
@@ -800,8 +810,13 @@ const es: Dictionary = {
     of: 'de',
     more: (n) => `+${n}`
   },
-  kiosk: { tapToStart: 'Toca para empezar', openSettings: 'Abrir ajustes' },
-  scene: { tapToDismiss: 'Toca para cerrar' },
+  kiosk: {
+    tapToStart: 'Toca para ver en pantalla completa',
+    openSettings: 'Abrir ajustes',
+    installTip:
+      'Consejo: añade la app a tu pantalla de inicio para mantener la pantalla completa tras recargar'
+  },
+  scene: { tapToReturn: 'Toca para volver al panel' },
   settings: {
     title: 'Ajustes',
     close: 'Cerrar ajustes',
@@ -959,10 +974,12 @@ const it: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Tocca per iniziare',
-    openSettings: 'Apri impostazioni'
+    tapToStart: 'Tocca per andare a schermo intero',
+    openSettings: 'Apri impostazioni',
+    installTip:
+      'Suggerimento: aggiungi alla schermata Home per restare a schermo intero dopo un ricaricamento'
   },
-  scene: { tapToDismiss: 'Tocca per chiudere' },
+  scene: { tapToReturn: 'Tocca per tornare alla dashboard' },
   settings: {
     title: 'Impostazioni',
     close: 'Chiudi impostazioni',
@@ -1122,10 +1139,12 @@ const pt: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Toque para começar',
-    openSettings: 'Abrir configurações'
+    tapToStart: 'Toque para tela cheia',
+    openSettings: 'Abrir configurações',
+    installTip:
+      'Dica: adicione à tela inicial para manter a tela cheia após recarregar'
   },
-  scene: { tapToDismiss: 'Toque para fechar' },
+  scene: { tapToReturn: 'Toque para voltar ao painel' },
   settings: {
     title: 'Configurações',
     close: 'Fechar configurações',
@@ -1284,10 +1303,12 @@ const ru: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'Нажмите, чтобы начать',
-    openSettings: 'Открыть настройки'
+    tapToStart: 'Нажмите для полноэкранного режима',
+    openSettings: 'Открыть настройки',
+    installTip:
+      'Совет: добавьте на главный экран, чтобы сохранить полноэкранный режим после перезагрузки'
   },
-  scene: { tapToDismiss: 'Нажмите, чтобы закрыть' },
+  scene: { tapToReturn: 'Нажмите, чтобы вернуться на панель' },
   settings: {
     title: 'Настройки',
     close: 'Закрыть настройки',
@@ -1458,8 +1479,12 @@ const zh: Dictionary = {
     of: '共',
     more: (n) => `+${n}`
   },
-  kiosk: { tapToStart: '轻触开始', openSettings: '打开设置' },
-  scene: { tapToDismiss: '轻触关闭' },
+  kiosk: {
+    tapToStart: '轻触进入全屏',
+    openSettings: '打开设置',
+    installTip: '提示：添加到主屏幕，刷新后可保持全屏'
+  },
+  scene: { tapToReturn: '轻触返回仪表盘' },
   settings: {
     title: '设置',
     close: '关闭设置',
@@ -1594,10 +1619,12 @@ const hi: Dictionary = {
     more: (n) => `+${n}`
   },
   kiosk: {
-    tapToStart: 'शुरू करने के लिए टैप करें',
-    openSettings: 'सेटिंग्स खोलें'
+    tapToStart: 'फ़ुलस्क्रीन के लिए टैप करें',
+    openSettings: 'सेटिंग्स खोलें',
+    installTip:
+      'सुझाव: रीलोड के बाद भी फ़ुलस्क्रीन बनाए रखने के लिए होम स्क्रीन पर जोड़ें'
   },
-  scene: { tapToDismiss: 'बंद करने के लिए टैप करें' },
+  scene: { tapToReturn: 'डैशबोर्ड पर वापस जाने के लिए टैप करें' },
   settings: {
     title: 'सेटिंग्स',
     close: 'सेटिंग्स बंद करें',

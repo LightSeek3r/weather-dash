@@ -18,7 +18,8 @@
   import {
     startKiosk,
     watchVisibilityForWakeLock,
-    acquireWakeLock
+    acquireWakeLock,
+    isStandalone
   } from './lib/core/fullscreen'
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
@@ -47,12 +48,15 @@
 
   // Fullscreen requires a user gesture on most browsers (and iOS Safari has
   // no Fullscreen API at all), so the dashboard starts behind a "tap to
-  // start" overlay rather than requesting it unprompted on load — except
-  // right after the nightly 03:30 reload (see lib/core/nightly-reload.ts):
-  // that reload is not a real "someone walked up to the kiosk" moment, so
-  // it skips the overlay and re-requests the wake lock immediately instead
-  // of leaving the screen able to sleep until someone happens to tap it.
-  let started = $state(consumeNightlyReloadMarker())
+  // start" overlay rather than requesting it unprompted on load — except:
+  // - right after the nightly 03:30 reload (see lib/core/nightly-reload.ts):
+  //   that reload is not a real "someone walked up to the kiosk" moment, so
+  //   it skips the overlay and re-requests the wake lock immediately instead
+  //   of leaving the screen able to sleep until someone happens to tap it.
+  // - launched from a home-screen install (`isStandalone()`): there's no
+  //   browser chrome to request fullscreen for (and no user gesture to do
+  //   it with, this early), so the overlay would be pure friction.
+  let started = $state(consumeNightlyReloadMarker() || isStandalone())
   let stopWatchingVisibility: (() => void) | undefined
 
   let online = $state(getOnlineStatus())
@@ -87,6 +91,16 @@
   const idleVisibility = createIdleVisibility(GEAR_IDLE_MS)
   let gearVisible = $state(true)
   let settingsOpen = $state(false)
+
+  // First run with no location set yet: open Settings straight to the field
+  // that matters, instead of leaving the dashboard sitting on "Set a
+  // location to see the weather" until someone happens to find the gear.
+  let autoOpenedSettings = false
+  function maybeAutoOpenSettings(): void {
+    if (autoOpenedSettings || $settingsStore.location) return
+    autoOpenedSettings = true
+    settingsOpen = true
+  }
 
   const DEBUG_FALLBACK_LOCATION = {
     lat: 50.85,
@@ -127,7 +141,10 @@
         ? startDebugWeather(debugWeather)
         : initWeather()
     const stopNightlyReload = scheduleNightlyReload('03:30')
-    if (started) void acquireWakeLock()
+    if (started) {
+      void acquireWakeLock()
+      maybeAutoOpenSettings()
+    }
     return () => {
       unsubscribe()
       stopWeather()
@@ -143,6 +160,7 @@
   async function handleStart() {
     await startKiosk()
     started = true
+    maybeAutoOpenSettings()
   }
 </script>
 
@@ -153,7 +171,6 @@
   {#snippet hero()}
     <HeroClock />
     <DateLine />
-    <StatusPill {lastUpdated} {online} />
   {/snippet}
   {#snippet cap()}
     <CurrentWeather />
@@ -173,6 +190,8 @@
 <NightDim />
 <PixelShift />
 <FullscreenScene />
+
+<StatusPill {lastUpdated} {online} />
 
 <button
   type="button"
@@ -201,7 +220,10 @@
 
 {#if !started}
   <button type="button" class="start-overlay" onclick={handleStart}>
-    <span class="glass">{s.kiosk.tapToStart}</span>
+    <span class="glass">
+      {s.kiosk.tapToStart}
+      <small>{s.kiosk.installTip}</small>
+    </span>
   </button>
 {/if}
 
@@ -231,6 +253,16 @@
     font-family: var(--display);
     font-size: var(--fs-l);
     font-weight: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+    text-align: center;
+  }
+  .start-overlay .glass small {
+    font-size: var(--fs-s);
+    font-weight: 400;
+    color: var(--text-2);
   }
   .start-overlay:focus-visible {
     outline: 2px solid var(--ice);

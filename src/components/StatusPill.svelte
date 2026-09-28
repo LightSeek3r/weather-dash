@@ -36,46 +36,107 @@
         ? `${s.status.updatedPrefix} ${relativeTime(lastUpdated, now, s.status.relative)}`
         : s.status.noDataYet
   )
+
+  // The always-visible text pill read as noise with no payoff on a 24/7
+  // wall display — a small dot is the ambient signal, the text only
+  // appears when someone actually cares enough to tap it. Screen readers
+  // still get the same "went offline"-style updates passively via the
+  // hidden live region below, independent of whether the popover is open.
+  let detailOpen = $state(false)
+  let rootEl: HTMLDivElement | undefined
+
+  function toggleDetail(): void {
+    detailOpen = !detailOpen
+  }
+
+  function handlePointerDown(e: PointerEvent): void {
+    if (rootEl && !rootEl.contains(e.target as Node)) detailOpen = false
+  }
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Escape') detailOpen = false
+  }
+
+  $effect(() => {
+    if (!detailOpen) return
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('keydown', handleKeydown)
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeydown)
+    }
+  })
 </script>
 
-<!--
-  TODO: confirm token names once design-tokens.css lands — falls back to
-  sensible dusk-palette values so this looks reasonable standalone.
--->
-<div
-  class="status-pill"
-  class:status-pill--offline={!online}
-  role="status"
-  aria-live="polite"
->
-  <span class="status-pill__dot" aria-hidden="true"></span>
-  <span class="status-pill__label">{label}</span>
+<div class="status-pill" bind:this={rootEl}>
+  <span class="sr-only" role="status" aria-live="polite">{label}</span>
+  <button
+    type="button"
+    class="status-pill__dot"
+    class:status-pill__dot--offline={!online}
+    class:status-pill__dot--stale={online && !lastUpdated}
+    aria-label={label}
+    aria-haspopup="true"
+    aria-expanded={detailOpen}
+    onclick={toggleDetail}
+  ></button>
+  {#if detailOpen}
+    <p class="status-pill__detail">{label}</p>
+  {/if}
 </div>
 
 <style>
   .status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.35em 0.9em;
-    border-radius: var(--radius-full, 999px);
-    background: var(--color-glass, rgba(196, 222, 255, 0.075));
-    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.16));
-    color: var(--color-text-2, rgba(238, 244, 251, 0.75));
-    font-family: var(--font-body, 'Atkinson Hyperlegible', sans-serif);
-    font-size: var(--font-size-sm, 0.85rem);
+    position: fixed;
+    right: calc(var(--space-md, 1.5rem) * 2 + 2.75rem);
+    bottom: var(--space-md, 1.5rem);
+    z-index: 5;
   }
 
   .status-pill__dot {
-    width: 0.6em;
-    height: 0.6em;
+    display: block;
+    width: 0.85rem;
+    height: 0.85rem;
+    padding: 0;
+    border: none;
     border-radius: 50%;
     background: var(--color-accent, #a6dcff);
-    box-shadow: 0 0 10px var(--color-accent, #a6dcff);
+    box-shadow: 0 0 8px var(--color-accent, #a6dcff);
+    cursor: pointer;
   }
 
-  .status-pill--offline .status-pill__dot {
-    background: var(--color-error, #ff8a8a);
-    box-shadow: 0 0 10px var(--color-error, #ff8a8a);
+  .status-pill__dot--stale {
+    background: var(--color-text-2, rgba(238, 244, 251, 0.75));
+    box-shadow: none;
+  }
+
+  .status-pill__dot--offline {
+    background: var(--color-error, #ff9a86);
+    box-shadow: 0 0 8px var(--color-error, #ff9a86);
+  }
+
+  .status-pill__detail {
+    position: absolute;
+    right: 0;
+    bottom: calc(0.85rem + var(--space-sm, 0.6rem));
+    margin: 0;
+    padding: 0.5em 0.9em;
+    white-space: nowrap;
+    border-radius: var(--radius-md, 1rem);
+    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+    color: var(--color-text-2, rgba(238, 244, 251, 0.75));
+    font-family: var(--font-body, 'Atkinson Hyperlegible', sans-serif);
+    font-size: var(--font-size-sm, 0.85rem);
+    backdrop-filter: blur(16px);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 </style>

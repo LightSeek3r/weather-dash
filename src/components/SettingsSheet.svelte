@@ -581,7 +581,10 @@
         </div>
       </section>
 
-      <section class="location-section">
+      <section
+        class="location-section"
+        class:attention={!$settingsStore.location}
+      >
         <form
           class="location-search"
           onsubmit={(e) => {
@@ -1001,6 +1004,21 @@
 
   .location-section + .location-section {
     border-top: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+  }
+
+  /* First-run guidance, not an error — a distinct (non-error-red) accent so
+     it doesn't read as "you did something wrong" when nothing's been set
+     yet. App.svelte auto-opens the sheet with this section already showing
+     it when no location is configured. */
+  .location-section.attention {
+    margin: calc(var(--space-md, 1.5rem) * -0.5)
+      calc(var(--space-md, 1.5rem) * -0.7) 0;
+    padding: calc(var(--space-md, 1.5rem) * 1.5)
+      calc(var(--space-md, 1.5rem) * 0.7) var(--space-md, 1.5rem);
+    border-radius: calc(var(--r, 1rem) * 0.7);
+    outline: 1px solid var(--peach, #ffb896);
+    outline-offset: -1px;
+    background: rgb(255 184 150 / 0.06);
   }
 
   .location-search {

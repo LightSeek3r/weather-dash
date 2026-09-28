@@ -107,7 +107,7 @@
     class:static={$reducedMotion}
     data-palette={palette}
     style="--scene-dur: {durationSeconds}s; --from-x: {drift.fromX}vw; --from-y: {drift.fromY}vh; --to-x: {drift.toX}vw; --to-y: {drift.toY}vh;"
-    aria-label={s.scene.tapToDismiss}
+    aria-label={s.scene.tapToReturn}
     onclick={dismiss}
     transition:fade={{ duration: $reducedMotion ? 0 : FADE_MS }}
   >
@@ -118,7 +118,7 @@
     {#if visual}
       <svg class="icon" aria-hidden="true"><use href="#{visual.icon}" /></svg>
     {/if}
-    <span class="hint" aria-hidden="true">{s.scene.tapToDismiss}</span>
+    <span class="hint" aria-hidden="true">{s.scene.tapToReturn}</span>
   </button>
 {/if}
 

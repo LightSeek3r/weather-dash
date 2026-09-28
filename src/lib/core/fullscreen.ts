@@ -13,6 +13,30 @@ type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void
 }
 
+type NavigatorWithIosStandalone = Navigator & { standalone?: boolean }
+
+/**
+ * True when launched from a home-screen install (manifest `display:
+ * fullscreen`/`standalone`, or iOS's non-standard `navigator.standalone`) —
+ * there's no browser chrome to lose across a reload in that case, unlike a
+ * plain browser tab where the Fullscreen API always needs a fresh user
+ * gesture after any navigation (a platform security rule, not fixable from
+ * app code — see App.svelte's use of this for why the tap-to-start gesture
+ * is skipped here instead of worked around).
+ */
+export function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  const mql =
+    typeof window.matchMedia === 'function'
+      ? window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches
+      : false
+  const iosStandalone =
+    typeof navigator !== 'undefined' &&
+    (navigator as NavigatorWithIosStandalone).standalone === true
+  return mql || iosStandalone
+}
+
 export function isFullscreenSupported(): boolean {
   if (typeof document === 'undefined') return false
   const el = document.documentElement as FullscreenElement

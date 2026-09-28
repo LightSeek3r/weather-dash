@@ -5,7 +5,8 @@ import {
   isWakeLockSupported,
   acquireWakeLock,
   watchVisibilityForWakeLock,
-  startKiosk
+  startKiosk,
+  isStandalone
 } from '../../../src/lib/core/fullscreen'
 
 describe('fullscreen + wake lock capability guards', () => {
@@ -105,5 +106,46 @@ describe('fullscreen + wake lock happy path', () => {
     await startKiosk()
     expect(document.documentElement.requestFullscreen).toHaveBeenCalledTimes(1)
     expect(navigator.wakeLock.request).toHaveBeenCalledWith('screen')
+  })
+})
+
+describe('isStandalone', () => {
+  const originalMatchMedia = window.matchMedia
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia
+    // @ts-expect-error test-only cleanup of the non-standard iOS flag
+    delete (navigator as { standalone?: boolean }).standalone
+  })
+
+  function mockMatchMedia(matchingQuery: string | null): void {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === matchingQuery,
+      media: query
+    })) as unknown as typeof window.matchMedia
+  }
+
+  it('is false in a plain browser tab', () => {
+    mockMatchMedia(null)
+    expect(isStandalone()).toBe(false)
+  })
+
+  it('is true when display-mode: standalone matches', () => {
+    mockMatchMedia('(display-mode: standalone)')
+    expect(isStandalone()).toBe(true)
+  })
+
+  it('is true when display-mode: fullscreen matches (the manifest setting here)', () => {
+    mockMatchMedia('(display-mode: fullscreen)')
+    expect(isStandalone()).toBe(true)
+  })
+
+  it('is true on iOS Safari home-screen launch (navigator.standalone)', () => {
+    mockMatchMedia(null)
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true
+    })
+    expect(isStandalone()).toBe(true)
   })
 })

@@ -152,6 +152,48 @@ describe('weather store', () => {
     expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(2)
   })
 
+  it('(c2) refetches on the scheduler midnight tick', async () => {
+    vi.setSystemTime(new Date('2026-09-24T23:59:58'))
+    vi.mocked(fetchWeatherSnapshot).mockResolvedValue(makeSnapshot())
+    vi.mocked(fetchAirQuality).mockResolvedValue(null)
+    settingsStore.set({ ...defaultSettings(), location: BRUSSELS })
+
+    cleanup = initWeather()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(1)
+
+    scheduler.start()
+    await vi.advanceTimersByTimeAsync(4000) // crosses into 2026-09-25
+
+    // hour and midnight coincide here, but both are subscribed — must not
+    // double-fetch on the same tick() call.
+    expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(2)
+  })
+
+  it('(c3) still refetches on the hour tick while the document is hidden', async () => {
+    vi.setSystemTime(new Date('2026-09-24T17:59:58'))
+    vi.mocked(fetchWeatherSnapshot).mockResolvedValue(makeSnapshot())
+    vi.mocked(fetchAirQuality).mockResolvedValue(null)
+    settingsStore.set({ ...defaultSettings(), location: BRUSSELS })
+
+    cleanup = initWeather()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(1)
+
+    Object.defineProperty(document, 'hidden', {
+      value: true,
+      configurable: true
+    })
+    scheduler.start()
+    await vi.advanceTimersByTimeAsync(4000) // crosses 18:00:00 while hidden
+
+    expect(fetchWeatherSnapshot).toHaveBeenCalledTimes(2)
+    Object.defineProperty(document, 'hidden', {
+      value: false,
+      configurable: true
+    })
+  })
+
   it('(d) keeps the previous snapshot and toasts on a failed refetch', async () => {
     const goodSnapshot = makeSnapshot()
     vi.mocked(fetchWeatherSnapshot)
