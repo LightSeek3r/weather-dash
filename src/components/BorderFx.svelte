@@ -1,12 +1,16 @@
 <script lang="ts">
   /**
-   * Weather-driven ambient effect around the screen edges (plan decision:
-   * border FX by weather). Self-positioning overlay — mount once anywhere
-   * in App.svelte, no Layout.svelte slot needed.
+   * Weather-driven ambient effect across the sky, strongest along the
+   * screen edges (plan decision: border FX by weather). Self-positioning
+   * overlay — mount once anywhere in App.svelte, no Layout.svelte slot
+   * needed.
    *
-   * Sits at z-index 3: above Layout's sky/photo/scrim layers (0–2), below
-   * `.page` (4), so the effect reads as weather on the window *behind* the
-   * glass cards and can never cover text or controls.
+   * Sits at z-index 3: above Layout's photo/sky/sun-moon/scrim layers
+   * (0–2, full order documented in Layout.svelte), below `.page` (4), so
+   * the effect reads as weather on the window *behind* the glass cards and
+   * can never cover text or controls. Each effect also quiets itself behind
+   * Layout's `data-fx-calm` regions (lib/fx/calm-zones.ts), so nothing busy
+   * sits under the clock even though it's physically beneath it.
    *
    * Renders nothing until the first weather snapshot exists (no effect over
    * "no location set"), when the resolved tier is `off`, or when reduced
@@ -29,6 +33,8 @@
   } from '../lib/fx/border'
   import type { BorderEffect } from '../lib/fx/border/types'
   import { debugParams } from '../lib/core/debug-params'
+  import { celestialStore } from '../lib/weather/celestial-store'
+  import type { CelestialPosition } from '../lib/weather/celestialPosition'
 
   let host = $state<HTMLDivElement | null>(null)
   let osReducedMotion = $state(false)
@@ -80,6 +86,15 @@
   // rain, without pickEffect() needing a distinct EffectId per pair.
   let conditionKey = $derived(visual?.conditionKey ?? null)
   let intensity = $derived(visual?.intensity)
+  let hail = $derived(visual?.hail === true)
+  let isDay = $derived(current?.isDay ?? true)
+
+  // Plain variable, deliberately not $state: effects read it per frame via
+  // the getter below, and the sun/moon moving every minute must not re-run
+  // the mount effect (a remount per minute).
+  let latestCelestial: CelestialPosition | null = null
+  onDestroy(celestialStore.subscribe((p) => (latestCelestial = p)))
+  const celestial = (): CelestialPosition | null => latestCelestial
 
   // Reads state, never writes it: mounting happens after an async import,
   // outside this effect's tracking scope, so nothing an effect module does
@@ -91,6 +106,8 @@
     const d = density
     const ck = conditionKey
     const it = intensity
+    const hl = hail
+    const day = isDay
     if (!el || !id || activeTier === 'off') return
 
     let cancelled = false
@@ -103,7 +120,11 @@
           tier: activeTier,
           density: d,
           conditionKey: ck ?? undefined,
-          intensity: it
+          intensity: it,
+          hail: hl,
+          isDay: day,
+          frozen: debugParams.freeze,
+          celestial
         })
       })
       .catch((err) => console.warn(`[fx] could not load "${id}"`, err))

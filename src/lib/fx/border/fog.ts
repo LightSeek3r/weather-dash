@@ -1,95 +1,93 @@
 /**
- * Fog: pale, slow wisps drifting both ways along the frame over a faint
- * standing haze, heavier along the bottom edge where fog settles. Like the
- * cloud shadows it draws freely at low resolution and relies on the ring
- * mask for confinement.
+ * Fog: banks of mist in three parallax layers rolling slowly sideways over
+ * a standing haze that thickens toward the ground. The far layer sits
+ * higher and moves slowest; the near layer hugs the bottom edge and moves
+ * fastest (alternate layers drift opposite ways, like eddies). Each layer is
+ * one pre-rendered, horizontally seamless strip scrolled with wrap-around,
+ * so a frame is six blits plus a gradient. The haze is also what veils the
+ * sky layer's sun/moon.
  */
-import { createCanvas2dEffect, rand, type Scene2d } from './common'
+import { createCanvas2dEffect, makeSprite, rand, type Scene2d } from './common'
 import type { BorderEffect, EffectOptions } from './types'
 
-interface Wisp {
-  x: number
-  y: number
-  r: number
-  stretch: number
-  vx: number
-  alpha: number
-  period: number
-  phase: number
-}
+// Per layer (far → near): centre and thickness (fractions of h), speed
+// (fraction of w per second; sign = direction), opacity.
+const LAYERS = [
+  { y: 0.5, thick: 0.5, speed: 1 / 320, alpha: 0.55 },
+  { y: 0.7, thick: 0.46, speed: -1 / 210, alpha: 0.7 },
+  { y: 0.88, thick: 0.38, speed: 1 / 140, alpha: 0.85 }
+]
 
-function makeWisp(w: number, h: number, band: number, boost: number): Wisp {
-  const roll = Math.random()
-  // Half the wisps hug the bottom edge, a fifth the top, the rest anywhere
-  // (only visible where the ring mask lets them through on the sides).
-  const y =
-    roll < 0.5
-      ? h - rand(0, band * 0.9)
-      : roll < 0.7
-        ? rand(0, band * 0.7)
-        : rand(0, h)
-  return {
-    x: rand(0, w),
-    y,
-    r: band * rand(0.5, 1.1),
-    stretch: rand(2.4, 4.5),
-    vx: band * rand(0.012, 0.035) * (Math.random() < 0.5 ? -1 : 1),
-    alpha: rand(0.09, 0.18) * boost,
-    period: rand(18, 40),
-    phase: rand(0, Math.PI * 2)
-  }
+/** A seamless strip of stretched mist puffs, denser toward its middle. */
+function bankSprite(w: number, bh: number, puffs: number): HTMLCanvasElement {
+  return makeSprite(w, bh, (ctx) => {
+    for (let i = 0; i < puffs; i++) {
+      const x = rand(0, w)
+      // Sum of two uniforms: puffs cluster around the strip's centre line.
+      const y = bh * (0.5 + (rand(0, 0.5) + rand(0, 0.5) - 0.5) * 0.7)
+      const r = bh * rand(0.16, 0.32)
+      const stretch = rand(2.5, 5)
+      const a = rand(0.18, 0.4)
+      for (const ox of [x - w, x, x + w]) {
+        if (ox + r * stretch < 0 || ox - r * stretch > w) continue
+        ctx.save()
+        ctx.translate(ox, y)
+        ctx.scale(stretch, 1)
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r)
+        g.addColorStop(0, `rgba(214, 226, 238, ${a})`)
+        g.addColorStop(0.5, `rgba(200, 214, 228, ${a * 0.55})`)
+        g.addColorStop(1, 'rgba(200, 214, 228, 0)')
+        ctx.fillStyle = g
+        ctx.fillRect(-r, -r, r * 2, r * 2)
+        ctx.restore()
+      }
+    }
+  })
 }
 
 function fogScene(opts: EffectOptions): Scene2d {
   let w = 0
   let h = 0
   let band = 0
-  let wisps: Wisp[] = []
+  let banks: HTMLCanvasElement[] = []
   let haze: CanvasGradient | null = null
-  const count = Math.round(
-    (opts.tier === 'high' ? 22 : 16) * (0.7 + 0.3 * opts.density)
-  )
-  // Density has no intensity signal to ride for fog (mapWmo never sets one
-  // for codes 45/48), so it only nudges wisp opacity rather than the count.
+  const puffs = opts.tier === 'high' ? 34 : 22
+  // Fog has no intensity signal to ride (mapWmo never sets one for codes
+  // 45/48), so density only nudges opacity.
   const boost = 0.85 + 0.3 * opts.density
+  const phases = LAYERS.map(() => rand(0, 1))
 
   return {
     resize(nw, nh, nb) {
       w = nw
       h = nh
       band = nb
-      wisps = Array.from({ length: count }, () => makeWisp(w, h, band, boost))
+      banks = LAYERS.map((L) => bankSprite(w, h * L.thick, puffs))
       haze = null
     },
-    draw(ctx, t, dt) {
+    draw(ctx, t) {
       if (!haze) {
         haze = ctx.createLinearGradient(0, 0, 0, h)
-        haze.addColorStop(0, 'rgba(149, 169, 189, 0.09)')
-        haze.addColorStop(0.6, 'rgba(149, 169, 189, 0.07)')
-        haze.addColorStop(1, 'rgba(149, 169, 189, 0.2)')
+        haze.addColorStop(0, `rgba(160, 178, 198, ${0.2 * boost})`)
+        haze.addColorStop(0.5, `rgba(170, 186, 204, ${0.24 * boost})`)
+        haze.addColorStop(1, `rgba(186, 200, 216, ${0.5 * boost})`)
       }
+      ctx.globalAlpha = 1
       ctx.fillStyle = haze
       ctx.fillRect(0, 0, w, h)
 
-      for (const p of wisps) {
-        p.x += p.vx * dt
-        const span = p.r * p.stretch
-        if (p.x > w + span) p.x = -span
-        else if (p.x < -span) p.x = w + span
-        const a =
-          p.alpha *
-          (0.55 + 0.45 * Math.sin((t * Math.PI * 2) / p.period + p.phase))
-        ctx.save()
-        ctx.translate(p.x, p.y)
-        ctx.scale(p.stretch, 1)
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, p.r)
-        g.addColorStop(0, `rgba(205, 220, 234, ${a})`)
-        g.addColorStop(0.5, `rgba(189, 205, 221, ${a * 0.5})`)
-        g.addColorStop(1, 'rgba(189, 205, 221, 0)')
-        ctx.fillStyle = g
-        ctx.fillRect(-p.r, -p.r, p.r * 2, p.r * 2)
-        ctx.restore()
-      }
+      LAYERS.forEach((L, i) => {
+        const img = banks[i]
+        if (!img) return
+        const off = ((((t * L.speed + phases[i]) * w) % w) + w) % w
+        const bob = Math.sin(t / (23 + i * 7) + phases[i] * 6) * band * 0.12
+        const y = h * L.y - img.height / 2 + bob
+        const breathe = 0.85 + 0.15 * Math.sin(t / (13 + i * 5) + phases[i] * 4)
+        ctx.globalAlpha = Math.min(1, L.alpha * boost * breathe)
+        ctx.drawImage(img, off - w, y)
+        ctx.drawImage(img, off, y)
+      })
+      ctx.globalAlpha = 1
     }
   }
 }
@@ -100,7 +98,7 @@ export function createEffect(): BorderEffect {
       fps: o.tier === 'high' ? 20 : 12,
       maxDpr: o.tier === 'high' ? 0.5 : 0.33,
       maxPixels: o.tier === 'high' ? 400_000 : 160_000,
-      ringMask: true
+      floor: 0.85
     }),
     fogScene
   )

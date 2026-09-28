@@ -5,7 +5,10 @@ import {
   pickEffect,
   type EffectId
 } from '../../../src/lib/fx/border'
-import type { ActiveTier } from '../../../src/lib/fx/border/types'
+import type {
+  ActiveTier,
+  EffectOptions
+} from '../../../src/lib/fx/border/types'
 import { scheduler } from '../../../src/lib/core/scheduler'
 import { edgeFactor } from '../../../src/lib/fx/border/common'
 
@@ -281,5 +284,68 @@ describe('border effect lifecycle', () => {
     }
     expect(host.childElementCount).toBe(0)
     expect(raf.pendingCount()).toBe(0)
+  })
+
+  for (const id of ALL) {
+    it(`${id} frozen renders one still frame with no loop`, async () => {
+      const raf = fakeRaf()
+      const addDoc = vi.spyOn(document, 'addEventListener')
+      const fx = (await loadEffect(id))()
+      fx.mount(host, { tier: 'high', density: 0.8, frozen: true })
+      expect(host.querySelectorAll('canvas')).toHaveLength(1)
+      expect(raf.pendingCount()).toBe(0)
+      expect(
+        addDoc.mock.calls.filter((c) => c[0] === 'visibilitychange')
+      ).toHaveLength(0)
+      fx.unmount()
+      expect(host.childElementCount).toBe(0)
+    })
+  }
+
+  it('icy precipitation runs on Canvas2D, including from the WebGL rain module', async () => {
+    const raf = fakeRaf()
+    const cases: [EffectId, EffectOptions][] = [
+      [
+        'rain-webgl',
+        { tier: 'high', density: 1, conditionKey: 'freezingRain' }
+      ],
+      ['rain-webgl', { tier: 'high', density: 1, hail: true }],
+      [
+        'rain-eco',
+        { tier: 'eco', density: 0.75, conditionKey: 'freezingDrizzle' }
+      ],
+      ['snow', { tier: 'high', density: 0.75, conditionKey: 'snowGrains' }],
+      ['snow', { tier: 'eco', density: 1, hail: true }]
+    ]
+    for (const [id, opts] of cases) {
+      const fx = (await loadEffect(id))()
+      fx.mount(host, opts)
+      const canvases = host.querySelectorAll('canvas')
+      expect(canvases).toHaveLength(1)
+      expect(canvases[0].dataset.renderer).toBe('2d')
+      expect(() => raf.frames(60, 1000 / 30)).not.toThrow()
+      fx.unmount()
+      expect(host.childElementCount).toBe(0)
+      expect(raf.pendingCount()).toBe(0)
+    }
+    expect(loseContext).not.toHaveBeenCalled()
+  })
+
+  it('sun and stars read the live celestial position every frame without remounting', async () => {
+    const raf = fakeRaf()
+    for (const id of ['sun', 'stars'] as const) {
+      const celestial = vi.fn(() => ({
+        body: id === 'sun' ? ('sun' as const) : ('moon' as const),
+        fraction: 0.4,
+        x: 0.4,
+        y: 0.3
+      }))
+      const fx = (await loadEffect(id))()
+      fx.mount(host, { tier: 'high', density: 0.5, celestial })
+      raf.frames(30, 1000 / 30)
+      expect(celestial.mock.calls.length).toBeGreaterThan(1)
+      fx.unmount()
+    }
+    expect(host.childElementCount).toBe(0)
   })
 })

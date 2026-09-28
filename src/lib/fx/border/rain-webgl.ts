@@ -1,10 +1,10 @@
 /**
  * Rain / drizzle, high tier: procedural "drops on glass" in one fragment
- * shader pass — no textures, no per-frame uploads, no CPU simulation. Every
- * drop is a pure function of (pixel, time), so the whole frame is a single
- * fullscreen-triangle draw call, and pixels outside the border ring exit
- * after one distance test (the ring is ~half the screen; the other half
- * costs almost nothing).
+ * shader pass — no per-frame uploads, no CPU simulation. Every drop is a
+ * pure function of (pixel, time), so the whole frame is a single
+ * fullscreen-triangle draw call. The only texture is the tiny presence
+ * field (common.ts), re-uploaded when the layout moves; pixels where it's
+ * zero exit after one lookup.
  *
  * Model, per pixel:
  * - beads: a sparse grid of small static drops, each with its own slow
@@ -19,7 +19,13 @@
  *   mirrored through the drop centre (a drop on a window shows a small
  *   inverted view of what's behind it), with a darker total-internal-
  *   reflection rim, a warm caustic crescent opposite the key light, and a
- *   specular glint.
+ *   specular glint;
+ * - streaks: rain falling past the pane, slanted by the wind — sparse, short
+ *   and slow for light rain, dense, long and fast for heavy;
+ * - pool: water collecting along the bottom edge, with a bright meniscus and
+ *   ripples where drops land;
+ * - veil: a grey cloud deck from the top, which is what hides the sky
+ *   layer's sun/moon during rain.
  *
  * The browser can't hand WebGL the DOM behind the canvas, so the refracted
  * "scene" is a procedural stand-in for Layout.svelte's Blue Hour sky (same
@@ -29,10 +35,21 @@
  *
  * Falls back to the Canvas2D tier (rain-eco) if a context can't be created,
  * the shader fails to compile, the context is lost, or sustained frame time
- * shows the GPU can't keep up (plan premortem P3: tiers auto-degrade).
+ * shows the GPU can't keep up (plan premortem P3: tiers auto-degrade). The
+ * icy variants (freezing rain, hail) go straight to the Canvas2D scene at
+ * the same tier: frost and hail pellets live there, not in the shader.
  */
 import { createCappedLoop } from '../raf-loop'
-import { BAND_FRACTION, FPS, createLayerCanvas } from './common'
+import {
+  FPS,
+  FROZEN_T,
+  createFieldTracker,
+  createLayerCanvas,
+  random,
+  smoothstep,
+  type PresenceField
+} from './common'
+import { isIcy } from './ice'
 import { createEffect as createEcoEffect } from './rain-eco'
 import type { BorderEffect, EffectOptions } from './types'
 
@@ -51,10 +68,16 @@ precision mediump float;
 uniform vec2 uRes;
 uniform float uTime;
 uniform float uDensity;
-uniform float uBand;
+// 0 at light rain -> 1 at heavy/storm: streak length/speed/slant, pool depth.
+uniform float uHeavy;
 // 0 for rain, 1 for drizzle/freezing-drizzle (see EffectOptions.conditionKey)
 // — finer, slower, quieter droplets rather than just fewer of them.
 uniform float uDrizzle;
+// Presence field (alpha), and the affine map from screen uv to its texels:
+// grid samples sit on cell corners, i.e. on texel centres.
+uniform sampler2D uField;
+uniform vec2 uFieldA;
+uniform vec2 uFieldB;
 
 // Hash without sine, Dave Hoskins (MIT) — stable across GPUs, unlike sin-hashes.
 float hash11(float p) {
@@ -154,20 +177,52 @@ vec4 runners(vec2 uv, float t, float density, float seed, float drizzle) {
   return vec4(nrm, c, trail);
 }
 
+// Slanted rain falling past the pane; y is up, so heads move toward 0.
+float streaks(vec2 uv, float t, float density, float seed, float cols, float H) {
+  uv.x += uv.y * mix(0.05, 0.2, uHeavy);
+  float x = uv.x * cols;
+  float id = floor(x);
+  float fx = fract(x) - 0.5;
+  vec3 n = hash31(id * 17.13 + seed);
+  if (n.x > density) return 0.0;
+  float len = mix(mix(0.07, 0.34, uHeavy), 0.03, uDrizzle) * (0.6 + 0.8 * n.y);
+  float L = H + len + 0.4;
+  float speed = mix(mix(0.9, 2.2, uHeavy), 0.45, uDrizzle) * H * (0.75 + 0.5 * n.z);
+  float head = H + len - fract(t * speed / L + n.y * 7.0) * L;
+  float d = uv.y - head;
+  if (d < 0.0 || d > len) return 0.0;
+  float along = 1.0 - d / len;
+  float across = smoothstep(mix(0.08, 0.13, uHeavy), 0.0, abs(fx));
+  return along * along * across * (0.55 + 0.45 * n.z);
+}
+
+float ripples(vec2 uv, float sy, float t) {
+  const float CW = 0.16;
+  float id = floor(uv.x / CW);
+  vec3 n = hash31(id * 9.7 + 3.3);
+  float period = 0.9 + 1.6 * n.x;
+  float k = fract(t / period + n.y);
+  float cx = (id + 0.2 + 0.6 * n.z) * CW;
+  vec2 p = vec2(uv.x - cx, (uv.y - sy) * 4.0);
+  return smoothstep(0.005, 0.0, abs(length(p) - k * CW * 0.45)) * (1.0 - k);
+}
+
+vec4 over(vec4 src, vec4 dst) {
+  return src + dst * (1.0 - src.a);
+}
+
 void main() {
   vec2 frag = gl_FragCoord.xy;
   float shortSide = min(uRes.x, uRes.y);
   vec2 uv = frag / shortSide;
-  vec2 edge2 = min(frag, uRes - frag) / shortSide;
-  float band = uBand * (0.85 + 0.15 * sin(uv.x * 5.0 + uv.y * 3.0 + sin(uv.y * 4.0) * 2.0));
-  // Rounded-corner ring, same shape as common.ts edgeFactor().
-  float mask = smoothstep(0.0, band * 0.7, length(max(vec2(band) - edge2, 0.0)));
-  if (mask <= 0.0) {
+  vec2 suv = frag / uRes;
+  float mask = texture2D(uField, vec2(suv.x, 1.0 - suv.y) * uFieldA + uFieldB).a;
+  if (mask <= 0.004) {
     gl_FragColor = vec4(0.0);
     return;
   }
 
-  float beadDensity = (0.32 + 0.5 * uDensity) * mix(1.0, 1.3, uDrizzle);
+  float beadDensity = (0.3 + 0.55 * uDensity) * mix(1.0, 1.3, uDrizzle);
   vec3 b = beads(uv, uTime, min(beadDensity, 0.95), uDrizzle);
   vec4 r1 = runners(uv, uTime, 0.16 + 0.62 * uDensity, 0.0, uDrizzle);
   vec4 r2 = runners(uv * 1.7 + vec2(0.31, 0.0), uTime * 1.15, 0.12 + 0.52 * uDensity, 7.0, uDrizzle);
@@ -177,7 +232,6 @@ void main() {
   if (r1.z > d.z) d = r1.xyz;
   if (r2.z > d.z) d = r2.xyz;
 
-  vec2 suv = frag / uRes;
   vec2 nrm = d.xy;
   float rr = min(dot(nrm, nrm), 1.0);
   float edge = sqrt(rr);
@@ -186,24 +240,50 @@ void main() {
   vec2 refr = suv - nrm * 0.18 * shortSide / uRes;
   vec3 bg = env(refr);
   vec3 L = normalize(vec3(-0.35, 0.6, 0.72));
-  vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-  float spec = pow(max(dot(N, H), 0.0), 70.0);
+  vec3 Hv = normalize(L + vec3(0.0, 0.0, 1.0));
+  float spec = pow(max(dot(N, Hv), 0.0), 60.0);
   float rim = smoothstep(0.6, 1.0, edge);
   float caustic = smoothstep(0.35, 0.8, edge) * (1.0 - smoothstep(0.85, 1.0, edge))
     * max(0.0, dot(nrm / max(edge, 1e-3), -normalize(L.xy)));
 
-  vec3 dropCol = bg * (2.0 - 1.4 * rim)
-    + vec3(1.0, 0.72, 0.59) * caustic * 0.4
-    + vec3(1.0, 0.97, 0.93) * spec * 1.2;
-  float dropA = d.z * (0.5 + 0.4 * rim);
+  vec3 dropCol = bg * (2.6 - 1.6 * rim)
+    + vec3(1.0, 0.72, 0.59) * caustic * 0.55
+    + vec3(1.0, 0.97, 0.93) * spec * 1.6;
+  float dropA = d.z * (0.62 + 0.35 * rim);
 
-  vec3 hazeCol = env(suv) * 1.7 + vec3(0.02, 0.03, 0.04);
-  float hazeA = 0.1 * (1.0 - trail);
+  // Pool along the bottom edge (uv units; 0.14 = one band).
+  float pd = 0.14 * mix(0.14 + 0.26 * uHeavy, 0.1, uDrizzle);
+  float wa = pd * 0.09;
+  float sy = pd + sin(suv.x * 18.85 + uTime * 1.3) * wa
+    + sin(suv.x * 45.87 - uTime * 0.9) * wa * 0.6;
+  float below = sy - uv.y;
 
-  vec3 col = dropCol * dropA + hazeCol * hazeA * (1.0 - dropA);
-  float a = (dropA + hazeA * (1.0 - dropA)) * mask;
-  col *= mask;
-  gl_FragColor = vec4(min(col, vec3(a)), a);
+  float H = uRes.y / shortSide;
+  float st = 0.0;
+  if (below < 0.0) {
+    float sd = (0.3 + 0.6 * uDensity) * mix(1.0, 0.45, uDrizzle);
+    st = streaks(uv, uTime, sd, 1.0, 70.0, H)
+      + 0.6 * streaks(uv, uTime * 1.13, sd, 5.0, 130.0, H);
+  }
+
+  float veilA = (0.3 + 0.2 * uHeavy) * smoothstep(0.4, 1.0, suv.y) + 0.03;
+  vec4 acc = vec4(vec3(0.086, 0.133, 0.196) * veilA, veilA);
+  float hazeA = 0.08 * (1.0 - trail);
+  acc = over(vec4(env(suv) * 1.7 * hazeA, hazeA), acc);
+  float sa = min(st, 1.0) * mix(0.5, 0.3, uDrizzle);
+  acc = over(vec4(vec3(0.84, 0.92, 1.0) * sa, sa), acc);
+  acc = over(vec4(dropCol * dropA, dropA), acc);
+  if (below > 0.0) {
+    float poolA = mix(0.14, 0.34, clamp(1.0 - uv.y / max(pd, 1e-3), 0.0, 1.0));
+    acc = over(vec4(vec3(0.55, 0.75, 0.91) * poolA, poolA), acc);
+  }
+  float lineA = smoothstep(0.0035, 0.0, abs(below)) * 0.65;
+  if (below > -0.01 && below < pd * 0.6) lineA += ripples(uv, sy, uTime) * 0.5;
+  lineA = min(lineA, 1.0);
+  acc = over(vec4(vec3(0.89, 0.95, 1.0) * lineA, lineA), acc);
+
+  acc *= mask;
+  gl_FragColor = vec4(min(acc.rgb, vec3(acc.a)), acc.a);
 }
 `
 
@@ -250,10 +330,22 @@ export function createEffect(): BorderEffect {
 
   function mountGl(host: HTMLElement, opts: EffectOptions): void {
     let resized = true
+    let fieldDirty = true
+    // Frozen renders draw on demand instead of from a loop.
+    let redraw: (() => void) | null = null
+    const tracker = createFieldTracker(0.7, () => {
+      fieldDirty = true
+      redraw?.()
+    })
     const layer = createLayerCanvas(host, {
-      maxDpr: 1.5,
-      maxPixels: 1_400_000,
-      onResize: () => (resized = true)
+      maxDpr: 1.25,
+      maxPixels: 1_200_000,
+      onResize: (w, h) => {
+        tracker.resize(w, h)
+        resized = true
+        fieldDirty = true
+        redraw?.()
+      }
     })
     layer.canvas.dataset.renderer = 'webgl'
     const attrs: WebGLContextAttributes = {
@@ -268,6 +360,7 @@ export function createEffect(): BorderEffect {
     const gl = (layer.canvas.getContext('webgl2', attrs) ??
       layer.canvas.getContext('webgl', attrs)) as WebGLRenderingContext | null
     if (!gl) {
+      tracker.destroy()
       layer.destroy()
       toEco(host, opts, 'no WebGL context')
       return
@@ -275,6 +368,7 @@ export function createEffect(): BorderEffect {
 
     let program: WebGLProgram | null = null
     let buffer: WebGLBuffer | null = null
+    let texture: WebGLTexture | null = null
     const shaders: WebGLShader[] = []
     const onLost = (): void => toEco(host, opts, 'context lost')
     layer.canvas.addEventListener('webglcontextlost', onLost)
@@ -282,11 +376,14 @@ export function createEffect(): BorderEffect {
     let loop: ReturnType<typeof createCappedLoop> | null = null
     teardownGl = () => {
       loop?.stop()
+      redraw = null
+      tracker.destroy()
       layer.canvas.removeEventListener('webglcontextlost', onLost)
       if (!gl.isContextLost()) {
         for (const s of shaders) gl.deleteShader(s)
         if (program) gl.deleteProgram(program)
         if (buffer) gl.deleteBuffer(buffer)
+        if (texture) gl.deleteTexture(texture)
         // Release the context now: browsers cap live contexts per page
         // (~16), and GC alone is far too lazy for repeated remounts.
         gl.getExtension('WEBGL_lose_context')?.loseContext()
@@ -320,15 +417,70 @@ export function createEffect(): BorderEffect {
     const aPos = gl.getAttribLocation(program, 'aPos')
     gl.enableVertexAttribArray(aPos)
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+
+    texture = gl.createTexture()
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.uniform1i(gl.getUniformLocation(program, 'uField'), 0)
+    const uFieldA = gl.getUniformLocation(program, 'uFieldA')
+    const uFieldB = gl.getUniformLocation(program, 'uFieldB')
     const uRes = gl.getUniformLocation(program, 'uRes')
     const uTime = gl.getUniformLocation(program, 'uTime')
-    gl.uniform1f(gl.getUniformLocation(program, 'uDensity'), opts.density)
-    gl.uniform1f(gl.getUniformLocation(program, 'uBand'), BAND_FRACTION)
+
     const isDrizzle =
       opts.conditionKey === 'drizzle' || opts.conditionKey === 'freezingDrizzle'
+    gl.uniform1f(gl.getUniformLocation(program, 'uDensity'), opts.density)
     gl.uniform1f(gl.getUniformLocation(program, 'uDrizzle'), isDrizzle ? 1 : 0)
+    gl.uniform1f(
+      gl.getUniformLocation(program, 'uHeavy'),
+      isDrizzle ? 0 : smoothstep(0.5, 1, opts.density)
+    )
 
-    let t = Math.random() * 600
+    const uploadField = (field: PresenceField): void => {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        field.mask
+      )
+      // Screen uv (y down) -> texel coords: sample k sits at k·cell px.
+      gl.uniform2f(
+        uFieldA,
+        layer.width / (field.cell * field.cols),
+        layer.height / (field.cell * field.rows)
+      )
+      gl.uniform2f(uFieldB, 0.5 / field.cols, 0.5 / field.rows)
+    }
+
+    const draw = (time: number): void => {
+      if (gl.isContextLost()) return
+      if (resized) {
+        resized = false
+        gl.viewport(0, 0, layer.width, layer.height)
+        gl.uniform2f(uRes, layer.width, layer.height)
+      }
+      const field = tracker.field
+      if (fieldDirty && field) {
+        fieldDirty = false
+        uploadField(field)
+      }
+      gl.uniform1f(uTime, time)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+
+    if (opts.frozen) {
+      redraw = () => draw(FROZEN_T)
+      redraw()
+      return
+    }
+
+    let t = random() * 600
     let warm = 0
     let ema = 1000 / FPS.high
     let slowFrames = 0
@@ -346,14 +498,9 @@ export function createEffect(): BorderEffect {
           }
         }
       }
+      tracker.tick(deltaMs / 1000)
       t = (t + deltaMs / 1000) % TIME_WRAP_S
-      if (resized) {
-        resized = false
-        gl.viewport(0, 0, layer.width, layer.height)
-        gl.uniform2f(uRes, layer.width, layer.height)
-      }
-      gl.uniform1f(uTime, t)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      draw(t)
     })
     loop.start()
   }
@@ -361,6 +508,11 @@ export function createEffect(): BorderEffect {
   return {
     mount(host, opts) {
       if (teardownGl || fallback) return
+      if (isIcy(opts)) {
+        fallback = createEcoEffect()
+        fallback.mount(host, opts)
+        return
+      }
       mountGl(host, opts)
     },
     unmount() {

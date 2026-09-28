@@ -7,6 +7,7 @@
  */
 import type { FxTier } from '../tiers'
 import type { ConditionKey, WeatherVisual } from '../../weather/mapWmo'
+import type { CelestialPosition } from '../../weather/celestialPosition'
 
 export type ActiveTier = Exclude<FxTier, 'off'>
 
@@ -25,6 +26,21 @@ export interface EffectOptions {
    */
   conditionKey?: ConditionKey
   intensity?: WeatherVisual['intensity']
+  /** Thunderstorm with hail (WMO 96/99) — adds hail pellets and the icy look. */
+  hail?: boolean
+  /** From the snapshot's `isDay`; tints clouds sunlit vs moonlit. Defaults to day. */
+  isDay?: boolean
+  /**
+   * `?freeze=1`: render one deterministic frame (seeded random, fixed
+   * clock) and start no loop — see FROZEN_SEED in common.ts.
+   */
+  frozen?: boolean
+  /**
+   * Where the sun/moon currently sits (normalized viewport coords, see
+   * lib/weather/celestialPosition.ts). A getter rather than a value so the
+   * minute-by-minute movement never forces a remount; read per frame.
+   */
+  celestial?: () => CelestialPosition | null
 }
 
 export interface BorderEffect {

@@ -240,3 +240,63 @@ test.describe('visual matrix', () => {
     })
   }
 })
+
+// The matrix above pins clear-night inside the night window, where FX are
+// off, and the sun at 15:00 only. These cover the sun/moon arc elsewhere on
+// its path (debug snapshots rise 07:30, set 19:30) and the starfield itself.
+const SKY_CASES: {
+  name: string
+  weather: DebugWeatherState
+  now: string
+  body: 'sun' | 'moon'
+}[] = [
+  {
+    name: 'morning-sun',
+    weather: 'clear-day',
+    now: '2026-01-15T09:00:00',
+    body: 'sun'
+  },
+  {
+    name: 'evening-sun',
+    weather: 'clear-day',
+    now: '2026-01-15T18:45:00',
+    body: 'sun'
+  },
+  {
+    name: 'starry-night',
+    weather: 'clear-night',
+    now: '2026-01-15T21:00:00',
+    body: 'moon'
+  }
+]
+
+test.describe('sky positions', () => {
+  for (const viewport of VIEWPORTS.filter((v) =>
+    ['390x844', '1920x1080'].includes(v.name)
+  )) {
+    test.describe(viewport.name, () => {
+      test.use({ viewport: { width: viewport.width, height: viewport.height } })
+
+      for (const sky of SKY_CASES) {
+        test(sky.name, async ({ page }) => {
+          await seedSettings(page)
+          await page.goto(
+            `/?freeze=1&now=${encodeURIComponent(sky.now)}&weather=${sky.weather}`
+          )
+          const startButton = page.locator('.start-overlay')
+          await startButton.click()
+          await expect(startButton).toHaveCount(0)
+          await expect(page.locator('.temp')).toContainText(
+            `${Math.round(DEBUG_WEATHER_PROFILES[sky.weather].temperature)}°C`
+          )
+          await expect(
+            page.locator(`.bg-celestial [data-body="${sky.body}"]`)
+          ).toHaveCount(1)
+          await expect(page).toHaveScreenshot(
+            `${viewport.name}-sky-${sky.name}.png`
+          )
+        })
+      }
+    })
+  }
+})

@@ -12,6 +12,7 @@
   import Timeline24h from './components/Timeline24h.svelte'
   import Tomorrow from './components/Tomorrow.svelte'
   import BorderFx from './components/BorderFx.svelte'
+  import CelestialArc from './components/CelestialArc.svelte'
   import NightDim from './components/NightDim.svelte'
   import PixelShift from './components/PixelShift.svelte'
   import FullscreenScene from './components/FullscreenScene.svelte'
@@ -167,6 +168,9 @@
 <Layout>
   {#snippet bg()}
     <Background />
+  {/snippet}
+  {#snippet sky()}
+    <CelestialArc />
   {/snippet}
   {#snippet hero()}
     <HeroClock />

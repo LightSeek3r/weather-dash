@@ -12,9 +12,11 @@
     tm?: Snippet
     /** Rotating photo background (phase 4) — projected into the bg-photo slot below. */
     bg?: Snippet
+    /** Sun/moon on its arc (CelestialArc) — projected into the bg-celestial layer below. */
+    sky?: Snippet
   }
 
-  let { hero, cap, tl, tm, bg }: Props = $props()
+  let { hero, cap, tl, tm, bg, sky }: Props = $props()
 </script>
 
 <!--
@@ -23,6 +25,20 @@
   either. The slot exists now (rendering the `bg` snippet, empty when no
   Background component is passed) so later work never has to touch this
   layout to wire a background image in.
+
+  Full stacking order (z-index; same z paints in DOM order):
+    0  .bg-photo      rotating photo (bg slot)
+    1  .bg-sky        gradient sky, transparent while a photo shows
+    1  .bg-celestial  sun/moon (sky slot) — after .bg-sky in the DOM, so
+                      above both sky and photo
+    2  .scrim         readability dim; also dims the sun/moon with the
+                      photo dim slider
+    3  .border-fx     weather FX (BorderFx.svelte, mounted by App) — veils
+                      the sun/moon in bad weather, stays quiet behind the
+                      `data-fx-calm` regions below (lib/fx/calm-zones.ts)
+    4  .page          text and glass; nothing below may ever cover it
+  Overlays above the page (gear/status 5, fullscreen scene 8, night dim 9,
+  start overlay 10, settings 20, toasts 1000) live in their own components.
 -->
 <div class="layer bg-photo" data-bg-slot="photo" aria-hidden="true">
   {#if bg}
@@ -30,26 +46,35 @@
   {/if}
 </div>
 <div class="layer bg-sky" aria-hidden="true"></div>
+<div class="layer bg-celestial" aria-hidden="true">
+  {#if sky}
+    {@render sky()}
+  {/if}
+</div>
 <div class="layer scrim" aria-hidden="true"></div>
 
 <main class="page">
   {#if hero}
-    <section class="hero" aria-label="Time and date">
+    <section class="hero" aria-label="Time and date" data-fx-calm="text">
       {@render hero()}
     </section>
   {/if}
   {#if cap}
-    <section class="cap glass" aria-label="Current weather">
+    <section
+      class="cap glass"
+      aria-label="Current weather"
+      data-fx-calm="glass"
+    >
       {@render cap()}
     </section>
   {/if}
   {#if tl}
-    <section class="tl glass" aria-label="Next 24 hours">
+    <section class="tl glass" aria-label="Next 24 hours" data-fx-calm="glass">
       {@render tl()}
     </section>
   {/if}
   {#if tm}
-    <footer class="tm" aria-label="Tomorrow">
+    <footer class="tm" aria-label="Tomorrow" data-fx-calm="text">
       {@render tm()}
     </footer>
   {/if}
@@ -77,6 +102,10 @@
     );
     overflow: hidden;
     transition: opacity 0.6s linear;
+  }
+  .bg-celestial {
+    z-index: 1;
+    overflow: hidden;
   }
   /* Opaque and above .bg-photo, so it must go when a photo shows. */
   :global([data-photo]) .bg-sky {
