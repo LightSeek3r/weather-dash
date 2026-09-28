@@ -150,6 +150,28 @@ describe('export / import round trip', () => {
   })
 })
 
+describe('fullscreenOnStart', () => {
+  it('defaults to on, and a stored blob without it keeps that default', () => {
+    expect(defaultSettings().fullscreenOnStart).toBe(true)
+    const stored = { ...defaultSettings() } as Record<string, unknown>
+    delete stored.fullscreenOnStart
+    expect(migrate(JSON.stringify(stored)).fullscreenOnStart).toBe(true)
+  })
+
+  it('imports an export made before the field existed', () => {
+    const legacy = { ...defaultSettings() } as Record<string, unknown>
+    delete legacy.fullscreenOnStart
+    const result = importSettings(JSON.stringify(legacy))
+    expect('error' in result).toBe(false)
+    expect(get(settingsStore).fullscreenOnStart).toBe(true)
+  })
+
+  it('persists an explicit opt-out through migrate', () => {
+    const off = { ...defaultSettings(), fullscreenOnStart: false }
+    expect(migrate(JSON.stringify(off)).fullscreenOnStart).toBe(false)
+  })
+})
+
 describe('persistence key', () => {
   it('uses the namespaced storage key', () => {
     expect(STORAGE_KEY).toBe('wall-dashboard:settings:v1')

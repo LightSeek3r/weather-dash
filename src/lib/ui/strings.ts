@@ -44,7 +44,12 @@ export interface Dictionary {
     /** Overflow marker for the compact holiday item, e.g. "Christmas, Boxing Day" + "+1" more. */
     more: (n: number) => string
   }
-  kiosk: { tapToStart: string; openSettings: string; installTip: string }
+  kiosk: {
+    tapToStart: string
+    openSettings: string
+    installTip: string
+    enterFullscreen: string
+  }
   /** Fullscreen anti-burn-in scene overlay. */
   scene: { tapToReturn: string }
   settings: {
@@ -52,6 +57,7 @@ export interface Dictionary {
     close: string
     /** Language picker section — the <select>'s own options are each locale's native name for itself (never translated), only this heading is. */
     language: { heading: string }
+    display: { heading: string; fullscreenOnStart: string }
     holidays: {
       heading: string
       country: string
@@ -160,13 +166,19 @@ const en: Dictionary = {
   kiosk: {
     tapToStart: 'Tap to go fullscreen',
     openSettings: 'Open settings',
-    installTip: 'Tip: add to your home screen to stay fullscreen after a reload'
+    installTip:
+      'Tip: add to your home screen to stay fullscreen after a reload',
+    enterFullscreen: 'Go fullscreen'
   },
   scene: { tapToReturn: 'Tap to return to the dashboard' },
   settings: {
     title: 'Settings',
     close: 'Close settings',
     language: { heading: 'Language' },
+    display: {
+      heading: 'Display',
+      fullscreenOnStart: 'Go fullscreen when the app opens'
+    },
     holidays: {
       heading: 'Holidays',
       country: 'Country',
@@ -321,13 +333,18 @@ const fr: Dictionary = {
     tapToStart: 'Toucher pour passer en plein écran',
     openSettings: 'Ouvrir les réglages',
     installTip:
-      "Astuce : ajoutez l'app à l'écran d'accueil pour garder le plein écran après un rechargement"
+      "Astuce : ajoutez l'app à l'écran d'accueil pour garder le plein écran après un rechargement",
+    enterFullscreen: 'Passer en plein écran'
   },
   scene: { tapToReturn: 'Toucher pour revenir au tableau de bord' },
   settings: {
     title: 'Réglages',
     close: 'Fermer les réglages',
     language: { heading: 'Langue' },
+    display: {
+      heading: 'Affichage',
+      fullscreenOnStart: 'Passer en plein écran à l’ouverture'
+    },
     holidays: {
       heading: 'Jours fériés',
       country: 'Pays',
@@ -486,13 +503,18 @@ const nl: Dictionary = {
     tapToStart: 'Tik om volledig scherm te openen',
     openSettings: 'Instellingen openen',
     installTip:
-      'Tip: voeg toe aan je startscherm om volledig scherm te behouden na een herlaad'
+      'Tip: voeg toe aan je startscherm om volledig scherm te behouden na een herlaad',
+    enterFullscreen: 'Volledig scherm'
   },
   scene: { tapToReturn: 'Tik om terug te gaan naar het dashboard' },
   settings: {
     title: 'Instellingen',
     close: 'Instellingen sluiten',
     language: { heading: 'Taal' },
+    display: {
+      heading: 'Weergave',
+      fullscreenOnStart: 'Volledig scherm bij het openen van de app'
+    },
     holidays: {
       heading: 'Feestdagen',
       country: 'Land',
@@ -650,13 +672,18 @@ const de: Dictionary = {
     tapToStart: 'Für Vollbild tippen',
     openSettings: 'Einstellungen öffnen',
     installTip:
-      'Tipp: Zum Startbildschirm hinzufügen, damit Vollbild nach einem Neuladen erhalten bleibt'
+      'Tipp: Zum Startbildschirm hinzufügen, damit Vollbild nach einem Neuladen erhalten bleibt',
+    enterFullscreen: 'Vollbild'
   },
   scene: { tapToReturn: 'Tippen, um zum Dashboard zurückzukehren' },
   settings: {
     title: 'Einstellungen',
     close: 'Einstellungen schließen',
     language: { heading: 'Sprache' },
+    display: {
+      heading: 'Anzeige',
+      fullscreenOnStart: 'Beim Öffnen der App in den Vollbildmodus wechseln'
+    },
     holidays: {
       heading: 'Feiertage',
       country: 'Land',
@@ -814,13 +841,18 @@ const es: Dictionary = {
     tapToStart: 'Toca para ver en pantalla completa',
     openSettings: 'Abrir ajustes',
     installTip:
-      'Consejo: añade la app a tu pantalla de inicio para mantener la pantalla completa tras recargar'
+      'Consejo: añade la app a tu pantalla de inicio para mantener la pantalla completa tras recargar',
+    enterFullscreen: 'Pantalla completa'
   },
   scene: { tapToReturn: 'Toca para volver al panel' },
   settings: {
     title: 'Ajustes',
     close: 'Cerrar ajustes',
     language: { heading: 'Idioma' },
+    display: {
+      heading: 'Pantalla',
+      fullscreenOnStart: 'Pasar a pantalla completa al abrir la app'
+    },
     holidays: {
       heading: 'Días festivos',
       country: 'País',
@@ -977,13 +1009,18 @@ const it: Dictionary = {
     tapToStart: 'Tocca per andare a schermo intero',
     openSettings: 'Apri impostazioni',
     installTip:
-      'Suggerimento: aggiungi alla schermata Home per restare a schermo intero dopo un ricaricamento'
+      'Suggerimento: aggiungi alla schermata Home per restare a schermo intero dopo un ricaricamento',
+    enterFullscreen: 'Schermo intero'
   },
   scene: { tapToReturn: 'Tocca per tornare alla dashboard' },
   settings: {
     title: 'Impostazioni',
     close: 'Chiudi impostazioni',
     language: { heading: 'Lingua' },
+    display: {
+      heading: 'Schermo',
+      fullscreenOnStart: 'Passa a schermo intero all’apertura dell’app'
+    },
     holidays: {
       heading: 'Festività',
       country: 'Paese',
@@ -1142,13 +1179,18 @@ const pt: Dictionary = {
     tapToStart: 'Toque para tela cheia',
     openSettings: 'Abrir configurações',
     installTip:
-      'Dica: adicione à tela inicial para manter a tela cheia após recarregar'
+      'Dica: adicione à tela inicial para manter a tela cheia após recarregar',
+    enterFullscreen: 'Tela cheia'
   },
   scene: { tapToReturn: 'Toque para voltar ao painel' },
   settings: {
     title: 'Configurações',
     close: 'Fechar configurações',
     language: { heading: 'Idioma' },
+    display: {
+      heading: 'Tela',
+      fullscreenOnStart: 'Entrar em tela cheia ao abrir o app'
+    },
     holidays: {
       heading: 'Feriados',
       country: 'País',
@@ -1306,13 +1348,18 @@ const ru: Dictionary = {
     tapToStart: 'Нажмите для полноэкранного режима',
     openSettings: 'Открыть настройки',
     installTip:
-      'Совет: добавьте на главный экран, чтобы сохранить полноэкранный режим после перезагрузки'
+      'Совет: добавьте на главный экран, чтобы сохранить полноэкранный режим после перезагрузки',
+    enterFullscreen: 'Полноэкранный режим'
   },
   scene: { tapToReturn: 'Нажмите, чтобы вернуться на панель' },
   settings: {
     title: 'Настройки',
     close: 'Закрыть настройки',
     language: { heading: 'Язык' },
+    display: {
+      heading: 'Экран',
+      fullscreenOnStart: 'Включать полноэкранный режим при запуске'
+    },
     holidays: {
       heading: 'Праздники',
       country: 'Страна',
@@ -1482,13 +1529,15 @@ const zh: Dictionary = {
   kiosk: {
     tapToStart: '轻触进入全屏',
     openSettings: '打开设置',
-    installTip: '提示：添加到主屏幕，刷新后可保持全屏'
+    installTip: '提示：添加到主屏幕，刷新后可保持全屏',
+    enterFullscreen: '全屏'
   },
   scene: { tapToReturn: '轻触返回仪表盘' },
   settings: {
     title: '设置',
     close: '关闭设置',
     language: { heading: '语言' },
+    display: { heading: '显示', fullscreenOnStart: '打开应用时进入全屏' },
     holidays: {
       heading: '节假日',
       country: '国家',
@@ -1622,13 +1671,18 @@ const hi: Dictionary = {
     tapToStart: 'फ़ुलस्क्रीन के लिए टैप करें',
     openSettings: 'सेटिंग्स खोलें',
     installTip:
-      'सुझाव: रीलोड के बाद भी फ़ुलस्क्रीन बनाए रखने के लिए होम स्क्रीन पर जोड़ें'
+      'सुझाव: रीलोड के बाद भी फ़ुलस्क्रीन बनाए रखने के लिए होम स्क्रीन पर जोड़ें',
+    enterFullscreen: 'फ़ुलस्क्रीन'
   },
   scene: { tapToReturn: 'डैशबोर्ड पर वापस जाने के लिए टैप करें' },
   settings: {
     title: 'सेटिंग्स',
     close: 'सेटिंग्स बंद करें',
     language: { heading: 'भाषा' },
+    display: {
+      heading: 'डिस्प्ले',
+      fullscreenOnStart: 'ऐप खुलने पर फ़ुलस्क्रीन करें'
+    },
     holidays: {
       heading: 'छुट्टियाँ',
       country: 'देश',

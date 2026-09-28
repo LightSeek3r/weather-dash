@@ -323,6 +323,10 @@
     }))
   }
 
+  function setFullscreenOnStart(fullscreenOnStart: boolean): void {
+    settingsStore.update((current) => ({ ...current, fullscreenOnStart }))
+  }
+
   function setSaintsEnabled(enabled: boolean): void {
     settingsStore.update((current) => ({
       ...current,
@@ -632,6 +636,19 @@
         {#if $settingsStore.location}
           <p class="location-current">{$settingsStore.location.name}</p>
         {/if}
+      </section>
+
+      <section class="location-section">
+        <h3>{s.settings.display.heading}</h3>
+
+        <label class="field checkbox-field">
+          <input
+            type="checkbox"
+            checked={$settingsStore.fullscreenOnStart}
+            onchange={(e) => setFullscreenOnStart(e.currentTarget.checked)}
+          />
+          {s.settings.display.fullscreenOnStart}
+        </label>
       </section>
 
       <section class="location-section">

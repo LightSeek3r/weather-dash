@@ -6,7 +6,9 @@ import {
   acquireWakeLock,
   watchVisibilityForWakeLock,
   startKiosk,
-  isStandalone
+  isStandalone,
+  isFullscreen,
+  watchFullscreen
 } from '../../../src/lib/core/fullscreen'
 
 describe('fullscreen + wake lock capability guards', () => {
@@ -147,5 +149,36 @@ describe('isStandalone', () => {
       configurable: true
     })
     expect(isStandalone()).toBe(true)
+  })
+})
+
+describe('isFullscreen / watchFullscreen', () => {
+  afterEach(() => {
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: null,
+      configurable: true
+    })
+  })
+
+  const setFullscreenElement = (el: Element | null) =>
+    Object.defineProperty(document, 'fullscreenElement', {
+      value: el,
+      configurable: true
+    })
+
+  it('reports the current state and notifies on enter and exit until unsubscribed', () => {
+    const onChange = vi.fn()
+    const stop = watchFullscreen(onChange)
+    expect(isFullscreen()).toBe(false)
+
+    setFullscreenElement(document.documentElement)
+    document.dispatchEvent(new Event('fullscreenchange'))
+    setFullscreenElement(null)
+    document.dispatchEvent(new Event('webkitfullscreenchange'))
+    expect(onChange.mock.calls).toEqual([[true], [false]])
+
+    stop()
+    document.dispatchEvent(new Event('fullscreenchange'))
+    expect(onChange).toHaveBeenCalledTimes(2)
   })
 })

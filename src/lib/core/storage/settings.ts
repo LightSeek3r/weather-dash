@@ -71,6 +71,7 @@ const blurPxInner = v.pipe(v.number(), v.minValue(0), v.maxValue(20))
 const shuffleInner = v.boolean()
 const reducedMotionInner = v.picklist(['auto', 'on', 'off'])
 const fxQualityInner = v.picklist(['auto', 'high', 'eco', 'off'])
+const fullscreenOnStartInner = v.boolean()
 
 /** Strict schema: used for user-initiated import, rejects the whole file on any bad field. */
 export const StrictSettingsSchema = v.object({
@@ -102,7 +103,9 @@ export const StrictSettingsSchema = v.object({
     shuffle: shuffleInner
   }),
   reducedMotion: reducedMotionInner,
-  fxQuality: fxQualityInner
+  fxQuality: fxQualityInner,
+  // Optional so exports made before this field existed still import.
+  fullscreenOnStart: v.optional(fullscreenOnStartInner, true)
 })
 
 export type Settings = v.InferOutput<typeof StrictSettingsSchema>
@@ -219,7 +222,8 @@ const SettingsSchema = v.object({
     DEFAULT_PHOTOS
   ),
   reducedMotion: v.fallback(reducedMotionInner, 'auto'),
-  fxQuality: v.fallback(fxQualityInner, 'auto')
+  fxQuality: v.fallback(fxQualityInner, 'auto'),
+  fullscreenOnStart: v.fallback(fullscreenOnStartInner, true)
 })
 
 export function defaultSettings(): Settings {

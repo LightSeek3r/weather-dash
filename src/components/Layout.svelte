@@ -228,6 +228,10 @@
     gap: calc(var(--u) * 0.8) calc(var(--u) * 2);
     padding-right: 3.5rem;
   }
+  /* …and of the fullscreen button beside it, while App offers one. */
+  :global(:root[data-fs-button]) .tm {
+    padding-right: 6.75rem;
+  }
 
   .glass {
     background: var(--glass);

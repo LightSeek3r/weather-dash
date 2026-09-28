@@ -20,7 +20,11 @@
     startKiosk,
     watchVisibilityForWakeLock,
     acquireWakeLock,
-    isStandalone
+    isStandalone,
+    isFullscreen,
+    isFullscreenSupported,
+    watchFullscreen,
+    enterFullscreen
   } from './lib/core/fullscreen'
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
@@ -57,11 +61,32 @@
   // - launched from a home-screen install (`isStandalone()`): there's no
   //   browser chrome to request fullscreen for (and no user gesture to do
   //   it with, this early), so the overlay would be pure friction.
-  let started = $state(consumeNightlyReloadMarker() || isStandalone())
+  // - fullscreen-on-start turned off in Settings: the dashboard opens in a
+  //   normal window, and the button below offers fullscreen instead.
+  let started = $state(
+    consumeNightlyReloadMarker() ||
+      isStandalone() ||
+      !$settingsStore.fullscreenOnStart
+  )
   let stopWatchingVisibility: (() => void) | undefined
 
   let online = $state(getOnlineStatus())
   let stopWatchingOnline: (() => void) | undefined
+
+  // Offered whenever the app isn't fullscreen (opted out at start, or left
+  // with Esc). Installed launches are already chromeless, and iPhone Safari
+  // has no Fullscreen API, so neither gets a button that can't do anything.
+  const canOfferFullscreen = isFullscreenSupported() && !isStandalone()
+  let fullscreen = $state(isFullscreen())
+  let showFullscreenButton = $derived(
+    canOfferFullscreen && started && !fullscreen
+  )
+  // Layout.svelte widens the Tomorrow row's right clearance while it's shown.
+  $effect(() => {
+    const root = document.documentElement
+    if (showFullscreenButton) root.dataset.fsButton = ''
+    else delete root.dataset.fsButton
+  })
 
   // Real timestamp once initWeather() below has fetched at least once;
   // null (renders "no data yet") until the first fetch resolves — see
@@ -133,6 +158,7 @@
   onMount(() => {
     stopWatchingVisibility = watchVisibilityForWakeLock()
     stopWatchingOnline = subscribeOnlineStatus((next) => (online = next))
+    const stopWatchingFullscreen = watchFullscreen((on) => (fullscreen = on))
     const unsubscribe = idleVisibility.visible.subscribe(
       (v) => (gearVisible = v)
     )
@@ -148,6 +174,7 @@
     }
     return () => {
       unsubscribe()
+      stopWatchingFullscreen()
       stopWeather()
       stopNightlyReload()
     }
@@ -218,6 +245,31 @@
     <circle cx="12" cy="12" r="3" />
   </svg>
 </button>
+
+{#if showFullscreenButton}
+  <button
+    type="button"
+    class="gear gear--fullscreen"
+    class:gear--hidden={!gearVisible}
+    aria-label={s.kiosk.enterFullscreen}
+    onclick={() => void enterFullscreen()}
+  >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+    </svg>
+  </button>
+{/if}
 
 <SettingsSheet open={settingsOpen} onclose={() => (settingsOpen = false)} />
 
@@ -291,6 +343,10 @@
     transition:
       opacity 0.4s var(--ease-standard, ease),
       transform 0.4s var(--ease-standard, ease);
+  }
+
+  .gear--fullscreen {
+    right: calc(var(--space-md, 1.5rem) + 3.25rem);
   }
 
   .gear svg {

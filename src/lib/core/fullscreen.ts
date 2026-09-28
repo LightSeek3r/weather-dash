@@ -46,11 +46,28 @@ export function isFullscreenSupported(): boolean {
   )
 }
 
+export function isFullscreen(): boolean {
+  if (typeof document === 'undefined') return false
+  const doc = document as FullscreenDocument
+  return !!(doc.fullscreenElement || doc.webkitFullscreenElement)
+}
+
+/** Calls `onChange` with the new state on every fullscreen enter/exit (Esc included). Returns the unsubscribe. */
+export function watchFullscreen(onChange: (on: boolean) => void): () => void {
+  if (typeof document === 'undefined') return () => {}
+  const handler = () => onChange(isFullscreen())
+  document.addEventListener('fullscreenchange', handler)
+  document.addEventListener('webkitfullscreenchange', handler)
+  return () => {
+    document.removeEventListener('fullscreenchange', handler)
+    document.removeEventListener('webkitfullscreenchange', handler)
+  }
+}
+
 /** Requests fullscreen on the document root. No-ops (never throws) when unsupported or denied. */
 export async function enterFullscreen(): Promise<void> {
   if (typeof document === 'undefined') return
-  const doc = document as FullscreenDocument
-  if (doc.fullscreenElement || doc.webkitFullscreenElement) return
+  if (isFullscreen()) return
 
   const el = document.documentElement as FullscreenElement
   try {
