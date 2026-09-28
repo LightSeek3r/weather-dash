@@ -6,12 +6,10 @@
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
-  import { t } from '../lib/ui/strings'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import type { HourlyPoint } from '../lib/weather/types'
 
   let hourly = $derived($weatherStore.snapshot?.hourly ?? [])
-  let s = $derived(t($settingsStore.locale))
 
   let hourFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
@@ -68,9 +66,7 @@
   <div class="row hours">
     {#each hourly as point, i (point.time)}
       <span class={i === 0 ? 'n' : i % 6 ? 'sparse' : ''}>
-        {#if i === 0}
-          {s.weather.panel.now}
-        {:else if i % 3 === 0}
+        {#if i % 3 === 0}
           {hourFormatter.format(new Date(point.time))}
         {/if}
       </span>

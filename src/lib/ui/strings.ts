@@ -137,8 +137,6 @@ export interface Dictionary {
       daylight: string
       moonPhase: string
       tomorrow: string
-      /** Timeline's first-hour label. */
-      now: string
       noLocation: string
     }
     location: {
@@ -305,7 +303,6 @@ const en: Dictionary = {
       daylight: 'Daylight',
       moonPhase: 'Moon phase',
       tomorrow: 'Tomorrow',
-      now: 'Now',
       noLocation: 'Set a location to see the weather'
     },
     location: {
@@ -476,7 +473,6 @@ const fr: Dictionary = {
       daylight: 'Ensoleillement',
       moonPhase: 'Phase lunaire',
       tomorrow: 'Demain',
-      now: 'Maint.',
       noLocation: 'Définissez un lieu pour voir la météo'
     },
     location: {
@@ -645,7 +641,6 @@ const nl: Dictionary = {
       daylight: 'Daglicht',
       moonPhase: 'Maanfase',
       tomorrow: 'Morgen',
-      now: 'Nu',
       noLocation: 'Stel een locatie in om het weer te zien'
     },
     location: {
@@ -814,7 +809,6 @@ const de: Dictionary = {
       daylight: 'Tageslicht',
       moonPhase: 'Mondphase',
       tomorrow: 'Morgen',
-      now: 'Jetzt',
       noLocation: 'Standort festlegen, um das Wetter zu sehen'
     },
     location: {
@@ -982,7 +976,6 @@ const es: Dictionary = {
       daylight: 'Horas de luz',
       moonPhase: 'Fase lunar',
       tomorrow: 'Mañana',
-      now: 'Ahora',
       noLocation: 'Configura una ubicación para ver el tiempo'
     },
     location: {
@@ -1152,7 +1145,6 @@ const it: Dictionary = {
       daylight: 'Ore di luce',
       moonPhase: 'Fase lunare',
       tomorrow: 'Domani',
-      now: 'Ora',
       noLocation: 'Imposta una posizione per vedere il meteo'
     },
     location: {
@@ -1320,7 +1312,6 @@ const pt: Dictionary = {
       daylight: 'Luz do dia',
       moonPhase: 'Fase da lua',
       tomorrow: 'Amanhã',
-      now: 'Agora',
       noLocation: 'Defina uma localização para ver o tempo'
     },
     location: {
@@ -1497,7 +1488,6 @@ const ru: Dictionary = {
       daylight: 'Световой день',
       moonPhase: 'Фаза луны',
       tomorrow: 'Завтра',
-      now: 'Сейчас',
       noLocation: 'Укажите местоположение, чтобы увидеть погоду'
     },
     location: {
@@ -1645,7 +1635,6 @@ const zh: Dictionary = {
       daylight: '日照时长',
       moonPhase: '月相',
       tomorrow: '明天',
-      now: '现在',
       noLocation: '设置位置以查看天气'
     },
     location: {
@@ -1817,7 +1806,6 @@ const hi: Dictionary = {
       daylight: 'दिन की रोशनी',
       moonPhase: 'चंद्र कला',
       tomorrow: 'कल',
-      now: 'अभी',
       noLocation: 'मौसम देखने के लिए स्थान सेट करें'
     },
     location: {
