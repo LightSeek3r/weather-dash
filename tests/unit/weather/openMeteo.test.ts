@@ -45,9 +45,11 @@ describe('fetchWeatherSnapshot', () => {
       precipitationProbability: 0
     })
 
-    // "current hour" of the fixture is 17:00; forecast_days=2 gives 48
-    // hourly entries, so the rolling window is a slice, not index 0.
-    expect(snapshot.hourly).toHaveLength(24)
+    // "current hour" of the fixture is 17:00; the fixture has 48 hourly
+    // entries (recorded with forecast_days=2), and mapHourly now returns
+    // every entry from the current hour onward, not just the first 24 —
+    // 48 - 17 = 31.
+    expect(snapshot.hourly).toHaveLength(31)
     expect(snapshot.hourly[0].time).toBe('2026-09-24T17:00')
     expect(
       snapshot.hourly.every((p) => typeof p.temperature === 'number')

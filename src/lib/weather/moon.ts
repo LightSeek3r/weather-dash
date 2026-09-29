@@ -41,3 +41,21 @@ export function moonPhase(date: Date): MoonPhase {
 
   return { fraction, labelKey: bucketFor(fraction) }
 }
+
+/**
+ * Approximate visible illumination, 0-100 — same decorative-cosine model
+ * amateur moon-phase widgets use (0%/100% at new/full, smooth in between),
+ * not a real ephemeris illuminated-fraction calculation.
+ */
+export function illuminationPercent(fraction: number): number {
+  return Math.round(((1 - Math.cos(2 * Math.PI * fraction)) / 2) * 100)
+}
+
+/**
+ * Days until `fraction` next reaches `target` (0 = new, 0.5 = full),
+ * wrapping forward through the cycle — 0 when already at `target`.
+ */
+export function daysUntilPhase(fraction: number, target: number): number {
+  const remaining = (((target - fraction) % 1) + 1) % 1
+  return remaining * SYNODIC_MONTH_DAYS
+}

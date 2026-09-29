@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { moonPhase } from '../../../src/lib/weather/moon'
+import {
+  moonPhase,
+  illuminationPercent,
+  daysUntilPhase
+} from '../../../src/lib/weather/moon'
 import type { MoonPhaseKey } from '../../../src/lib/weather/types'
 
 // Mirrors the reference epoch/period in moon.ts — a decorative, non-ephemeris
@@ -69,5 +73,32 @@ describe('moonPhase', () => {
     const result = moonPhase(farFuture)
     expect(result.fraction).toBeCloseTo(0.5, 4)
     expect(result.labelKey).toBe('fullMoon')
+  })
+})
+
+describe('illuminationPercent', () => {
+  it('is 0 at new moon and 100 at full moon', () => {
+    expect(illuminationPercent(0)).toBe(0)
+    expect(illuminationPercent(0.5)).toBe(100)
+  })
+
+  it('is ~50 at the quarters', () => {
+    expect(illuminationPercent(0.25)).toBeCloseTo(50, 0)
+    expect(illuminationPercent(0.75)).toBeCloseTo(50, 0)
+  })
+})
+
+describe('daysUntilPhase', () => {
+  it('is 0 when already at the target fraction', () => {
+    expect(daysUntilPhase(0.5, 0.5)).toBeCloseTo(0, 5)
+  })
+
+  it('counts forward to the next full moon from just after new', () => {
+    expect(daysUntilPhase(0.1, 0.5)).toBeCloseTo(0.4 * SYNODIC_MONTH_DAYS, 5)
+  })
+
+  it('wraps forward across the cycle boundary to the next new moon', () => {
+    // Just past full (0.6) counting to new (0/1): 0.4 of the cycle remains.
+    expect(daysUntilPhase(0.6, 0)).toBeCloseTo(0.4 * SYNODIC_MONTH_DAYS, 5)
   })
 })

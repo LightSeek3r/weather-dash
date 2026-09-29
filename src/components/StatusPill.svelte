@@ -94,12 +94,15 @@
 </div>
 
 <style>
-  /* Last item of Layout's `.tm` flex row, pushed to its right end, so the
-     dot shares the Tomorrow strip's vertical centre (and its pixel shift). */
+  /* Last item of Layout's `.tm` flex row, pushed to its right end and
+     bottom edge — `align-items: center` on `.tm` still centers every other
+     child (Tomorrow's text/icons), this one overrides just its own
+     cross-axis placement. */
   .status-pill {
     position: relative;
     flex: none;
     margin-left: auto;
+    align-self: flex-end;
   }
 
   .status-pill__dot {

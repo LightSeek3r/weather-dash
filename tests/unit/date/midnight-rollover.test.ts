@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import { getSaintOfDay } from '../../../src/lib/date/saints'
-import { getTodayHolidays } from '../../../src/lib/date/holidays'
+import { getHolidaysForDateAndSettings } from '../../../src/lib/date/holidays'
 
 const justBeforeMidnight = new Date(2025, 11, 31, 23, 59, 59) // Dec 31, 23:59:59
 const justAfterMidnight = new Date(2026, 0, 1, 0, 0, 1) // Jan 1, 00:00:01
@@ -30,7 +30,7 @@ describe('midnight rollover', () => {
     expect(before).not.toBe(after)
   })
 
-  it("getTodayHolidays flips at local midnight: France's New Year's Day applies Jan 1 but not Dec 31", () => {
+  it("getHolidaysForDateAndSettings flips at local midnight: France's New Year's Day applies Jan 1 but not Dec 31", () => {
     const settings = {
       baseCountry: 'FR',
       baseRegion: null,
@@ -38,8 +38,16 @@ describe('midnight rollover', () => {
       disabledHolidayIds: []
     }
 
-    const before = getTodayHolidays(justBeforeMidnight, settings, 'fr')
-    const after = getTodayHolidays(justAfterMidnight, settings, 'fr')
+    const before = getHolidaysForDateAndSettings(
+      justBeforeMidnight,
+      settings,
+      'fr'
+    )
+    const after = getHolidaysForDateAndSettings(
+      justAfterMidnight,
+      settings,
+      'fr'
+    )
 
     expect(before.some((h) => h.name === 'Nouvel An')).toBe(false)
     expect(after.some((h) => h.name === 'Nouvel An')).toBe(true)

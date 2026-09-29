@@ -165,14 +165,14 @@ function mapCurrent(raw: RawCurrent): CurrentConditions {
   }
 }
 
-/** First 24 hourly entries starting at the current hour (Open-Meteo's hourly array starts at 00:00 today, so "current hour" is a slice, not index 0). */
+/** Every hourly entry from the current hour onward (Open-Meteo's hourly array starts at 00:00 today, so "current hour" is a slice, not index 0) — the full `forecast_days` range, not just the first 24h. */
 function mapHourly(raw: RawHourly, currentTime: string): HourlyPoint[] {
   const hourPrefix = currentTime.slice(0, 13) // "YYYY-MM-DDTHH"
   const startIndex = raw.time.findIndex((t) => t.startsWith(hourPrefix))
   const from = startIndex === -1 ? 0 : startIndex
 
   const points: HourlyPoint[] = []
-  for (let i = from; i < Math.min(from + 24, raw.time.length); i++) {
+  for (let i = from; i < raw.time.length; i++) {
     points.push({
       time: raw.time[i],
       temperature: raw.temperature_2m[i],
@@ -218,7 +218,9 @@ export async function fetchWeatherSnapshot(
   url.searchParams.set('hourly', HOURLY_FIELDS)
   url.searchParams.set('daily', DAILY_FIELDS)
   url.searchParams.set('timezone', 'auto')
-  url.searchParams.set('forecast_days', '2')
+  // 16 is Open-Meteo's documented max for the standard forecast endpoint —
+  // the timeline UI scrolls through however much of that it actually returns.
+  url.searchParams.set('forecast_days', '16')
 
   let response: Response
   try {

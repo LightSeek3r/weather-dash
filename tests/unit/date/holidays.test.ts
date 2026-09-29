@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
+  countryDisplayName,
   countryEntry,
   getHolidaysForDate,
   getRegions,
   getSupportedCountries,
-  getTodayHolidays,
+  getHolidaysForDateAndSettings,
   getYearHolidays,
-  parseCountryEntry
+  parseCountryEntry,
+  regionDisplayName
 } from '../../../src/lib/date/holidays'
 
 describe('getHolidaysForDate', () => {
@@ -77,11 +79,11 @@ describe('getHolidaysForDate', () => {
   })
 })
 
-describe('getTodayHolidays', () => {
+describe('getHolidaysForDateAndSettings', () => {
   const now = new Date(2026, 6, 21) // July 21 — BE national day, FR nothing
 
   it('unions holidays across baseCountry and every extraCountries entry', () => {
-    const result = getTodayHolidays(
+    const result = getHolidaysForDateAndSettings(
       now,
       {
         baseCountry: 'BE',
@@ -99,7 +101,7 @@ describe('getTodayHolidays', () => {
 
   it('adding France as an extra country surfaces its July 14 holiday too', () => {
     const bastilleDay = new Date(2026, 6, 14)
-    const result = getTodayHolidays(
+    const result = getHolidaysForDateAndSettings(
       bastilleDay,
       {
         baseCountry: 'BE',
@@ -116,7 +118,7 @@ describe('getTodayHolidays', () => {
   })
 
   it('dedupes when baseCountry and extraCountries overlap', () => {
-    const result = getTodayHolidays(
+    const result = getHolidaysForDateAndSettings(
       now,
       {
         baseCountry: 'BE',
@@ -131,7 +133,7 @@ describe('getTodayHolidays', () => {
   })
 
   it('filters out anything whose id is in disabledHolidayIds', () => {
-    const withoutFilter = getTodayHolidays(
+    const withoutFilter = getHolidaysForDateAndSettings(
       now,
       {
         baseCountry: 'BE',
@@ -146,7 +148,7 @@ describe('getTodayHolidays', () => {
     )?.id
     expect(nationalDayId).toBeDefined()
 
-    const withFilter = getTodayHolidays(
+    const withFilter = getHolidaysForDateAndSettings(
       now,
       {
         baseCountry: 'BE',
@@ -190,11 +192,15 @@ describe('extra country regions', () => {
 
   it("queries an extra country's region, not just its national holidays", () => {
     expect(
-      getTodayHolidays(jeuneGenevois, settings(['CH-GE']), 'fr').map(
-        (h) => h.name
-      )
+      getHolidaysForDateAndSettings(
+        jeuneGenevois,
+        settings(['CH-GE']),
+        'fr'
+      ).map((h) => h.name)
     ).toContain('Jeûne Genevois')
-    expect(getTodayHolidays(jeuneGenevois, settings(['CH']), 'fr')).toEqual([])
+    expect(
+      getHolidaysForDateAndSettings(jeuneGenevois, settings(['CH']), 'fr')
+    ).toEqual([])
   })
 })
 
@@ -210,5 +216,31 @@ describe('country and region pickers', () => {
     const names = getRegions('CH', 'fr').map((r) => r.name)
     expect(names.length).toBeGreaterThan(20)
     expect(names).toEqual([...names].sort(new Intl.Collator('fr').compare))
+  })
+
+  it('countryDisplayName matches the same name getSupportedCountries uses', () => {
+    expect(countryDisplayName('CH', 'fr')).toBe('Suisse')
+  })
+
+  it('regionDisplayName matches the same name getRegions uses, and falls back to the raw code when unknown', () => {
+    const geneva = getRegions('CH', 'fr').find((r) => r.code === 'GE')
+    expect(geneva).toBeDefined()
+    expect(regionDisplayName('CH', 'GE', 'fr')).toBe(geneva?.name)
+    expect(regionDisplayName('CH', 'NOT_A_REGION', 'fr')).toBe('NOT_A_REGION')
+  })
+})
+
+describe('HolidayInfo.regionCode', () => {
+  it('carries the region a holiday was looked up with, and null for a country-wide lookup', () => {
+    const geneva = getHolidaysForDate(
+      new Date(2026, 8, 10),
+      'CH',
+      'GE',
+      'fr'
+    ).find((h) => h.name === 'Jeûne Genevois')
+    expect(geneva?.regionCode).toBe('GE')
+
+    const belgium = getHolidaysForDate(new Date(2026, 6, 21), 'BE', null, 'fr')
+    expect(belgium.every((h) => h.regionCode === null)).toBe(true)
   })
 })

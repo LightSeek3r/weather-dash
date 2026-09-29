@@ -10,8 +10,10 @@
   import { beaufortForce } from '../lib/weather/beaufort'
   import { displayTemperature } from '../lib/weather/units'
   import { compassDirection } from '../lib/weather/wind'
+  import { illuminationPercent, daysUntilPhase } from '../lib/weather/moon'
   import type { MoonPhaseKey } from '../lib/weather/types'
   import WeatherIconSprite from './WeatherIconSprite.svelte'
+  import InfoDisclosure from './InfoDisclosure.svelte'
 
   // Decorative + always paired with the translated phase name below, not an
   // icon-only control — the phase's actual shape (crescent/gibbous/etc.) is
@@ -67,6 +69,15 @@
   let moonLabel = $derived(
     snapshot ? s.weather.moonPhase[snapshot.moon.labelKey] : ''
   )
+  let moonIllumination = $derived(
+    snapshot ? illuminationPercent(snapshot.moon.fraction) : 0
+  )
+  let daysToFullMoon = $derived(
+    snapshot ? Math.round(daysUntilPhase(snapshot.moon.fraction, 0.5)) : 0
+  )
+  let daysToNewMoon = $derived(
+    snapshot ? Math.round(daysUntilPhase(snapshot.moon.fraction, 0)) : 0
+  )
 </script>
 
 <WeatherIconSprite />
@@ -89,11 +100,30 @@
           {current.precipitationProbability}% · {current.precipitationMm} mm
         </p>
       </div>
-      <p class="moon" title={s.weather.panel.moonPhase}>
-        <span class="moon-glyph" aria-hidden="true">{moonGlyph}</span><span
-          class="moon-label">{moonLabel}</span
-        >
-      </p>
+      <InfoDisclosure
+        label={s.weather.panel.moonPhase}
+        placement="above"
+        align="end"
+      >
+        {#snippet trigger()}
+          <p class="moon">
+            <span class="moon-glyph" aria-hidden="true">{moonGlyph}</span><span
+              class="moon-label">{moonLabel}</span
+            >
+          </p>
+        {/snippet}
+        {#snippet content()}
+          <p class="moon-detail">
+            {s.weather.panel.moonIllumination(moonIllumination)}
+          </p>
+          <p class="moon-detail">
+            {s.weather.panel.moonNextFull(daysToFullMoon)}
+          </p>
+          <p class="moon-detail">
+            {s.weather.panel.moonNextNew(daysToNewMoon)}
+          </p>
+        {/snippet}
+      </InfoDisclosure>
     </div>
     <div class="reads">
       <p class="read">

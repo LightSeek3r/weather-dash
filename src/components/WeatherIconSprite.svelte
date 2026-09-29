@@ -130,5 +130,12 @@
     <symbol id="i-arrow" viewBox="0 0 24 24">
       <path d="M12 3l5 14-5-3-5 3z" fill="currentColor" />
     </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9" />
+        <path stroke-linecap="round" d="M12 11v5" />
+        <circle cx="12" cy="7.5" r="0.1" stroke-linecap="round" />
+      </g>
+    </symbol>
   </defs>
 </svg>

@@ -1,8 +1,13 @@
 <script lang="ts">
-  // Renders into Layout's `tl` slot. Rolling next-24h strip, following
-  // design/mockups/02-blue-hour.html's .chart structure (hours row, icons
-  // row, temperature curve, rain-probability bars). No midnight marker: a
-  // vertical rule mid-strip reads as "now", not as the day change.
+  // Renders into Layout's `tl` slot. Follows design/mockups/02-blue-hour.html's
+  // .chart structure (hours row, icons row, temperature curve,
+  // rain-probability bars), extended to scroll through the full hourly range
+  // Open-Meteo returns (openMeteo.ts's `forecast_days`) instead of clipping
+  // to 24h — each column is a fixed 1/24th of the *visible* width (the
+  // `.viewport` container query, not `.chart`'s own now-wider width), so the
+  // default (unscrolled) view still shows exactly the next 24h. No midnight
+  // dashed rule: a vertical rule mid-strip used to read as "now", not as the
+  // day change; a weekday label at each day boundary replaces it instead.
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
@@ -14,6 +19,11 @@
   let hourFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
       hour: '2-digit'
+    })
+  )
+  let weekdayFormatter = $derived(
+    new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
+      weekday: 'short'
     })
   )
 
@@ -62,58 +72,86 @@
   let paths = $derived(buildPaths(hourly))
 </script>
 
-<div class="chart">
-  <div class="row hours">
-    {#each hourly as point, i (point.time)}
-      <span class={i === 0 ? 'n' : i % 6 ? 'sparse' : ''}>
-        {#if i % 3 === 0}
-          {hourFormatter.format(new Date(point.time))}
-        {/if}
-      </span>
-    {/each}
-  </div>
-  <div class="row icons">
-    {#each hourly as point (point.time)}
-      {@const visual = mapWmoCode(point.weatherCode, point.isDay)}
-      <svg class="ic" aria-hidden="true"><use href="#{visual.icon}" /></svg>
-    {/each}
-  </div>
-  <div class="curve">
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <path class="area" d={paths.area} />
-      <path class="line" d={paths.line} />
-    </svg>
-    {#each hourly as point, i (point.time)}
-      {#if i % 3 === 0}
+<div class="viewport">
+  <div class="chart" style="--cols: {hourly.length}">
+    <div class="row hours">
+      {#each hourly as point, i (point.time)}
+        {@const dayBoundary = i !== 0 && new Date(point.time).getHours() === 0}
         <span
-          class={i === 0 ? 't now' : 't'}
-          style="left:{xFor(i, hourly.length)}%;top:{yFor(point.temperature)}%"
-          >{Math.round(point.temperature)}°</span
+          class={i === 0 ? 'n' : dayBoundary ? 'day' : i % 6 ? 'sparse' : ''}
         >
-      {/if}
-    {/each}
-  </div>
-  <div class="row rain">
-    {#each hourly as point, i (point.time)}
-      <div
-        class={[
-          point.precipitationProbability < 15 && 'dry',
-          i % 3 && 'sparse'
-        ]}
-        style="height:{Math.max(point.precipitationProbability, 4)}%"
-      >
-        {#if point.precipitationProbability >= 30}
-          <span>{point.precipitationProbability}%</span>
+          {#if dayBoundary}
+            {weekdayFormatter.format(new Date(point.time))}
+          {:else if i % 3 === 0}
+            {hourFormatter.format(new Date(point.time))}
+          {/if}
+        </span>
+      {/each}
+    </div>
+    <div class="row icons">
+      {#each hourly as point (point.time)}
+        {@const visual = mapWmoCode(point.weatherCode, point.isDay)}
+        <svg class="ic" aria-hidden="true"><use href="#{visual.icon}" /></svg>
+      {/each}
+    </div>
+    <div class="curve">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="area" d={paths.area} />
+        <path class="line" d={paths.line} />
+      </svg>
+      {#each hourly as point, i (point.time)}
+        {#if i % 3 === 0}
+          <span
+            class={i === 0 ? 't now' : 't'}
+            style="left:{xFor(i, hourly.length)}%;top:{yFor(
+              point.temperature
+            )}%">{Math.round(point.temperature)}°</span
+          >
         {/if}
-      </div>
-    {/each}
+      {/each}
+    </div>
+    <div class="row rain">
+      {#each hourly as point, i (point.time)}
+        <div
+          class={[
+            point.precipitationProbability < 15 && 'dry',
+            i % 3 && 'sparse'
+          ]}
+          style="height:{point.precipitationProbability}%"
+        >
+          {#if point.precipitationProbability >= 30}
+            <span>{point.precipitationProbability}%</span>
+          {/if}
+        </div>
+      {/each}
+    </div>
   </div>
 </div>
 
 <style>
+  /* Establishes the container-query context at the *visible* width — the
+     inner .chart is wider than this once hourly.length exceeds 24, so the
+     breakpoints below (sized for the visible viewport, not the scrollable
+     content) must key off .viewport, not .chart. */
+  .viewport {
+    container-type: inline-size;
+    overflow-x: auto;
+    scrollbar-color: rgb(196 222 255 / 0.35) transparent;
+    scrollbar-width: thin;
+  }
+  .viewport::-webkit-scrollbar {
+    height: 6px;
+  }
+  .viewport::-webkit-scrollbar-thumb {
+    background: rgb(196 222 255 / 0.35);
+    border-radius: 99px;
+  }
   .chart {
     position: relative;
-    container-type: inline-size;
+    /* Each column is a fixed 1/24th of the viewport's width, so exactly the
+       next 24h fill it with no scroll offset; the rest of --cols extends the
+       chart's own width to the right, making .viewport scrollable. */
+    width: calc(var(--cols) * (100cqw / 24));
   }
   /* 24 columns get narrow fast: per-hour rain percentages collide below
      ~40px a column, 3-hourly hour labels below ~25px. */
@@ -136,7 +174,7 @@
   }
   .row {
     display: grid;
-    grid-template-columns: repeat(24, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols), calc(100cqw / 24));
   }
   .hours {
     font-size: var(--fs-s);
@@ -148,6 +186,10 @@
   }
   .hours .n {
     color: var(--peach);
+    font-weight: 700;
+  }
+  .hours .day {
+    color: var(--text-2);
     font-weight: 700;
   }
   .icons {
@@ -220,7 +262,6 @@
     margin-inline: 22%;
     border-radius: 99px 99px 3px 3px;
     background: linear-gradient(180deg, var(--rain), rgb(124 196 255 / 0.45));
-    min-height: 3px;
   }
   .rain div.dry {
     background: rgb(166 220 255 / 0.18);

@@ -86,7 +86,7 @@ export interface WeatherSnapshot {
   fetchedAt: string
   location: { lat: number; lon: number; name: string; timezone: string }
   current: CurrentConditions
-  /** Rolling next 24h starting at current.time */
+  /** Every hourly point from current.time to the end of the fetched forecast range (up to Open-Meteo's `forecast_days` max) — the timeline UI scrolls through it, not just the first 24h. */
   hourly: HourlyPoint[]
   /** Today's sunrise/sunset live here */
   today: DailySummary

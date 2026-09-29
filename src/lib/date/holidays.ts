@@ -31,6 +31,8 @@ export interface HolidayInfo {
   /** In the requested language where the library has a translation, else its own default. */
   name: string
   countryCode: string
+  /** The region this holiday's country/region entry was looked up with — `null` for a country-wide (no region) lookup. */
+  regionCode: string | null
   type: HolidaysTypes.HolidayType
 }
 
@@ -48,13 +50,15 @@ function slugify(input: string): string {
 
 function toHolidayInfo(
   holiday: HolidaysTypes.Holiday,
-  countryCode: string
+  countryCode: string,
+  regionCode: string | null
 ): HolidayInfo {
   const key = slugify(holiday.rule || holiday.name)
   return {
     id: `${countryCode}:${key}`,
     name: holiday.name,
     countryCode,
+    regionCode,
     type: holiday.type
   }
 }
@@ -104,7 +108,7 @@ export function getYearHolidays(
   language: string
 ): HolidayInfo[] {
   return rawYearHolidays(year, countryCode, regionCode, language).map((h) =>
-    toHolidayInfo(h, countryCode)
+    toHolidayInfo(h, countryCode, regionCode)
   )
 }
 
@@ -118,7 +122,7 @@ export function getHolidaysForDate(
   const targetKey = localDateKey(date)
   return rawYearHolidays(date.getFullYear(), countryCode, regionCode, language)
     .filter((h) => h.date.slice(0, 10) === targetKey)
-    .map((h) => toHolidayInfo(h, countryCode))
+    .map((h) => toHolidayInfo(h, countryCode, regionCode))
 }
 
 /**
@@ -148,25 +152,27 @@ export interface TodayHolidaysSettings {
 }
 
 /**
- * Union of today's holidays from `baseCountry`+`baseRegion` and every
+ * Union of `date`'s holidays from `baseCountry`+`baseRegion` and every
  * `extraCountries` entry (see `parseCountryEntry`), deduped by id, with
- * anything in `disabledHolidayIds` filtered out.
+ * anything in `disabledHolidayIds` filtered out. `date` need not be "today" —
+ * `Tomorrow.svelte` calls this the same way `DateLine.svelte` does, one day
+ * ahead.
  */
-export function getTodayHolidays(
-  now: Date,
+export function getHolidaysForDateAndSettings(
+  date: Date,
   settings: TodayHolidaysSettings,
   language: string
 ): HolidayInfo[] {
   const all = [
     ...getHolidaysForDate(
-      now,
+      date,
       settings.baseCountry,
       settings.baseRegion,
       language
     ),
     ...settings.extraCountries.flatMap((entry) => {
       const { country, region } = parseCountryEntry(entry)
-      return getHolidaysForDate(now, country, region, language)
+      return getHolidaysForDate(date, country, region, language)
     })
   ]
 
@@ -198,10 +204,25 @@ function regionNames(language: string): Intl.DisplayNames | null {
 }
 
 /**
+ * A single country's display name in `language` — `Intl.DisplayNames` where
+ * it has one, else the library's own (English) name, same fallback
+ * `getSupportedCountries` applies per-entry below.
+ */
+export function countryDisplayName(
+  countryCode: string,
+  language = 'en'
+): string {
+  const fallback = new Holidays().getCountries('en')[countryCode] ?? countryCode
+  return regionNames(language)?.of(countryCode) ?? fallback
+}
+
+/**
  * Every country `date-holidays` has data for, named in `language` and sorted
  * by that name. Names come from `Intl.DisplayNames`: the library's own list
  * mixes English with native-script names ("Հայաստան"), which sorts into
- * nonsense.
+ * nonsense. Builds its own single `Holidays()` instance rather than calling
+ * `countryDisplayName` per entry — that would create one per country (~200)
+ * just for the fallback name.
  */
 export function getSupportedCountries(language = 'en'): CountryOption[] {
   const names = regionNames(language)
@@ -237,4 +258,20 @@ export function getRegions(
     console.warn(`[holidays] failed to load regions for ${countryCode}`, err)
     return []
   }
+}
+
+/**
+ * A single region's display name within `countryCode`, in `language` where
+ * `date-holidays` has a translation — falls back to the raw `regionCode`
+ * (e.g. `getRegions` returning `[]` for a country with no subdivision data).
+ */
+export function regionDisplayName(
+  countryCode: string,
+  regionCode: string,
+  language = 'en'
+): string {
+  return (
+    getRegions(countryCode, language).find((r) => r.code === regionCode)
+      ?.name ?? regionCode
+  )
 }

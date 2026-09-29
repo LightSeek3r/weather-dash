@@ -3,6 +3,7 @@
   // Layout.svelte's `.tm` already provides the flex row + gap, this only
   // supplies the child elements, matching design/mockups/02-blue-hour.html's
   // tomorrow strip).
+  import { onMount } from 'svelte'
   import { weatherStore } from '../lib/weather/store'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
@@ -10,6 +11,8 @@
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import { beaufortForce } from '../lib/weather/beaufort'
   import { displayTemperature } from '../lib/weather/units'
+  import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
+  import InfoDisclosure from './InfoDisclosure.svelte'
 
   let s = $derived(t($settingsStore.locale))
   let unit = $derived($settingsStore.weather.tempUnit)
@@ -25,13 +28,55 @@
       weekday: 'short'
     })
   )
-  let dayName = $derived(
-    tomorrow ? dayFormatter.format(new Date(tomorrow.date)) : ''
-  )
+  // Shared by dayName below and the holiday lookup — both need "tomorrow" as
+  // an actual Date, not the YYYY-MM-DD string the daily summary carries it as.
+  let tomorrowDate = $derived(tomorrow ? new Date(tomorrow.date) : null)
+  let dayName = $derived(tomorrowDate ? dayFormatter.format(tomorrowDate) : '')
 
   function rounded(celsius: number): number {
     return Math.round(displayTemperature(celsius, unit))
   }
+
+  // See holidaysLazy.ts: DateLine.svelte already loads this module; the
+  // promise cache means this call shares that one fetch, not a second one.
+  let holidaysApi = $state<HolidaysModule | null>(null)
+  onMount(() => {
+    void loadHolidays().then((m) => {
+      holidaysApi = m
+    })
+  })
+
+  let tomorrowHolidays = $derived(
+    holidaysApi && tomorrowDate
+      ? holidaysApi.getHolidaysForDateAndSettings(
+          tomorrowDate,
+          $settingsStore.holidays,
+          $settingsStore.locale
+        )
+      : []
+  )
+  // Same compact-with-overflow treatment as DateLine.svelte's holidayDisplay.
+  let holidayDisplay = $derived.by(() => {
+    const names = tomorrowHolidays.map((h) => h.name)
+    if (names.length <= 2) return names.join(', ')
+    return `${names.slice(0, 2).join(', ')} ${s.dateLine.more(names.length - 2)}`
+  })
+  let holidayOrigins = $derived(
+    tomorrowHolidays.map((h) => {
+      const country = holidaysApi
+        ? holidaysApi.countryDisplayName(h.countryCode, $settingsStore.locale)
+        : h.countryCode
+      const region =
+        h.regionCode && holidaysApi
+          ? holidaysApi.regionDisplayName(
+              h.countryCode,
+              h.regionCode,
+              $settingsStore.locale
+            )
+          : null
+      return { name: h.name, origin: s.dateLine.holidayOrigin(country, region) }
+    })
+  )
 </script>
 
 {#if tomorrow && visual}
@@ -49,6 +94,21 @@
     <b>{Math.round(tomorrow.windSpeedKmh)}</b> km/h · {s.weather.panel.force}
     {beaufortForce(tomorrow.windSpeedKmh)}
   </p>
+  {#if tomorrowHolidays.length > 0}
+    <p class="v holiday">
+      <b>{holidayDisplay}</b>
+      <InfoDisclosure label={s.common.moreInfo} placement="above" align="end">
+        {#snippet trigger()}
+          <svg class="info-icon" aria-hidden="true"><use href="#i-info" /></svg>
+        {/snippet}
+        {#snippet content()}
+          {#each holidayOrigins as h (h.name)}
+            <p>{h.name} — {h.origin}</p>
+          {/each}
+        {/snippet}
+      </InfoDisclosure>
+    </p>
+  {/if}
 {/if}
 
 <style>
@@ -100,5 +160,10 @@
   }
   .drop {
     color: var(--rain);
+  }
+  .info-icon {
+    width: 0.9em;
+    height: 0.9em;
+    opacity: 0.6;
   }
 </style>

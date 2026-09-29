@@ -8,6 +8,7 @@
   import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import { getSaintOfDay, type SaintTradition } from '../lib/date/saints'
   import { debugParams } from '../lib/core/debug-params'
+  import InfoDisclosure from './InfoDisclosure.svelte'
 
   // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
   // instant directly since scheduler.start() is skipped while frozen.
@@ -64,9 +65,14 @@
         )
       : null
   )
+  let saintTraditionLabel = $derived(
+    $settingsStore.saints.tradition === 'french-civil'
+      ? s.settings.saints.traditionFrenchCivil
+      : s.settings.saints.traditionRomanCatholic
+  )
   let todaysHolidays = $derived(
     holidaysApi
-      ? holidaysApi.getTodayHolidays(
+      ? holidaysApi.getHolidaysForDateAndSettings(
           now,
           $settingsStore.holidays,
           $settingsStore.locale
@@ -81,6 +87,24 @@
     if (names.length <= 2) return names.join(', ')
     return `${names.slice(0, 2).join(', ')} ${s.dateLine.more(names.length - 2)}`
   })
+  // Untruncated per-holiday country/region breakdown for the info popover —
+  // the compact `holidayDisplay` line above stays as-is either way.
+  let holidayOrigins = $derived(
+    todaysHolidays.map((h) => {
+      const country = holidaysApi
+        ? holidaysApi.countryDisplayName(h.countryCode, $settingsStore.locale)
+        : h.countryCode
+      const region =
+        h.regionCode && holidaysApi
+          ? holidaysApi.regionDisplayName(
+              h.countryCode,
+              h.regionCode,
+              $settingsStore.locale
+            )
+          : null
+      return { name: h.name, origin: s.dateLine.holidayOrigin(country, region) }
+    })
+  )
 </script>
 
 <p class="date">
@@ -96,10 +120,32 @@
   <li>{s.dateLine.week} <b>{week}</b></li>
   <li>{s.dateLine.day} <b>{doy}</b> {s.dateLine.of} {daysInYear}</li>
   {#if saintName}
-    <li><b>{saintName}</b></li>
+    <li>
+      <b>{saintName}</b>
+      <InfoDisclosure label={s.common.moreInfo} placement="above">
+        {#snippet trigger()}
+          <svg class="info-icon" aria-hidden="true"><use href="#i-info" /></svg>
+        {/snippet}
+        {#snippet content()}
+          <p>{s.dateLine.saintSource(saintTraditionLabel)}</p>
+        {/snippet}
+      </InfoDisclosure>
+    </li>
   {/if}
   {#if todaysHolidays.length > 0}
-    <li><b>{holidayDisplay}</b></li>
+    <li>
+      <b>{holidayDisplay}</b>
+      <InfoDisclosure label={s.common.moreInfo} placement="above">
+        {#snippet trigger()}
+          <svg class="info-icon" aria-hidden="true"><use href="#i-info" /></svg>
+        {/snippet}
+        {#snippet content()}
+          {#each holidayOrigins as h (h.name)}
+            <p>{h.name} — {h.origin}</p>
+          {/each}
+        {/snippet}
+      </InfoDisclosure>
+    </li>
   {/if}
 </ul>
 
@@ -132,5 +178,19 @@
   .meta b {
     color: var(--text);
     font-weight: 700;
+  }
+  .info-icon {
+    width: 0.9em;
+    height: 0.9em;
+    opacity: 0.6;
+  }
+  /* The info popover's content is authored here but renders inside
+     InfoDisclosure — reset the UA default <p> margin the same way
+     CurrentWeather.svelte already does for its own popover content. */
+  :global(.info-disclosure__popover) p {
+    margin: 0 0 0.3em;
+  }
+  :global(.info-disclosure__popover) p:last-child {
+    margin-bottom: 0;
   }
 </style>

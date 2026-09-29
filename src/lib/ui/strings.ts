@@ -37,12 +37,20 @@ interface IntensifiedConditions {
 }
 
 export interface Dictionary {
+  /** Shared across every `InfoDisclosure` trigger unless a call site overrides it. */
+  common: {
+    moreInfo: string
+  }
   dateLine: {
     week: string
     day: string
     of: string
     /** Overflow marker for the compact holiday item, e.g. "Christmas, Boxing Day" + "+1" more. */
     more: (n: number) => string
+    /** Holiday provenance in the info popover: country, or country + region. */
+    holidayOrigin: (country: string, region: string | null) => string
+    /** Saint-of-the-day provenance in the info popover, composed with the already-translated `settings.saints.traditionRomanCatholic`/`traditionFrenchCivil` value. */
+    saintSource: (tradition: string) => string
   }
   kiosk: {
     tapToStart: string
@@ -136,6 +144,12 @@ export interface Dictionary {
       sunset: string
       daylight: string
       moonPhase: string
+      /** Moon info popover: approximate visible illumination, e.g. "62% illuminated". */
+      moonIllumination: (percent: number) => string
+      /** Moon info popover: days until the next full moon, handling the "today" (n<=0) case itself. */
+      moonNextFull: (days: number) => string
+      /** Moon info popover: days until the next new moon, handling the "today" (n<=0) case itself. */
+      moonNextNew: (days: number) => string
       tomorrow: string
       noLocation: string
     }
@@ -155,11 +169,17 @@ export interface Dictionary {
 }
 
 const en: Dictionary = {
+  common: {
+    moreInfo: 'More info'
+  },
   dateLine: {
     week: 'Week',
     day: 'Day',
     of: 'of',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Source: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Tap to go fullscreen',
@@ -302,6 +322,11 @@ const en: Dictionary = {
       sunset: 'Sunset',
       daylight: 'Daylight',
       moonPhase: 'Moon phase',
+      moonIllumination: (percent) => `${percent}% illuminated`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Full moon today' : `Full moon in ${days}d`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'New moon today' : `New moon in ${days}d`,
       tomorrow: 'Tomorrow',
       noLocation: 'Set a location to see the weather'
     },
@@ -320,11 +345,17 @@ const en: Dictionary = {
 }
 
 const fr: Dictionary = {
+  common: {
+    moreInfo: 'Plus d’infos'
+  },
   dateLine: {
     week: 'Semaine',
     day: 'Jour',
     of: 'sur',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Source : ${tradition}`
   },
   kiosk: {
     tapToStart: 'Toucher pour passer en plein écran',
@@ -472,6 +503,13 @@ const fr: Dictionary = {
       sunset: 'Coucher du soleil',
       daylight: 'Ensoleillement',
       moonPhase: 'Phase lunaire',
+      moonIllumination: (percent) => `${percent}% éclairée`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Pleine lune aujourd’hui' : `Pleine lune dans ${days} j`,
+      moonNextNew: (days) =>
+        days <= 0
+          ? 'Nouvelle lune aujourd’hui'
+          : `Nouvelle lune dans ${days} j`,
       tomorrow: 'Demain',
       noLocation: 'Définissez un lieu pour voir la météo'
     },
@@ -489,11 +527,17 @@ const fr: Dictionary = {
 }
 
 const nl: Dictionary = {
+  common: {
+    moreInfo: 'Meer info'
+  },
   dateLine: {
     week: 'Week',
     day: 'Dag',
     of: 'van',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Bron: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Tik om volledig scherm te openen',
@@ -640,6 +684,11 @@ const nl: Dictionary = {
       sunset: 'Zonsondergang',
       daylight: 'Daglicht',
       moonPhase: 'Maanfase',
+      moonIllumination: (percent) => `${percent}% verlicht`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Vandaag volle maan' : `Volle maan in ${days} d`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Vandaag nieuwe maan' : `Nieuwe maan in ${days} d`,
       tomorrow: 'Morgen',
       noLocation: 'Stel een locatie in om het weer te zien'
     },
@@ -657,11 +706,17 @@ const nl: Dictionary = {
 }
 
 const de: Dictionary = {
+  common: {
+    moreInfo: 'Mehr Infos'
+  },
   dateLine: {
     week: 'Woche',
     day: 'Tag',
     of: 'von',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Quelle: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Für Vollbild tippen',
@@ -808,6 +863,11 @@ const de: Dictionary = {
       sunset: 'Sonnenuntergang',
       daylight: 'Tageslicht',
       moonPhase: 'Mondphase',
+      moonIllumination: (percent) => `${percent}% beleuchtet`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Heute Vollmond' : `Vollmond in ${days} Tg.`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Heute Neumond' : `Neumond in ${days} Tg.`,
       tomorrow: 'Morgen',
       noLocation: 'Standort festlegen, um das Wetter zu sehen'
     },
@@ -825,11 +885,17 @@ const de: Dictionary = {
 }
 
 const es: Dictionary = {
+  common: {
+    moreInfo: 'Más información'
+  },
   dateLine: {
     week: 'Semana',
     day: 'Día',
     of: 'de',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Fuente: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Toca para ver en pantalla completa',
@@ -975,6 +1041,11 @@ const es: Dictionary = {
       sunset: 'Atardecer',
       daylight: 'Horas de luz',
       moonPhase: 'Fase lunar',
+      moonIllumination: (percent) => `${percent}% iluminada`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Luna llena hoy' : `Luna llena en ${days} d`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Luna nueva hoy' : `Luna nueva en ${days} d`,
       tomorrow: 'Mañana',
       noLocation: 'Configura una ubicación para ver el tiempo'
     },
@@ -992,11 +1063,17 @@ const es: Dictionary = {
 }
 
 const it: Dictionary = {
+  common: {
+    moreInfo: 'Altre info'
+  },
   dateLine: {
     week: 'Settimana',
     day: 'Giorno',
     of: 'di',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Fonte: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Tocca per andare a schermo intero',
@@ -1144,6 +1221,11 @@ const it: Dictionary = {
       sunset: 'Tramonto',
       daylight: 'Ore di luce',
       moonPhase: 'Fase lunare',
+      moonIllumination: (percent) => `${percent}% illuminata`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Luna piena oggi' : `Luna piena in ${days} g`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Luna nuova oggi' : `Luna nuova in ${days} g`,
       tomorrow: 'Domani',
       noLocation: 'Imposta una posizione per vedere il meteo'
     },
@@ -1161,11 +1243,17 @@ const it: Dictionary = {
 }
 
 const pt: Dictionary = {
+  common: {
+    moreInfo: 'Mais informações'
+  },
   dateLine: {
     week: 'Semana',
     day: 'Dia',
     of: 'de',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Fonte: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Toque para tela cheia',
@@ -1311,6 +1399,11 @@ const pt: Dictionary = {
       sunset: 'Pôr do sol',
       daylight: 'Luz do dia',
       moonPhase: 'Fase da lua',
+      moonIllumination: (percent) => `${percent}% iluminada`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Lua cheia hoje' : `Lua cheia em ${days} d`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Lua nova hoje' : `Lua nova em ${days} d`,
       tomorrow: 'Amanhã',
       noLocation: 'Defina uma localização para ver o tempo'
     },
@@ -1329,11 +1422,17 @@ const pt: Dictionary = {
 }
 
 const ru: Dictionary = {
+  common: {
+    moreInfo: 'Подробнее'
+  },
   dateLine: {
     week: 'Неделя',
     day: 'День',
     of: 'из',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Источник: ${tradition}`
   },
   kiosk: {
     tapToStart: 'Нажмите для полноэкранного режима',
@@ -1487,6 +1586,11 @@ const ru: Dictionary = {
       sunset: 'Закат',
       daylight: 'Световой день',
       moonPhase: 'Фаза луны',
+      moonIllumination: (percent) => `Освещённость ${percent}%`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Сегодня полнолуние' : `Полнолуние через ${days} дн`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Сегодня новолуние' : `Новолуние через ${days} дн`,
       tomorrow: 'Завтра',
       noLocation: 'Укажите местоположение, чтобы увидеть погоду'
     },
@@ -1510,11 +1614,17 @@ const zh: Dictionary = {
   // phrase (see component) — idiomatic Chinese would write "第34周", which
   // this rigid label-then-number slot can't produce, so noun+number ("周
   // 34") is used instead, same compact-badge pattern as every other locale.
+  common: {
+    moreInfo: '更多信息'
+  },
   dateLine: {
     week: '周',
     day: '天',
     of: '共',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country}（${region}）` : country,
+    saintSource: (tradition) => `来源：${tradition}`
   },
   kiosk: {
     tapToStart: '轻触进入全屏',
@@ -1634,6 +1744,9 @@ const zh: Dictionary = {
       sunset: '日落',
       daylight: '日照时长',
       moonPhase: '月相',
+      moonIllumination: (percent) => `照亮 ${percent}%`,
+      moonNextFull: (days) => (days <= 0 ? '今天满月' : `满月还有 ${days} 天`),
+      moonNextNew: (days) => (days <= 0 ? '今天新月' : `新月还有 ${days} 天`),
       tomorrow: '明天',
       noLocation: '设置位置以查看天气'
     },
@@ -1650,11 +1763,17 @@ const zh: Dictionary = {
 }
 
 const hi: Dictionary = {
+  common: {
+    moreInfo: 'अधिक जानकारी'
+  },
   dateLine: {
     week: 'सप्ताह',
     day: 'दिन',
     of: 'में से',
-    more: (n) => `+${n}`
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `स्रोत: ${tradition}`
   },
   kiosk: {
     tapToStart: 'फ़ुलस्क्रीन के लिए टैप करें',
@@ -1805,6 +1924,11 @@ const hi: Dictionary = {
       sunset: 'सूर्यास्त',
       daylight: 'दिन की रोशनी',
       moonPhase: 'चंद्र कला',
+      moonIllumination: (percent) => `${percent}% रोशन`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'आज पूर्णिमा' : `पूर्णिमा ${days} दिन में`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'आज अमावस्या' : `अमावस्या ${days} दिन में`,
       tomorrow: 'कल',
       noLocation: 'मौसम देखने के लिए स्थान सेट करें'
     },
