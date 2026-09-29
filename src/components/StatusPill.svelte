@@ -94,15 +94,22 @@
 </div>
 
 <style>
-  /* Last item of Layout's `.tm` flex row, pushed to its right end and
-     bottom edge — `align-items: center` on `.tm` still centers every other
-     child (Tomorrow's text/icons), this one overrides just its own
-     cross-axis placement. */
+  /* Pinned to the screen's bottom-right corner, mirroring Tomorrow's
+     bottom-left placement in the same footer row — not just right-aligned
+     within `.tm`'s flow, the actual corner. Same `position: fixed` pattern
+     App.svelte's `.gear`/`.gear--fullscreen` buttons already use, sized to
+     the same 2.75rem footprint so all three sit on one consistent grid;
+     App.svelte shifts `.gear`/`.gear--fullscreen` left to make room here
+     (see the comment there). */
   .status-pill {
-    position: relative;
-    flex: none;
-    margin-left: auto;
-    align-self: flex-end;
+    position: fixed;
+    right: var(--space-md, 1.5rem);
+    bottom: var(--space-md, 1.5rem);
+    z-index: 5;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
   }
 
   .status-pill__dot {
@@ -130,12 +137,17 @@
   .status-pill__detail {
     position: absolute;
     right: 0;
-    bottom: calc(0.85rem + var(--space-sm, 0.6rem));
+    bottom: calc(100% + var(--space-sm, 0.6rem));
     margin: 0;
     padding: 0.5em 0.9em;
     white-space: nowrap;
     border-radius: var(--radius-md, 1rem);
-    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+    /* Solid enough to read over bright FX (bright sun/lightning) behind it —
+       the shared low-opacity `--color-glass` tint the big panels use relies
+       on their own 22px blur to stay legible; this floats free-standing over
+       whatever's behind it, so it needs a background closer to
+       SettingsSheet's own solid-ish `rgb(9 20 34 / 0.92)` sheet header. */
+    background: rgb(9 20 34 / 0.92);
     border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
     color: var(--color-text-2, rgba(238, 244, 251, 0.75));
     font-family: var(--font-body, 'Atkinson Hyperlegible', sans-serif);

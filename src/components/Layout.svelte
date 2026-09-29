@@ -218,19 +218,23 @@
     grid-area: tl;
     padding: calc(var(--u) * 1.4) calc(var(--u) * 2.2) calc(var(--u) * 1.2);
   }
-  /* Right padding keeps the row (and the status dot at its end) clear of
-     App's fixed gear button; wraps rather than running off narrow phones. */
+  /* Right padding keeps Tomorrow's own text clear of the fixed bottom-right
+     corner cluster — StatusPill's dot (the corner itself) plus App's gear
+     button one 3.25rem slot in from it; wraps rather than running off narrow
+     phones. StatusPill itself is `position: fixed` now (not part of this
+     row's flex flow), so this is sized for the cluster, not for "one item at
+     the row's own end" like it used to be. */
   .tm {
     grid-area: tm;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: calc(var(--u) * 0.8) calc(var(--u) * 2);
-    padding-right: 3.5rem;
+    padding-right: 7.75rem;
   }
-  /* …and of the fullscreen button beside it, while App offers one. */
+  /* …and of the fullscreen button, one more 3.25rem slot in, while App offers one. */
   :global(:root[data-fs-button]) .tm {
-    padding-right: 6.75rem;
+    padding-right: 11rem;
   }
 
   .glass {

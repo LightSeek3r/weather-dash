@@ -324,9 +324,13 @@
     outline-offset: -2px;
   }
 
+  /* StatusPill.svelte now pins its status dot to this same bottom-right
+     corner (right: var(--space-md), same z-index) — shifted one 3.25rem
+     slot further out so the dot claims the actual corner instead of being
+     covered by it. */
   .gear {
     position: fixed;
-    right: var(--space-md, 1.5rem);
+    right: calc(var(--space-md, 1.5rem) + 3.25rem);
     bottom: var(--space-md, 1.5rem);
     z-index: 5;
     width: 2.75rem;
@@ -346,7 +350,7 @@
   }
 
   .gear--fullscreen {
-    right: calc(var(--space-md, 1.5rem) + 3.25rem);
+    right: calc(var(--space-md, 1.5rem) + 6.5rem);
   }
 
   .gear svg {

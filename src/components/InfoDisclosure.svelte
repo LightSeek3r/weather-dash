@@ -102,7 +102,12 @@
     margin: 0;
     padding: 0.6em 0.9em;
     border-radius: var(--radius-md, 1rem);
-    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+    /* Solid enough to read over bright FX (bright sun/lightning) behind it —
+       the shared low-opacity `--color-glass` tint the big panels use relies
+       on their own 22px blur to stay legible; this floats free-standing over
+       whatever's behind it, so it needs a background closer to
+       SettingsSheet's own solid-ish `rgb(9 20 34 / 0.92)` sheet header. */
+    background: rgb(9 20 34 / 0.92);
     border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
     color: var(--color-text-2, rgba(238, 244, 251, 0.75));
     font-family: var(--font-body, 'Atkinson Hyperlegible', sans-serif);
