@@ -29,6 +29,7 @@
   import { subscribeOnlineStatus, getOnlineStatus } from './lib/ui/status'
   import { createIdleVisibility } from './lib/ui/idle-visibility'
   import { settingsStore } from './lib/core/storage/settings'
+  import { localeTag, textDirection } from './lib/ui/i18n'
   import { t } from './lib/ui/strings'
   import {
     weatherStore,
@@ -86,6 +87,18 @@
     const root = document.documentElement
     if (showFullscreenButton) root.dataset.fsButton = ''
     else delete root.dataset.fsButton
+  })
+
+  // `<html lang>` was static markup before Arabic/Urdu existed as options —
+  // screen readers and the browser's own script/font selection need it to
+  // track the chosen locale. `dir` flips the two RTL locales; the grid layout
+  // itself (clock/weather/timeline placement) stays put rather than
+  // mirroring — `dir="rtl"` still right-aligns and correctly shapes the
+  // translated text itself, which is the part that actually needs it.
+  $effect(() => {
+    const root = document.documentElement
+    root.lang = localeTag($settingsStore.locale)
+    root.dir = textDirection($settingsStore.locale)
   })
 
   // Real timestamp once initWeather() below has fetched at least once;

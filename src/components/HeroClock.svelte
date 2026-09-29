@@ -51,15 +51,24 @@
 </script>
 
 <time class="clock" datetime={now.toISOString()}>
-  {#each parts as part, i (i + part.type)}
-    {#if part.type === 'literal'}
-      <span class="sep">{part.value}</span>
-    {:else if part.type === 'dayPeriod'}
-      <span class="period">{part.value}</span>
-    {:else}
-      {part.value}
-    {/if}
-  {/each}
+  <!-- <bdi dir="ltr">: the digit groups and the `.sep` colon between them are
+       separate inline elements, and RTL locales (ar/ur) would otherwise
+       reorder them as sibling boxes — "17:30" rendering as "30:17" — the way
+       a clock face never actually flips digit order just because the
+       surrounding UI is RTL. Isolating only this inner run (rather than
+       putting dir="ltr" on .clock itself) keeps .clock's own text-align, and
+       so its position within .hero, following the page's actual direction. -->
+  <bdi dir="ltr">
+    {#each parts as part, i (i + part.type)}
+      {#if part.type === 'literal'}
+        <span class="sep">{part.value}</span>
+      {:else if part.type === 'dayPeriod'}
+        <span class="period">{part.value}</span>
+      {:else}
+        {part.value}
+      {/if}
+    {/each}
+  </bdi>
 </time>
 
 <style>

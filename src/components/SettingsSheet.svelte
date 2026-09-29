@@ -47,7 +47,12 @@
     { value: 'pt', label: 'Português' },
     { value: 'ru', label: 'Русский' },
     { value: 'zh', label: '中文' },
-    { value: 'hi', label: 'हिन्दी' }
+    { value: 'hi', label: 'हिन्दी' },
+    { value: 'ar', label: 'العربية' },
+    { value: 'bn', label: 'বাংলা' },
+    { value: 'ur', label: 'اردو' },
+    { value: 'id', label: 'Bahasa Indonesia' },
+    { value: 'ja', label: '日本語' }
   ]
 
   function setLocale(value: Settings['locale']): void {

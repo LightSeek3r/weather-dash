@@ -3,20 +3,25 @@
  * come from here, keyed by `settingsStore.locale` — a hardcoded English
  * literal is the same bug twice over: it already happened once (clock/date
  * formatting ignored `settingsStore.locale` entirely until this pass fixed
- * it). Extend this file's `Dictionary` shape + all 10 locale objects together
+ * it). Extend this file's `Dictionary` shape + all 15 locale objects together
  * so nothing ships translated for some languages and not others.
  *
  * These are short, common calendar/UI words — confident enough without
  * native review. Weather condition labels (phase 2) are more idiomatic and
- * should get a native-speaker pass for fr/nl/de/ru/zh/hi per the plan's
- * model notes.
+ * should get a native-speaker pass for fr/nl/de/ru/zh/hi/ar/bn/ur/id/ja per
+ * the plan's model notes.
  *
  * Font note: the two self-hosted families (Lexend, Atkinson Hyperlegible —
- * see design-tokens.css) cover Latin + Cyrillic, so ru renders in-font; zh
- * and hi glyphs have no coverage there and silently fall back to whatever
- * CJK/Devanagari system font the browser substitutes per-character. That's
- * expected browser behavior, not a bug — bundling CJK/Devanagari webfonts is
- * out of scope (bundle-size concern, tracked in the plan).
+ * see design-tokens.css) cover Latin + Cyrillic, so en/fr/nl/de/es/it/pt/id
+ * and ru render in-font; zh, hi, ar, bn, ur and ja glyphs have no coverage
+ * there and silently fall back to whatever CJK/Devanagari/Arabic/Bengali
+ * system font the browser substitutes per-character. That's expected browser
+ * behavior, not a bug — bundling that many non-Latin/Cyrillic webfonts is out
+ * of scope (bundle-size concern, tracked in the plan). Arabic and Urdu are
+ * also this app's only right-to-left locales — see `i18n.ts`'s
+ * `textDirection()` and `App.svelte`'s `<html dir>` effect; the dashboard's
+ * own grid layout (clock/weather/timeline placement) intentionally doesn't
+ * mirror, only the text itself flows and shapes correctly.
  */
 import type { Locale } from '../core/storage/settings'
 import type { RelativeTimeLabels } from './status'
@@ -1945,6 +1950,890 @@ const hi: Dictionary = {
   }
 }
 
+const ar: Dictionary = {
+  common: {
+    moreInfo: 'معلومات إضافية'
+  },
+  dateLine: {
+    week: 'الأسبوع',
+    day: 'اليوم',
+    of: 'من',
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `المصدر: ${tradition}`
+  },
+  kiosk: {
+    tapToStart: 'اضغط للانتقال إلى وضع ملء الشاشة',
+    openSettings: 'فتح الإعدادات',
+    installTip:
+      'نصيحة: أضف التطبيق إلى الشاشة الرئيسية للبقاء في وضع ملء الشاشة بعد إعادة التحميل',
+    enterFullscreen: 'ملء الشاشة'
+  },
+  scene: { tapToReturn: 'اضغط للعودة إلى لوحة المعلومات' },
+  settings: {
+    title: 'الإعدادات',
+    close: 'إغلاق الإعدادات',
+    language: { heading: 'اللغة' },
+    display: {
+      heading: 'العرض',
+      fullscreenOnStart: 'ملء الشاشة عند فتح التطبيق'
+    },
+    holidays: {
+      heading: 'الأعياد',
+      country: 'الدولة',
+      region: 'المنطقة',
+      nationalOnly: 'الأعياد الوطنية فقط',
+      extraCountries: 'دول إضافية',
+      addCountry: 'إضافة دولة',
+      removeCountry: 'إزالة الدولة',
+      listHeading: 'أعياد هذا العام'
+    },
+    saints: {
+      heading: 'قديس اليوم',
+      enable: 'تفعيل قديس اليوم',
+      tradition: 'التقليد',
+      traditionRomanCatholic: 'كاثوليكي روماني',
+      traditionFrenchCivil: 'التقويم المدني الفرنسي'
+    },
+    photos: {
+      heading: 'الصور',
+      addPhotos: 'إضافة صور',
+      deletePhoto: 'حذف الصورة',
+      empty: 'لا توجد صور بعد',
+      rotation: 'التبديل',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'دقيقة',
+      unitMinutes: 'دقائق',
+      unitHour: 'ساعة',
+      unitHours: 'ساعات',
+      dim: 'تعتيم',
+      blur: 'تمويه',
+      shuffle: 'ترتيب عشوائي للصور',
+      storageUsage: (used, quota) => `${used} م.ب من ${quota} م.ب مستخدمة`
+    },
+    backup: {
+      heading: 'النسخ الاحتياطي',
+      exportButton: 'تصدير الإعدادات',
+      importButton: 'استيراد الإعدادات',
+      exportSuccess: 'تم تصدير الإعدادات',
+      importSuccess: 'تم استيراد الإعدادات',
+      importErrorPrefix: 'فشل الاستيراد'
+    }
+  },
+  status: {
+    offline: 'غير متصل',
+    noDataYet: 'لا توجد بيانات بعد',
+    updatedPrefix: 'آخر تحديث',
+    relative: {
+      justNow: 'الآن',
+      minutesAgo: (n) => `منذ ${n} د`,
+      hoursAgo: (n) => `منذ ${n} س`,
+      yesterday: 'الأمس',
+      daysAgo: (n) => `منذ ${n} يوم`
+    }
+  },
+  weather: {
+    fetchError: 'تعذّر تحديث حالة الطقس',
+    condition: {
+      clearSky: 'سماء صافية',
+      mainlyClear: 'صافٍ غالبًا',
+      partlyCloudy: 'غائم جزئيًا',
+      overcast: 'ملبد بالغيوم',
+      fog: 'ضباب',
+      drizzle: 'رذاذ',
+      freezingDrizzle: 'رذاذ متجمد',
+      rain: 'مطر',
+      freezingRain: 'مطر متجمد',
+      snow: 'ثلج',
+      snowGrains: 'حبيبات ثلجية',
+      rainShowers: 'زخات مطر',
+      snowShowers: 'زخات ثلجية',
+      thunderstorm: 'عاصفة رعدية'
+    },
+    moonPhase: {
+      newMoon: 'محاق',
+      waxingCrescent: 'هلال متزايد',
+      firstQuarter: 'التربيع الأول',
+      waxingGibbous: 'أحدب متزايد',
+      fullMoon: 'بدر',
+      waningGibbous: 'أحدب متناقص',
+      lastQuarter: 'التربيع الأخير',
+      waningCrescent: 'هلال متناقص'
+    },
+    intensified: {
+      drizzle: {
+        light: 'رذاذ خفيف',
+        moderate: 'رذاذ متوسط',
+        heavy: 'رذاذ كثيف'
+      },
+      freezingDrizzle: {
+        light: 'رذاذ متجمد خفيف',
+        heavy: 'رذاذ متجمد كثيف'
+      },
+      rain: {
+        light: 'مطر خفيف',
+        moderate: 'مطر متوسط',
+        heavy: 'مطر غزير'
+      },
+      freezingRain: {
+        light: 'مطر متجمد خفيف',
+        heavy: 'مطر متجمد غزير'
+      },
+      snow: {
+        light: 'ثلج خفيف',
+        moderate: 'ثلج متوسط',
+        heavy: 'ثلج كثيف'
+      },
+      rainShowers: {
+        light: 'زخات مطر خفيفة',
+        moderate: 'زخات مطر متوسطة',
+        heavy: 'زخات مطر غزيرة'
+      },
+      snowShowers: { light: 'زخات ثلجية خفيفة', heavy: 'زخات ثلجية كثيفة' }
+    },
+    thunderstormHail: 'عاصفة رعدية مصحوبة بالبرد',
+    panel: {
+      feelsLike: 'الشعور بالحرارة',
+      humidity: 'الرطوبة',
+      uvIndex: 'مؤشر الأشعة فوق البنفسجية',
+      wind: 'الرياح',
+      force: 'قوة',
+      gusts: 'هبات',
+      sunrise: 'شروق الشمس',
+      sunset: 'غروب الشمس',
+      daylight: 'مدة النهار',
+      moonPhase: 'طور القمر',
+      moonIllumination: (percent) => `إضاءة ${percent}%`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'بدر اليوم' : `البدر بعد ${days} يوم`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'محاق اليوم' : `المحاق بعد ${days} يوم`,
+      tomorrow: 'غدًا',
+      noLocation: 'حدّد موقعًا لرؤية حالة الطقس'
+    },
+    location: {
+      searchPlaceholder: 'البحث عن مدينة',
+      searchButton: 'بحث',
+      useMyLocation: 'استخدام موقعي',
+      currentLocationName: 'الموقع الحالي',
+      gpsDenied: 'تم رفض الوصول إلى الموقع',
+      gpsFailed: 'تعذّر تحديد موقعك — ابحث عن مدينتك بدلاً من ذلك',
+      approximate: 'موقع تقريبي من شبكتك — ابحث عن مدينتك لمزيد من الدقة'
+    }
+  }
+}
+
+const bn: Dictionary = {
+  common: {
+    moreInfo: 'আরও তথ্য'
+  },
+  dateLine: {
+    week: 'সপ্তাহ',
+    day: 'দিন',
+    of: 'এর মধ্যে',
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `উৎস: ${tradition}`
+  },
+  kiosk: {
+    tapToStart: 'ফুলস্ক্রিনে যেতে ট্যাপ করুন',
+    openSettings: 'সেটিংস খুলুন',
+    installTip:
+      'পরামর্শ: রিলোডের পরেও ফুলস্ক্রিন রাখতে হোম স্ক্রিনে যুক্ত করুন',
+    enterFullscreen: 'ফুলস্ক্রিন করুন'
+  },
+  scene: { tapToReturn: 'ড্যাশবোর্ডে ফিরতে ট্যাপ করুন' },
+  settings: {
+    title: 'সেটিংস',
+    close: 'সেটিংস বন্ধ করুন',
+    language: { heading: 'ভাষা' },
+    display: {
+      heading: 'ডিসপ্লে',
+      fullscreenOnStart: 'অ্যাপ খোলার সময় ফুলস্ক্রিন করুন'
+    },
+    holidays: {
+      heading: 'ছুটির দিন',
+      country: 'দেশ',
+      region: 'অঞ্চল',
+      nationalOnly: 'শুধু জাতীয় ছুটির দিন',
+      extraCountries: 'অতিরিক্ত দেশ',
+      addCountry: 'দেশ যুক্ত করুন',
+      removeCountry: 'দেশ অপসারণ করুন',
+      listHeading: 'এই বছরের ছুটির দিন'
+    },
+    saints: {
+      heading: 'দিনের সাধু',
+      enable: 'দিনের সাধু সক্রিয় করুন',
+      tradition: 'ধারা',
+      traditionRomanCatholic: 'রোমান ক্যাথলিক',
+      traditionFrenchCivil: 'ফরাসি নাগরিক ক্যালেন্ডার'
+    },
+    photos: {
+      heading: 'ছবি',
+      addPhotos: 'ছবি যুক্ত করুন',
+      deletePhoto: 'ছবি মুছুন',
+      empty: 'এখনও কোনো ছবি নেই',
+      rotation: 'ঘূর্ণন',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'মিনিট',
+      unitMinutes: 'মিনিট',
+      unitHour: 'ঘণ্টা',
+      unitHours: 'ঘণ্টা',
+      dim: 'অন্ধকার করুন',
+      blur: 'ব্লার',
+      shuffle: 'ছবি শাফল করুন',
+      storageUsage: (used, quota) => `${quota} এমবির মধ্যে ${used} এমবি ব্যবহৃত`
+    },
+    backup: {
+      heading: 'ব্যাকআপ',
+      exportButton: 'সেটিংস এক্সপোর্ট করুন',
+      importButton: 'সেটিংস ইমপোর্ট করুন',
+      exportSuccess: 'সেটিংস এক্সপোর্ট হয়েছে',
+      importSuccess: 'সেটিংস ইমপোর্ট হয়েছে',
+      importErrorPrefix: 'ইমপোর্ট ব্যর্থ হয়েছে'
+    }
+  },
+  status: {
+    offline: 'অফলাইন',
+    noDataYet: 'এখনও কোনো তথ্য নেই',
+    updatedPrefix: 'আপডেট হয়েছে',
+    relative: {
+      justNow: 'এইমাত্র',
+      minutesAgo: (n) => `${n} মিনিট আগে`,
+      hoursAgo: (n) => `${n} ঘণ্টা আগে`,
+      yesterday: 'গতকাল',
+      daysAgo: (n) => `${n} দিন আগে`
+    }
+  },
+  weather: {
+    fetchError: 'আবহাওয়া আপডেট করা যায়নি',
+    condition: {
+      clearSky: 'পরিষ্কার আকাশ',
+      mainlyClear: 'প্রধানত পরিষ্কার',
+      partlyCloudy: 'আংশিক মেঘলা',
+      overcast: 'মেঘলা',
+      fog: 'কুয়াশা',
+      drizzle: 'গুঁড়ি গুঁড়ি বৃষ্টি',
+      freezingDrizzle: 'হিমায়িত গুঁড়ি বৃষ্টি',
+      rain: 'বৃষ্টি',
+      freezingRain: 'হিমায়িত বৃষ্টি',
+      snow: 'তুষার',
+      snowGrains: 'তুষার দানা',
+      rainShowers: 'বৃষ্টির ঝাপটা',
+      snowShowers: 'তুষারের ঝাপটা',
+      thunderstorm: 'বজ্রঝড়'
+    },
+    moonPhase: {
+      newMoon: 'অমাবস্যা',
+      waxingCrescent: 'বর্ধনশীল অর্ধচন্দ্র',
+      firstQuarter: 'প্রথম কোয়ার্টার',
+      waxingGibbous: 'বর্ধনশীল উদ্বৃত্ত চন্দ্র',
+      fullMoon: 'পূর্ণিমা',
+      waningGibbous: 'ক্ষয়িষ্ণু উদ্বৃত্ত চন্দ্র',
+      lastQuarter: 'শেষ কোয়ার্টার',
+      waningCrescent: 'ক্ষয়িষ্ণু অর্ধচন্দ্র'
+    },
+    intensified: {
+      drizzle: {
+        light: 'হালকা গুঁড়ি বৃষ্টি',
+        moderate: 'মাঝারি গুঁড়ি বৃষ্টি',
+        heavy: 'ভারী গুঁড়ি বৃষ্টি'
+      },
+      freezingDrizzle: {
+        light: 'হালকা হিমায়িত গুঁড়ি বৃষ্টি',
+        heavy: 'ভারী হিমায়িত গুঁড়ি বৃষ্টি'
+      },
+      rain: {
+        light: 'হালকা বৃষ্টি',
+        moderate: 'মাঝারি বৃষ্টি',
+        heavy: 'ভারী বৃষ্টি'
+      },
+      freezingRain: {
+        light: 'হালকা হিমায়িত বৃষ্টি',
+        heavy: 'ভারী হিমায়িত বৃষ্টি'
+      },
+      snow: {
+        light: 'হালকা তুষার',
+        moderate: 'মাঝারি তুষার',
+        heavy: 'ভারী তুষার'
+      },
+      rainShowers: {
+        light: 'হালকা বৃষ্টির ঝাপটা',
+        moderate: 'মাঝারি বৃষ্টির ঝাপটা',
+        heavy: 'ভারী বৃষ্টির ঝাপটা'
+      },
+      snowShowers: {
+        light: 'হালকা তুষারের ঝাপটা',
+        heavy: 'ভারী তুষারের ঝাপটা'
+      }
+    },
+    thunderstormHail: 'শিলাবৃষ্টি সহ বজ্রঝড়',
+    panel: {
+      feelsLike: 'অনুভূত হচ্ছে',
+      humidity: 'আর্দ্রতা',
+      uvIndex: 'ইউভি সূচক',
+      wind: 'বাতাস',
+      force: 'শক্তি',
+      gusts: 'ঝাপটা',
+      sunrise: 'সূর্যোদয়',
+      sunset: 'সূর্যাস্ত',
+      daylight: 'দিনের আলো',
+      moonPhase: 'চন্দ্রকলা',
+      moonIllumination: (percent) => `${percent}% আলোকিত`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'আজ পূর্ণিমা' : `${days} দিনে পূর্ণিমা`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'আজ অমাবস্যা' : `${days} দিনে অমাবস্যা`,
+      tomorrow: 'আগামীকাল',
+      noLocation: 'আবহাওয়া দেখতে একটি স্থান নির্ধারণ করুন'
+    },
+    location: {
+      searchPlaceholder: 'একটি শহর খুঁজুন',
+      searchButton: 'অনুসন্ধান',
+      useMyLocation: 'আমার অবস্থান ব্যবহার করুন',
+      currentLocationName: 'বর্তমান অবস্থান',
+      gpsDenied: 'অবস্থান অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে',
+      gpsFailed:
+        'আপনার অবস্থান নির্ধারণ করা যায়নি — পরিবর্তে আপনার শহর খুঁজুন',
+      approximate:
+        'আপনার নেটওয়ার্ক থেকে আনুমানিক অবস্থান — সঠিকতার জন্য আপনার শহর খুঁজুন'
+    }
+  }
+}
+
+const ur: Dictionary = {
+  common: {
+    moreInfo: 'مزید معلومات'
+  },
+  dateLine: {
+    week: 'ہفتہ',
+    day: 'دن',
+    of: 'از',
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `ماخذ: ${tradition}`
+  },
+  kiosk: {
+    tapToStart: 'فل اسکرین کے لیے ٹیپ کریں',
+    openSettings: 'ترتیبات کھولیں',
+    installTip:
+      'مشورہ: ری لوڈ کے بعد بھی فل اسکرین برقرار رکھنے کے لیے ہوم اسکرین پر شامل کریں',
+    enterFullscreen: 'فل اسکرین کریں'
+  },
+  scene: { tapToReturn: 'ڈیش بورڈ پر واپس جانے کے لیے ٹیپ کریں' },
+  settings: {
+    title: 'ترتیبات',
+    close: 'ترتیبات بند کریں',
+    language: { heading: 'زبان' },
+    display: {
+      heading: 'ڈسپلے',
+      fullscreenOnStart: 'ایپ کھلنے پر فل اسکرین کریں'
+    },
+    holidays: {
+      heading: 'تعطیلات',
+      country: 'ملک',
+      region: 'علاقہ',
+      nationalOnly: 'صرف قومی تعطیلات',
+      extraCountries: 'اضافی ممالک',
+      addCountry: 'ملک شامل کریں',
+      removeCountry: 'ملک ہٹائیں',
+      listHeading: 'اس سال کی تعطیلات'
+    },
+    saints: {
+      heading: 'دن کا سینٹ',
+      enable: 'دن کا سینٹ فعال کریں',
+      tradition: 'روایت',
+      traditionRomanCatholic: 'رومن کیتھولک',
+      traditionFrenchCivil: 'فرانسیسی سویلین کیلنڈر'
+    },
+    photos: {
+      heading: 'تصاویر',
+      addPhotos: 'تصاویر شامل کریں',
+      deletePhoto: 'تصویر حذف کریں',
+      empty: 'ابھی کوئی تصویر نہیں',
+      rotation: 'گردش',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'منٹ',
+      unitMinutes: 'منٹ',
+      unitHour: 'گھنٹہ',
+      unitHours: 'گھنٹے',
+      dim: 'دھیما کریں',
+      blur: 'دھندلا',
+      shuffle: 'تصاویر بے ترتیب کریں',
+      storageUsage: (used, quota) =>
+        `${quota} ایم بی میں سے ${used} ایم بی استعمال شدہ`
+    },
+    backup: {
+      heading: 'بیک اپ',
+      exportButton: 'ترتیبات ایکسپورٹ کریں',
+      importButton: 'ترتیبات امپورٹ کریں',
+      exportSuccess: 'ترتیبات ایکسپورٹ ہو گئیں',
+      importSuccess: 'ترتیبات امپورٹ ہو گئیں',
+      importErrorPrefix: 'امپورٹ ناکام ہوگئی'
+    }
+  },
+  status: {
+    offline: 'آف لائن',
+    noDataYet: 'ابھی کوئی ڈیٹا نہیں',
+    updatedPrefix: 'تازہ کاری',
+    relative: {
+      justNow: 'ابھی ابھی',
+      minutesAgo: (n) => `${n} منٹ پہلے`,
+      hoursAgo: (n) => `${n} گھنٹے پہلے`,
+      yesterday: 'گزشتہ روز',
+      daysAgo: (n) => `${n} دن پہلے`
+    }
+  },
+  weather: {
+    fetchError: 'موسم کو اپ ڈیٹ نہیں کیا جا سکا',
+    condition: {
+      clearSky: 'صاف آسمان',
+      mainlyClear: 'زیادہ تر صاف',
+      partlyCloudy: 'جزوی ابر آلود',
+      overcast: 'ابر آلود',
+      fog: 'دھند',
+      drizzle: 'بوندا باندی',
+      freezingDrizzle: 'منجمد بوندا باندی',
+      rain: 'بارش',
+      freezingRain: 'منجمد بارش',
+      snow: 'برف',
+      snowGrains: 'برف کے ذرات',
+      rainShowers: 'بارش کی جھڑی',
+      snowShowers: 'برف کی جھڑی',
+      thunderstorm: 'گرج چمک کا طوفان'
+    },
+    moonPhase: {
+      newMoon: 'نیا چاند',
+      waxingCrescent: 'بڑھتا ہلال',
+      firstQuarter: 'پہلی سہ ماہی',
+      waxingGibbous: 'بڑھتا محدب چاند',
+      fullMoon: 'مکمل چاند',
+      waningGibbous: 'گھٹتا محدب چاند',
+      lastQuarter: 'آخری سہ ماہی',
+      waningCrescent: 'گھٹتا ہلال'
+    },
+    intensified: {
+      drizzle: {
+        light: 'ہلکی بوندا باندی',
+        moderate: 'معتدل بوندا باندی',
+        heavy: 'شدید بوندا باندی'
+      },
+      freezingDrizzle: {
+        light: 'ہلکی منجمد بوندا باندی',
+        heavy: 'شدید منجمد بوندا باندی'
+      },
+      rain: {
+        light: 'ہلکی بارش',
+        moderate: 'معتدل بارش',
+        heavy: 'شدید بارش'
+      },
+      freezingRain: {
+        light: 'ہلکی منجمد بارش',
+        heavy: 'شدید منجمد بارش'
+      },
+      snow: {
+        light: 'ہلکی برف',
+        moderate: 'معتدل برف',
+        heavy: 'شدید برف'
+      },
+      rainShowers: {
+        light: 'ہلکی بارش کی جھڑی',
+        moderate: 'معتدل بارش کی جھڑی',
+        heavy: 'شدید بارش کی جھڑی'
+      },
+      snowShowers: { light: 'ہلکی برف کی جھڑی', heavy: 'شدید برف کی جھڑی' }
+    },
+    thunderstormHail: 'ژالہ باری کے ساتھ گرج چمک کا طوفان',
+    panel: {
+      feelsLike: 'محسوس ہونے والا درجہ حرارت',
+      humidity: 'نمی',
+      uvIndex: 'یووی انڈیکس',
+      wind: 'ہوا',
+      force: 'شدت',
+      gusts: 'جھونکے',
+      sunrise: 'طلوع آفتاب',
+      sunset: 'غروب آفتاب',
+      daylight: 'دن کی روشنی',
+      moonPhase: 'چاند کا مرحلہ',
+      moonIllumination: (percent) => `${percent}% روشن`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'آج مکمل چاند ہے' : `${days} دن میں مکمل چاند`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'آج نیا چاند ہے' : `${days} دن میں نیا چاند`,
+      tomorrow: 'کل',
+      noLocation: 'موسم دیکھنے کے لیے مقام مقرر کریں'
+    },
+    location: {
+      searchPlaceholder: 'شہر تلاش کریں',
+      searchButton: 'تلاش',
+      useMyLocation: 'میرا مقام استعمال کریں',
+      currentLocationName: 'موجودہ مقام',
+      gpsDenied: 'مقام تک رسائی سے انکار کر دیا گیا',
+      gpsFailed:
+        'آپ کا مقام معلوم نہیں ہو سکا — اس کے بجائے اپنا شہر تلاش کریں',
+      approximate:
+        'آپ کے نیٹ ورک سے تخمینی مقام — درستگی کے لیے اپنا شہر تلاش کریں'
+    }
+  }
+}
+
+const id: Dictionary = {
+  common: {
+    moreInfo: 'Info lebih lanjut'
+  },
+  dateLine: {
+    week: 'Minggu',
+    day: 'Hari',
+    of: 'dari',
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country} (${region})` : country,
+    saintSource: (tradition) => `Sumber: ${tradition}`
+  },
+  kiosk: {
+    tapToStart: 'Ketuk untuk masuk mode layar penuh',
+    openSettings: 'Buka pengaturan',
+    installTip:
+      'Tips: tambahkan ke layar utama agar tetap layar penuh setelah dimuat ulang',
+    enterFullscreen: 'Masuk layar penuh'
+  },
+  scene: { tapToReturn: 'Ketuk untuk kembali ke dasbor' },
+  settings: {
+    title: 'Pengaturan',
+    close: 'Tutup pengaturan',
+    language: { heading: 'Bahasa' },
+    display: {
+      heading: 'Tampilan',
+      fullscreenOnStart: 'Masuk layar penuh saat aplikasi dibuka'
+    },
+    holidays: {
+      heading: 'Hari libur',
+      country: 'Negara',
+      region: 'Wilayah',
+      nationalOnly: 'Hanya hari libur nasional',
+      extraCountries: 'Negara tambahan',
+      addCountry: 'Tambah negara',
+      removeCountry: 'Hapus negara',
+      listHeading: 'Hari libur tahun ini'
+    },
+    saints: {
+      heading: 'Santo/santa hari ini',
+      enable: 'Aktifkan santo/santa hari ini',
+      tradition: 'Tradisi',
+      traditionRomanCatholic: 'Katolik Roma',
+      traditionFrenchCivil: 'Kalender sipil Prancis'
+    },
+    photos: {
+      heading: 'Foto',
+      addPhotos: 'Tambah foto',
+      deletePhoto: 'Hapus foto',
+      empty: 'Belum ada foto',
+      rotation: 'Rotasi',
+      duration: (n, unit) => `${n} ${unit}`,
+      unitMinute: 'menit',
+      unitMinutes: 'menit',
+      unitHour: 'jam',
+      unitHours: 'jam',
+      dim: 'Redupkan',
+      blur: 'Buram',
+      shuffle: 'Acak foto',
+      storageUsage: (used, quota) => `${used} MB dari ${quota} MB terpakai`
+    },
+    backup: {
+      heading: 'Cadangan',
+      exportButton: 'Ekspor pengaturan',
+      importButton: 'Impor pengaturan',
+      exportSuccess: 'Pengaturan diekspor',
+      importSuccess: 'Pengaturan diimpor',
+      importErrorPrefix: 'Impor gagal'
+    }
+  },
+  status: {
+    offline: 'luring',
+    noDataYet: 'belum ada data',
+    updatedPrefix: 'diperbarui',
+    relative: {
+      justNow: 'baru saja',
+      minutesAgo: (n) => `${n} mnt lalu`,
+      hoursAgo: (n) => `${n} jam lalu`,
+      yesterday: 'kemarin',
+      daysAgo: (n) => `${n} hr lalu`
+    }
+  },
+  weather: {
+    fetchError: 'Tidak dapat memperbarui cuaca',
+    condition: {
+      clearSky: 'Cerah',
+      mainlyClear: 'Sebagian besar cerah',
+      partlyCloudy: 'Berawan sebagian',
+      overcast: 'Berawan tebal',
+      fog: 'Berkabut',
+      drizzle: 'Gerimis',
+      freezingDrizzle: 'Gerimis beku',
+      rain: 'Hujan',
+      freezingRain: 'Hujan beku',
+      snow: 'Salju',
+      snowGrains: 'Butiran salju',
+      rainShowers: 'Hujan lokal',
+      snowShowers: 'Hujan salju lokal',
+      thunderstorm: 'Badai petir'
+    },
+    moonPhase: {
+      newMoon: 'Bulan baru',
+      waxingCrescent: 'Sabit bertambah',
+      firstQuarter: 'Kuartal pertama',
+      waxingGibbous: 'Cembung bertambah',
+      fullMoon: 'Bulan purnama',
+      waningGibbous: 'Cembung berkurang',
+      lastQuarter: 'Kuartal akhir',
+      waningCrescent: 'Sabit berkurang'
+    },
+    intensified: {
+      drizzle: {
+        light: 'Gerimis ringan',
+        moderate: 'Gerimis sedang',
+        heavy: 'Gerimis lebat'
+      },
+      freezingDrizzle: {
+        light: 'Gerimis beku ringan',
+        heavy: 'Gerimis beku lebat'
+      },
+      rain: {
+        light: 'Hujan ringan',
+        moderate: 'Hujan sedang',
+        heavy: 'Hujan lebat'
+      },
+      freezingRain: {
+        light: 'Hujan beku ringan',
+        heavy: 'Hujan beku lebat'
+      },
+      snow: {
+        light: 'Salju ringan',
+        moderate: 'Salju sedang',
+        heavy: 'Salju lebat'
+      },
+      rainShowers: {
+        light: 'Hujan lokal ringan',
+        moderate: 'Hujan lokal sedang',
+        heavy: 'Hujan lokal lebat'
+      },
+      snowShowers: {
+        light: 'Hujan salju lokal ringan',
+        heavy: 'Hujan salju lokal lebat'
+      }
+    },
+    thunderstormHail: 'Badai petir disertai hujan es',
+    panel: {
+      feelsLike: 'Terasa seperti',
+      humidity: 'Kelembapan',
+      uvIndex: 'Indeks UV',
+      wind: 'Angin',
+      force: 'kekuatan',
+      gusts: 'hembusan',
+      sunrise: 'Matahari terbit',
+      sunset: 'Matahari terbenam',
+      daylight: 'Lama siang',
+      moonPhase: 'Fase bulan',
+      moonIllumination: (percent) => `${percent}% tersinari`,
+      moonNextFull: (days) =>
+        days <= 0 ? 'Purnama hari ini' : `Purnama dalam ${days} hari`,
+      moonNextNew: (days) =>
+        days <= 0 ? 'Bulan baru hari ini' : `Bulan baru dalam ${days} hari`,
+      tomorrow: 'Besok',
+      noLocation: 'Atur lokasi untuk melihat cuaca'
+    },
+    location: {
+      searchPlaceholder: 'Cari kota',
+      searchButton: 'Cari',
+      useMyLocation: 'Gunakan lokasi saya',
+      currentLocationName: 'Lokasi saat ini',
+      gpsDenied: 'Akses lokasi ditolak',
+      gpsFailed: 'Tidak dapat menentukan lokasi Anda — coba cari kota Anda',
+      approximate:
+        'Lokasi perkiraan dari jaringan Anda — cari kota Anda untuk hasil yang lebih akurat'
+    }
+  }
+}
+
+const ja: Dictionary = {
+  common: {
+    moreInfo: '詳細情報'
+  },
+  dateLine: {
+    week: '週',
+    day: '日目',
+    of: '／',
+    more: (n) => `+${n}`,
+    holidayOrigin: (country, region) =>
+      region ? `${country}（${region}）` : country,
+    saintSource: (tradition) => `出典: ${tradition}`
+  },
+  kiosk: {
+    tapToStart: 'タップして全画面表示にする',
+    openSettings: '設定を開く',
+    installTip:
+      'ヒント: 再読み込み後も全画面表示を保つには、ホーム画面に追加してください',
+    enterFullscreen: '全画面表示にする'
+  },
+  scene: { tapToReturn: 'タップしてダッシュボードに戻る' },
+  settings: {
+    title: '設定',
+    close: '設定を閉じる',
+    language: { heading: '言語' },
+    display: {
+      heading: '表示',
+      fullscreenOnStart: 'アプリ起動時に全画面表示にする'
+    },
+    holidays: {
+      heading: '祝日',
+      country: '国',
+      region: '地域',
+      nationalOnly: '国民の祝日のみ',
+      extraCountries: '追加の国',
+      addCountry: '国を追加',
+      removeCountry: '国を削除',
+      listHeading: '今年の祝日'
+    },
+    saints: {
+      heading: '今日の聖人',
+      enable: '今日の聖人を表示する',
+      tradition: '伝統',
+      traditionRomanCatholic: 'ローマ・カトリック',
+      traditionFrenchCivil: 'フランス民間暦'
+    },
+    photos: {
+      heading: '写真',
+      addPhotos: '写真を追加',
+      deletePhoto: '写真を削除',
+      empty: 'まだ写真がありません',
+      rotation: '切り替え間隔',
+      duration: (n, unit) => `${n}${unit}`,
+      unitMinute: '分',
+      unitMinutes: '分',
+      unitHour: '時間',
+      unitHours: '時間',
+      dim: '暗さ',
+      blur: 'ぼかし',
+      shuffle: '写真をシャッフル',
+      storageUsage: (used, quota) => `${quota}MBのうち${used}MB使用`
+    },
+    backup: {
+      heading: 'バックアップ',
+      exportButton: '設定を書き出す',
+      importButton: '設定を読み込む',
+      exportSuccess: '設定を書き出しました',
+      importSuccess: '設定を読み込みました',
+      importErrorPrefix: '読み込みに失敗しました'
+    }
+  },
+  status: {
+    offline: 'オフライン',
+    noDataYet: 'データなし',
+    updatedPrefix: '更新',
+    relative: {
+      justNow: 'たった今',
+      minutesAgo: (n) => `${n}分前`,
+      hoursAgo: (n) => `${n}時間前`,
+      yesterday: '昨日',
+      daysAgo: (n) => `${n}日前`
+    }
+  },
+  weather: {
+    fetchError: '天気を更新できませんでした',
+    condition: {
+      clearSky: '快晴',
+      mainlyClear: 'ほぼ晴れ',
+      partlyCloudy: '所々曇り',
+      overcast: '曇り',
+      fog: '霧',
+      drizzle: '霧雨',
+      freezingDrizzle: '着氷性の霧雨',
+      rain: '雨',
+      freezingRain: '着氷性の雨',
+      snow: '雪',
+      snowGrains: '細氷',
+      rainShowers: 'にわか雨',
+      snowShowers: 'にわか雪',
+      thunderstorm: '雷雨'
+    },
+    moonPhase: {
+      newMoon: '新月',
+      waxingCrescent: '三日月',
+      firstQuarter: '上弦の月',
+      waxingGibbous: '満ちゆく月',
+      fullMoon: '満月',
+      waningGibbous: '欠けゆく月',
+      lastQuarter: '下弦の月',
+      waningCrescent: '有明月'
+    },
+    intensified: {
+      drizzle: {
+        light: '弱い霧雨',
+        moderate: 'やや強い霧雨',
+        heavy: '強い霧雨'
+      },
+      freezingDrizzle: {
+        light: '弱い着氷性の霧雨',
+        heavy: '強い着氷性の霧雨'
+      },
+      rain: {
+        light: '弱い雨',
+        moderate: 'やや強い雨',
+        heavy: '強い雨'
+      },
+      freezingRain: {
+        light: '弱い着氷性の雨',
+        heavy: '強い着氷性の雨'
+      },
+      snow: {
+        light: '弱い雪',
+        moderate: 'やや強い雪',
+        heavy: '強い雪'
+      },
+      rainShowers: {
+        light: '弱いにわか雨',
+        moderate: 'やや強いにわか雨',
+        heavy: '強いにわか雨'
+      },
+      snowShowers: { light: '弱いにわか雪', heavy: '強いにわか雪' }
+    },
+    thunderstormHail: '雹を伴う雷雨',
+    panel: {
+      feelsLike: '体感温度',
+      humidity: '湿度',
+      uvIndex: 'UV指数',
+      wind: '風',
+      force: '風力',
+      gusts: '突風',
+      sunrise: '日の出',
+      sunset: '日の入り',
+      daylight: '日照時間',
+      moonPhase: '月相',
+      moonIllumination: (percent) => `輝面率${percent}%`,
+      moonNextFull: (days) =>
+        days <= 0 ? '今日は満月' : `満月まであと${days}日`,
+      moonNextNew: (days) =>
+        days <= 0 ? '今日は新月' : `新月まであと${days}日`,
+      tomorrow: '明日',
+      noLocation: '天気を見るには場所を設定してください'
+    },
+    location: {
+      searchPlaceholder: '都市を検索',
+      searchButton: '検索',
+      useMyLocation: '現在地を使用',
+      currentLocationName: '現在地',
+      gpsDenied: '位置情報へのアクセスが拒否されました',
+      gpsFailed:
+        '位置を特定できませんでした — 代わりに都市名で検索してください',
+      approximate:
+        'ネットワークからのおおよその位置情報です — 精度を上げるには都市名で検索してください'
+    }
+  }
+}
+
 const DICTIONARIES: Record<Locale, Dictionary> = {
   en,
   fr,
@@ -1955,7 +2844,12 @@ const DICTIONARIES: Record<Locale, Dictionary> = {
   pt,
   ru,
   zh,
-  hi
+  hi,
+  ar,
+  bn,
+  ur,
+  id,
+  ja
 }
 
 export function t(locale: Locale): Dictionary {

@@ -25,7 +25,12 @@ export const LOCALES = [
   'pt',
   'ru',
   'zh',
-  'hi'
+  'hi',
+  'ar',
+  'bn',
+  'ur',
+  'id',
+  'ja'
 ] as const
 export type Locale = (typeof LOCALES)[number]
 export const PHOTO_ROTATION_VALUES = [
