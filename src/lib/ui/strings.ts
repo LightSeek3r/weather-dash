@@ -142,8 +142,12 @@ export interface Dictionary {
       feelsLike: string
       humidity: string
       uvIndex: string
+      /** UV info popover: one-line WHO band explanation. */
+      uvScaleInfo: string
       wind: string
       force: string
+      /** Wind info popover: one-line Beaufort scale explanation. */
+      windScaleInfo: string
       gusts: string
       sunrise: string
       sunset: string
@@ -320,8 +324,11 @@ const en: Dictionary = {
       feelsLike: 'Feels like',
       humidity: 'Humidity',
       uvIndex: 'UV index',
+      uvScaleInfo:
+        'WHO UV index: 0–2 low, 3–5 moderate, 6–7 high, 8–10 very high, 11+ extreme.',
       wind: 'Wind',
       force: 'force',
+      windScaleInfo: 'Beaufort scale: 0 (calm) to 12 (hurricane force).',
       gusts: 'gusts',
       sunrise: 'Sunrise',
       sunset: 'Sunset',
@@ -501,8 +508,11 @@ const fr: Dictionary = {
       feelsLike: 'Ressenti',
       humidity: 'Humidité',
       uvIndex: 'Indice UV',
+      uvScaleInfo:
+        'Indice UV (OMS) : 0–2 faible, 3–5 modéré, 6–7 élevé, 8–10 très élevé, 11+ extrême.',
       wind: 'Vent',
       force: 'force',
+      windScaleInfo: 'Échelle de Beaufort : de 0 (calme) à 12 (force ouragan).',
       gusts: 'rafales',
       sunrise: 'Lever du soleil',
       sunset: 'Coucher du soleil',
@@ -682,8 +692,12 @@ const nl: Dictionary = {
       feelsLike: 'Voelt als',
       humidity: 'Vochtigheid',
       uvIndex: 'UV-index',
+      uvScaleInfo:
+        'UV-index (WHO): 0–2 laag, 3–5 matig, 6–7 hoog, 8–10 zeer hoog, 11+ extreem.',
       wind: 'Wind',
       force: 'kracht',
+      windScaleInfo:
+        'Schaal van Beaufort: van 0 (windstil) tot 12 (orkaankracht).',
       gusts: 'windstoten',
       sunrise: 'Zonsopgang',
       sunset: 'Zonsondergang',
@@ -861,8 +875,11 @@ const de: Dictionary = {
       feelsLike: 'Gefühlt',
       humidity: 'Luftfeuchtigkeit',
       uvIndex: 'UV-Index',
+      uvScaleInfo:
+        'UV-Index (WHO): 0–2 niedrig, 3–5 mäßig, 6–7 hoch, 8–10 sehr hoch, 11+ extrem.',
       wind: 'Wind',
       force: 'Stärke',
+      windScaleInfo: 'Beaufort-Skala: von 0 (windstill) bis 12 (Orkanstärke).',
       gusts: 'Böen',
       sunrise: 'Sonnenaufgang',
       sunset: 'Sonnenuntergang',
@@ -1039,8 +1056,11 @@ const es: Dictionary = {
       feelsLike: 'Sensación',
       humidity: 'Humedad',
       uvIndex: 'Índice UV',
+      uvScaleInfo:
+        'Índice UV (OMS): 0–2 bajo, 3–5 moderado, 6–7 alto, 8–10 muy alto, 11+ extremo.',
       wind: 'Viento',
       force: 'fuerza',
+      windScaleInfo: 'Escala de Beaufort: de 0 (calma) a 12 (fuerza huracán).',
       gusts: 'rachas',
       sunrise: 'Amanecer',
       sunset: 'Atardecer',
@@ -1219,8 +1239,11 @@ const it: Dictionary = {
       feelsLike: 'Percepita',
       humidity: 'Umidità',
       uvIndex: 'Indice UV',
+      uvScaleInfo:
+        'Indice UV (OMS): 0–2 basso, 3–5 moderato, 6–7 alto, 8–10 molto alto, 11+ estremo.',
       wind: 'Vento',
       force: 'forza',
+      windScaleInfo: 'Scala Beaufort: da 0 (calma) a 12 (forza uragano).',
       gusts: 'raffiche',
       sunrise: 'Alba',
       sunset: 'Tramonto',
@@ -1397,8 +1420,12 @@ const pt: Dictionary = {
       feelsLike: 'Sensação',
       humidity: 'Humidade',
       uvIndex: 'Índice UV',
+      uvScaleInfo:
+        'Índice UV (OMS): 0–2 baixo, 3–5 moderado, 6–7 alto, 8–10 muito alto, 11+ extremo.',
       wind: 'Vento',
       force: 'força',
+      windScaleInfo:
+        'Escala de Beaufort: de 0 (calmo) a 12 (força de furacão).',
       gusts: 'rajadas',
       sunrise: 'Nascer do sol',
       sunset: 'Pôr do sol',
@@ -1584,8 +1611,11 @@ const ru: Dictionary = {
       feelsLike: 'Ощущается как',
       humidity: 'Влажность',
       uvIndex: 'УФ-индекс',
+      uvScaleInfo:
+        'УФ-индекс (ВОЗ): 0–2 низкий, 3–5 умеренный, 6–7 высокий, 8–10 очень высокий, 11+ экстремальный.',
       wind: 'Ветер',
       force: 'сила',
+      windScaleInfo: 'Шкала Бофорта: от 0 (штиль) до 12 (ураганная сила).',
       gusts: 'порывы',
       sunrise: 'Восход',
       sunset: 'Закат',
@@ -1742,8 +1772,11 @@ const zh: Dictionary = {
       feelsLike: '体感温度',
       humidity: '湿度',
       uvIndex: '紫外线指数',
+      uvScaleInfo:
+        '紫外线指数（世卫组织）：0–2 低，3–5 中等，6–7 高，8–10 很高，11+ 极高。',
       wind: '风',
       force: '风力',
+      windScaleInfo: '蒲福风级：0（无风）至12（飓风）。',
       gusts: '阵风',
       sunrise: '日出',
       sunset: '日落',
@@ -1922,8 +1955,11 @@ const hi: Dictionary = {
       feelsLike: 'अनुभव तापमान',
       humidity: 'नमी',
       uvIndex: 'यूवी इंडेक्स',
+      uvScaleInfo:
+        'यूवी इंडेक्स (WHO): 0–2 कम, 3–5 मध्यम, 6–7 उच्च, 8–10 बहुत उच्च, 11+ अत्यधिक।',
       wind: 'हवा',
       force: 'गति',
+      windScaleInfo: 'ब्यूफोर्ट स्केल: 0 (शांत) से 12 (तूफानी शक्ति) तक।',
       gusts: 'झोंके',
       sunrise: 'सूर्योदय',
       sunset: 'सूर्यास्त',
@@ -2097,8 +2133,11 @@ const ar: Dictionary = {
       feelsLike: 'الشعور بالحرارة',
       humidity: 'الرطوبة',
       uvIndex: 'مؤشر الأشعة فوق البنفسجية',
+      uvScaleInfo:
+        'مؤشر الأشعة فوق البنفسجية (منظمة الصحة العالمية): 0–2 منخفض، 3–5 متوسط، 6–7 مرتفع، 8–10 مرتفع جدًا، 11+ شديد.',
       wind: 'الرياح',
       force: 'قوة',
+      windScaleInfo: 'مقياس بوفورت: من 0 (هادئ) إلى 12 (قوة إعصار).',
       gusts: 'هبات',
       sunrise: 'شروق الشمس',
       sunset: 'غروب الشمس',
@@ -2274,8 +2313,12 @@ const bn: Dictionary = {
       feelsLike: 'অনুভূত হচ্ছে',
       humidity: 'আর্দ্রতা',
       uvIndex: 'ইউভি সূচক',
+      uvScaleInfo:
+        'ইউভি সূচক (WHO): 0–2 কম, 3–5 মাঝারি, 6–7 উচ্চ, 8–10 অতি উচ্চ, 11+ চরম।',
       wind: 'বাতাস',
       force: 'শক্তি',
+      windScaleInfo:
+        'বিউফোর্ট স্কেল: 0 (শান্ত) থেকে 12 (ঘূর্ণিঝড় শক্তি) পর্যন্ত।',
       gusts: 'ঝাপটা',
       sunrise: 'সূর্যোদয়',
       sunset: 'সূর্যাস্ত',
@@ -2451,8 +2494,11 @@ const ur: Dictionary = {
       feelsLike: 'محسوس ہونے والا درجہ حرارت',
       humidity: 'نمی',
       uvIndex: 'یووی انڈیکس',
+      uvScaleInfo:
+        'یووی انڈیکس (WHO): 0–2 کم، 3–5 معتدل، 6–7 زیادہ، 8–10 بہت زیادہ، 11+ انتہائی۔',
       wind: 'ہوا',
       force: 'شدت',
+      windScaleInfo: 'بیوفورٹ اسکیل: 0 (پرسکون) سے 12 (طوفانی شدت) تک۔',
       gusts: 'جھونکے',
       sunrise: 'طلوع آفتاب',
       sunset: 'غروب آفتاب',
@@ -2630,8 +2676,12 @@ const id: Dictionary = {
       feelsLike: 'Terasa seperti',
       humidity: 'Kelembapan',
       uvIndex: 'Indeks UV',
+      uvScaleInfo:
+        'Indeks UV (WHO): 0–2 rendah, 3–5 sedang, 6–7 tinggi, 8–10 sangat tinggi, 11+ ekstrem.',
       wind: 'Angin',
       force: 'kekuatan',
+      windScaleInfo:
+        'Skala Beaufort: dari 0 (tenang) hingga 12 (kekuatan badai).',
       gusts: 'hembusan',
       sunrise: 'Matahari terbit',
       sunset: 'Matahari terbenam',
@@ -2805,8 +2855,11 @@ const ja: Dictionary = {
       feelsLike: '体感温度',
       humidity: '湿度',
       uvIndex: 'UV指数',
+      uvScaleInfo:
+        'UV指数（WHO）: 0–2 低い、3–5 中程度、6–7 高い、8–10 非常に高い、11+ 極端に高い。',
       wind: '風',
       force: '風力',
+      windScaleInfo: 'ビューフォート風力階級: 0(静穏)〜12(暴風)。',
       gusts: '突風',
       sunrise: '日の出',
       sunset: '日の入り',

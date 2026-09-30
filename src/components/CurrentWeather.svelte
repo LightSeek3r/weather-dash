@@ -137,7 +137,14 @@
         >
       </p>
       <p class="read">
-        <small>{s.weather.panel.uvIndex}</small><b>{current.uvIndex}</b>
+        <small>
+          <InfoDisclosure label={s.weather.panel.uvIndex} align="end">
+            {#snippet trigger()}{s.weather.panel.uvIndex}{/snippet}
+            {#snippet content()}
+              <p>{s.weather.panel.uvScaleInfo}</p>
+            {/snippet}
+          </InfoDisclosure>
+        </small><b>{Math.round(current.uvIndex)}</b><span class="q">/11+</span>
       </p>
       <div class="read wind">
         <svg class="dial" viewBox="0 0 48 48" aria-hidden="true">
@@ -163,10 +170,17 @@
           </g>
         </svg>
         <div>
-          <small
-            >{s.weather.panel.wind} · {s.weather.panel.force}
-            {beaufortForce(current.windSpeedKmh)}</small
-          >
+          <small>
+            <InfoDisclosure label={s.weather.panel.wind} placement="above">
+              {#snippet trigger()}
+                {s.weather.panel.wind} · {s.weather.panel.force}
+                {beaufortForce(current.windSpeedKmh)}/12
+              {/snippet}
+              {#snippet content()}
+                <p>{s.weather.panel.windScaleInfo}</p>
+              {/snippet}
+            </InfoDisclosure>
+          </small>
           <b>{Math.round(current.windSpeedKmh)}</b>
           <span class="q"
             >km/h {compassDirection(current.windDirectionDeg)} · {s.weather
