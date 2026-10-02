@@ -8,6 +8,7 @@
   import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import { getSaintOfDay, type SaintTradition } from '../lib/date/saints'
   import { debugParams } from '../lib/core/debug-params'
+  import { isPlaceholderLocationName } from '../lib/weather/locationName'
   import InfoDisclosure from './InfoDisclosure.svelte'
 
   // `?freeze=1`/`?now=` (see lib/core/debug-params.ts): seed the frozen
@@ -49,12 +50,33 @@
   // natural order for the same reason; this follows that precedent instead
   // of reintroducing the same class of bug in a second component.
   let dateParts = $derived(dateFormatter.formatToParts(now))
+  // Two unbreakable groups — the weekday (with the separator next to it) and
+  // the rest — so a line too narrow for both breaks between them, never
+  // inside "15 January 2026". Weekday-first and weekday-last orders both exist.
+  let dateGroups = $derived.by(() => {
+    const parts = dateParts
+    const first = parts[0]?.type === 'weekday'
+    const last = parts.at(-1)?.type === 'weekday'
+    if (first && parts[1]?.type === 'literal') {
+      return [parts.slice(0, 2), parts.slice(2)]
+    }
+    if (last && parts.at(-2)?.type === 'literal') {
+      return [parts.slice(0, -2), parts.slice(-2)]
+    }
+    return [parts]
+  })
   let week = $derived(isoWeek(now))
   let doy = $derived(dayOfYear(now))
   // Reuses dayOfYear itself for "days in this year" instead of a separate
   // leap-year check — Dec 31 is always the last day of its own year.
   let daysInYear = $derived(dayOfYear(new Date(now.getFullYear(), 11, 31)))
   let s = $derived(t($settingsStore.locale))
+
+  // An unnamed GPS fix ("Current location") says nothing worth showing.
+  let place = $derived.by(() => {
+    const name = $settingsStore.location?.name
+    return name && !isPlaceholderLocationName(name) ? name : ''
+  })
 
   let saintName = $derived(
     $settingsStore.saints.enabled
@@ -108,15 +130,20 @@
 </script>
 
 <p class="date">
-  {#each dateParts as part, i (i + part.type)}
-    {#if part.type === 'year'}
-      <span>{part.value}</span>
-    {:else}
-      {part.value}
-    {/if}
-  {/each}
+  {#each dateGroups as group, g (g)}<span class="group"
+      >{#each group as part, i (i + part.type)}{#if part.type === 'year'}<span
+            class="year">{part.value}</span
+          >{:else}{part.value}{/if}{/each}</span
+    >{/each}
 </p>
 <ul class="meta">
+  {#if place}
+    <li class="place">
+      <svg class="pin" aria-hidden="true"><use href="#i-pin" /></svg><b
+        >{place}</b
+      >
+    </li>
+  {/if}
   <li>{s.dateLine.week} <b>{week}</b></li>
   <li>{s.dateLine.day} <b>{doy}</b> {s.dateLine.of} {daysInYear}</li>
   {#if saintName}
@@ -155,9 +182,14 @@
     font-family: var(--display);
     font-size: var(--fs-xl);
     font-weight: 300;
+    line-height: 1.1;
     letter-spacing: -0.01em;
   }
-  .date span {
+  .date .group {
+    display: inline-block;
+    white-space: pre;
+  }
+  .date .year {
     color: var(--text-2);
   }
   .meta {
@@ -167,7 +199,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: calc(var(--u) * 0.8) calc(var(--u) * 2.4);
-    font-size: var(--fs-m);
+    font-size: max(17px, calc(var(--u) * 1.9));
     color: var(--text-2);
   }
   .meta li {
@@ -183,6 +215,15 @@
     width: 0.9em;
     height: 0.9em;
     opacity: 0.6;
+  }
+  .meta .place {
+    gap: 0.35em;
+  }
+  .pin {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    color: var(--ice);
   }
   /* The info popover's content is authored here but renders inside
      InfoDisclosure — reset the UA default <p> margin the same way

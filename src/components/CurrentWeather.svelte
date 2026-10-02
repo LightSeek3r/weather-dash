@@ -11,6 +11,8 @@
   import { displayTemperature } from '../lib/weather/units'
   import { compassDirection } from '../lib/weather/wind'
   import { illuminationPercent, daysUntilPhase } from '../lib/weather/moon'
+  import { remainingDayRange } from '../lib/weather/todayRange'
+  import { europeanAqiBand } from '../lib/weather/aqi'
   import type { MoonPhaseKey } from '../lib/weather/types'
   import WeatherIconSprite from './WeatherIconSprite.svelte'
   import InfoDisclosure from './InfoDisclosure.svelte'
@@ -42,6 +44,18 @@
   }
 
   let conditionText = $derived(visual ? conditionLabel(s.weather, visual) : '')
+
+  let range = $derived(snapshot ? remainingDayRange(snapshot) : null)
+  let rangeLabel = $derived(
+    range
+      ? s.weather.panel.todayRange(
+          `${roundedTemp(range.min)}°`,
+          `${roundedTemp(range.max)}°`
+        )
+      : ''
+  )
+  let aqi = $derived(snapshot?.airQuality?.europeanAqi ?? null)
+  let aqiBand = $derived(aqi === null ? null : europeanAqiBand(aqi))
 
   let timeFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {
@@ -87,7 +101,20 @@
 {:else}
   <div class="weather-panel">
     <div class="cap-now">
-      <p class="temp">{roundedTemp(current.temperature)}<sup>°{unit}</sup></p>
+      <div class="temp-row">
+        <p class="temp">
+          {roundedTemp(current.temperature)}<sup>°{unit}</sup>
+        </p>
+        {#if range}
+          <p class="range" title={rangeLabel}>
+            <span class="sr-only">{rangeLabel}</span>
+            <span class="hi" aria-hidden="true">↑{roundedTemp(range.max)}°</span
+            >
+            <span class="lo" aria-hidden="true">↓{roundedTemp(range.min)}°</span
+            >
+          </p>
+        {/if}
+      </div>
       <svg class="hero-icon" aria-hidden="true">
         <use href="#{visual.icon}" />
       </svg>
@@ -95,10 +122,34 @@
     <div class="cap-cond">
       <div>
         <p class="cond">{conditionText}</p>
-        <p class="rain">
-          <svg class="ic-inline" aria-hidden="true"><use href="#i-drop" /></svg>
-          {current.precipitationProbability}% · {current.precipitationMm} mm
-        </p>
+        <div class="cond-meta">
+          <p class="rain">
+            <svg class="ic-inline" aria-hidden="true"
+              ><use href="#i-drop" /></svg
+            >
+            {current.precipitationProbability}% · {current.precipitationMm} mm
+          </p>
+          {#if aqi !== null && aqiBand}
+            <InfoDisclosure
+              label={s.weather.panel.airQuality}
+              placement="above"
+            >
+              {#snippet trigger()}
+                <p class="aqi" title={s.weather.panel.airQuality}>
+                  <svg class="aqi-ic aqi--{aqiBand}" aria-hidden="true"
+                    ><use href="#i-air" /></svg
+                  ><span class="sr-only">{s.weather.panel.airQuality}</span>
+                  <b>{s.weather.panel.aqiBand[aqiBand]}</b><span
+                    class="aqi-value">{Math.round(aqi)}</span
+                  >
+                </p>
+              {/snippet}
+              {#snippet content()}
+                <p>{s.weather.panel.aqiScaleInfo}</p>
+              {/snippet}
+            </InfoDisclosure>
+          {/if}
+        </div>
       </div>
       <InfoDisclosure
         label={s.weather.panel.moonPhase}
@@ -252,14 +303,41 @@
     flex: none;
   }
 
+  .temp-row {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 1.2);
+  }
+  .range {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    font-family: var(--display);
+    font-size: var(--fs-m);
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .range .hi {
+    color: var(--peach);
+  }
+  .range .lo {
+    color: var(--ice);
+  }
+
   .cond {
     font-family: var(--display);
     font-size: var(--fs-l);
     font-weight: 400;
     line-height: 1.15;
   }
-  .rain {
+  .cond-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--u) * 0.3) calc(var(--u) * 1.4);
     margin-top: calc(var(--u) * 0.5);
+  }
+  .rain {
     display: inline-flex;
     align-items: center;
     gap: 0.4em;
@@ -358,10 +436,49 @@
     font-size: 1.3em;
     line-height: 1;
   }
+  .aqi {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    min-width: 0;
+    color: var(--text-3);
+    font-size: var(--fs-s);
+  }
+  .aqi b {
+    color: var(--text);
+    font-weight: 400;
+  }
+  .aqi-value {
+    color: var(--text-2);
+  }
+  .aqi-ic {
+    width: 1.15em;
+    height: 1.15em;
+    color: var(--aqi);
+    filter: drop-shadow(0 0 0.3em var(--aqi));
+  }
+  .aqi--good {
+    --aqi: #5ee8dd;
+  }
+  .aqi--fair {
+    --aqi: #7ddcaa;
+  }
+  .aqi--moderate {
+    --aqi: #f0e15a;
+  }
+  .aqi--poor {
+    --aqi: #ff9a6e;
+  }
+  .aqi--veryPoor {
+    --aqi: #ff6f91;
+  }
+  .aqi--extremelyPoor {
+    --aqi: #c792ff;
+  }
 
   /* Short screens: the cap card's height is the hero row's, so every line
      here competes with the clock. The moon glyph already shows the phase;
-     its name stays in the title and for screen readers. */
+     its name stays for screen readers. */
   @media (max-height: 820px) {
     .weather-panel {
       gap: calc(var(--u) * 0.9);
@@ -405,6 +522,19 @@
     }
     .dial {
       display: none;
+    }
+  }
+
+  /* Narrow columns: the low/high goes under the temperature, not beside it. */
+  @media (orientation: portrait), (max-height: 520px) {
+    .temp-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: calc(var(--u) * 0.4);
+    }
+    .range {
+      flex-direction: row;
+      gap: 0.7em;
     }
   }
 

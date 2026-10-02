@@ -95,12 +95,14 @@ vec3 hash31(float p) {
 // Stand-in for Layout.svelte's .bg-sky (y up: sky-0 top, sky-2 bottom).
 vec3 env(vec2 p) {
   p = clamp(p, 0.0, 1.0);
-  vec3 top = vec3(0.039, 0.090, 0.149);
-  vec3 mid = vec3(0.063, 0.141, 0.227);
-  vec3 bot = vec3(0.102, 0.180, 0.275);
-  vec3 c = p.y > 0.48 ? mix(mid, top, (p.y - 0.48) / 0.52) : mix(bot, mid, p.y / 0.48);
-  c += vec3(1.0, 0.588, 0.463) * 0.2 * (1.0 - smoothstep(0.0, 0.8, length(p * vec2(1.0, 1.3))));
-  c += vec3(0.361, 0.667, 0.824) * 0.16 * (1.0 - smoothstep(0.0, 0.8, length(p - 1.0)));
+  vec3 top = vec3(0.027, 0.051, 0.141);
+  vec3 mid = vec3(0.047, 0.102, 0.239);
+  vec3 bot = vec3(0.059, 0.149, 0.314);
+  vec3 c = p.y > 0.5 ? mix(mid, top, (p.y - 0.5) / 0.5) : mix(bot, mid, p.y / 0.5);
+  c += vec3(0.157, 0.863, 0.784) * 0.2 * (1.0 - smoothstep(0.0, 0.8, length(p * vec2(1.0, 1.3))));
+  c += vec3(0.275, 0.549, 1.0) * 0.2 * (1.0 - smoothstep(0.0, 0.8, length(p - 1.0)));
+  c += vec3(0.235, 0.51, 1.0) * 0.25 * (1.0 - smoothstep(0.0, 0.55, length(p - vec2(0.12, 0.85))));
+  c += vec3(0.588, 0.431, 1.0) * 0.25 * (1.0 - smoothstep(0.0, 0.6, length(p - vec2(0.55, -0.05))));
   return c;
 }
 

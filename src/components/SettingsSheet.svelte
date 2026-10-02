@@ -10,6 +10,7 @@
   import { t } from '../lib/ui/strings'
   import { geocode } from '../lib/weather/openMeteo'
   import { fetchApproxLocation } from '../lib/weather/approxLocation'
+  import { nameUnnamedLocation } from '../lib/weather/locationName'
   import type { GeocodeResult } from '../lib/weather/types'
   import { loadHolidays, type HolidaysModule } from '../lib/date/holidaysLazy'
   import type { SaintTradition } from '../lib/date/saints'
@@ -141,15 +142,15 @@
     navigator.geolocation.getCurrentPosition(
       (position) => {
         gpsBusy = false
-        // No reverse geocoding in v1 (see comment above on
-        // currentLocationName), so raw GPS coords carry no country code —
-        // holidays.baseCountry can't be auto-set here and is left as-is;
-        // the user can still pick it manually in the holidays section.
+        // Saved under the placeholder name first so the weather loads at
+        // once; the reverse lookup then renames it and sets the holiday
+        // country, or leaves the placeholder if it fails.
         setLocation(
           position.coords.latitude,
           position.coords.longitude,
           s.weather.location.currentLocationName
         )
+        void nameUnnamedLocation(true)
       },
       (err) => {
         gpsBusy = false
@@ -913,6 +914,13 @@
             target="_blank"
             rel="noopener noreferrer">Open-Meteo.com</a
           > (CC BY 4.0)
+        </p>
+        <p>
+          Place names © <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener noreferrer">OpenStreetMap contributors</a
+          > (ODbL)
         </p>
         <p>
           Typefaces: <a

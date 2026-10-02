@@ -27,6 +27,7 @@ import type { Locale } from '../core/storage/settings'
 import type { RelativeTimeLabels } from './status'
 import type { ConditionKey, WeatherVisual } from '../weather/mapWmo'
 import type { MoonPhaseKey } from '../weather/types'
+import type { AqiBand } from '../weather/aqi'
 
 type Intensity = NonNullable<WeatherVisual['intensity']>
 
@@ -161,12 +162,19 @@ export interface Dictionary {
       moonNextNew: (days: number) => string
       tomorrow: string
       noLocation: string
+      /** Accessible name for the rest-of-today low/high shown beside the temperature. */
+      todayRange: (low: string, high: string) => string
+      airQuality: string
+      /** European AQI band names, as "Air quality: {band}". */
+      aqiBand: Record<AqiBand, string>
+      /** Air-quality info popover: one-line EEA band explanation. */
+      aqiScaleInfo: string
     }
     location: {
       searchPlaceholder: string
       searchButton: string
       useMyLocation: string
-      /** Location name stored after a successful GPS lookup (no reverse geocoding in v1). */
+      /** Placeholder name for a GPS fix until reverse geocoding (lib/weather/locationName.ts) names it. */
       currentLocationName: string
       gpsDenied: string
       /** GPS and the network fallback both failed. */
@@ -340,7 +348,19 @@ const en: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'New moon today' : `New moon in ${days}d`,
       tomorrow: 'Tomorrow',
-      noLocation: 'Set a location to see the weather'
+      noLocation: 'Set a location to see the weather',
+      todayRange: (low, high) => `Until midnight: low ${low}, high ${high}`,
+      airQuality: 'Air quality',
+      aqiBand: {
+        good: 'Good',
+        fair: 'Fair',
+        moderate: 'Moderate',
+        poor: 'Poor',
+        veryPoor: 'Very poor',
+        extremelyPoor: 'Extremely poor'
+      },
+      aqiScaleInfo:
+        'European Air Quality Index: 0–20 good, 20–40 fair, 40–60 moderate, 60–80 poor, 80–100 very poor, 100+ extremely poor.'
     },
     location: {
       searchPlaceholder: 'Search for a city',
@@ -526,7 +546,19 @@ const fr: Dictionary = {
           ? 'Nouvelle lune aujourd’hui'
           : `Nouvelle lune dans ${days} j`,
       tomorrow: 'Demain',
-      noLocation: 'Définissez un lieu pour voir la météo'
+      noLocation: 'Définissez un lieu pour voir la météo',
+      todayRange: (low, high) => `Jusqu’à minuit : min ${low}, max ${high}`,
+      airQuality: 'Qualité de l’air',
+      aqiBand: {
+        good: 'Bonne',
+        fair: 'Moyenne',
+        moderate: 'Dégradée',
+        poor: 'Mauvaise',
+        veryPoor: 'Très mauvaise',
+        extremelyPoor: 'Extrêmement mauvaise'
+      },
+      aqiScaleInfo:
+        'Indice européen de la qualité de l’air : 0–20 bonne, 20–40 moyenne, 40–60 dégradée, 60–80 mauvaise, 80–100 très mauvaise, 100+ extrêmement mauvaise.'
     },
     location: {
       searchPlaceholder: 'Rechercher une ville',
@@ -709,7 +741,19 @@ const nl: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Vandaag nieuwe maan' : `Nieuwe maan in ${days} d`,
       tomorrow: 'Morgen',
-      noLocation: 'Stel een locatie in om het weer te zien'
+      noLocation: 'Stel een locatie in om het weer te zien',
+      todayRange: (low, high) => `Tot middernacht: min ${low}, max ${high}`,
+      airQuality: 'Luchtkwaliteit',
+      aqiBand: {
+        good: 'Goed',
+        fair: 'Redelijk',
+        moderate: 'Matig',
+        poor: 'Slecht',
+        veryPoor: 'Zeer slecht',
+        extremelyPoor: 'Extreem slecht'
+      },
+      aqiScaleInfo:
+        'Europese luchtkwaliteitsindex: 0–20 goed, 20–40 redelijk, 40–60 matig, 60–80 slecht, 80–100 zeer slecht, 100+ extreem slecht.'
     },
     location: {
       searchPlaceholder: 'Zoek een stad',
@@ -891,7 +935,19 @@ const de: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Heute Neumond' : `Neumond in ${days} Tg.`,
       tomorrow: 'Morgen',
-      noLocation: 'Standort festlegen, um das Wetter zu sehen'
+      noLocation: 'Standort festlegen, um das Wetter zu sehen',
+      todayRange: (low, high) => `Bis Mitternacht: Tief ${low}, Hoch ${high}`,
+      airQuality: 'Luftqualität',
+      aqiBand: {
+        good: 'Gut',
+        fair: 'Ausreichend',
+        moderate: 'Mäßig',
+        poor: 'Schlecht',
+        veryPoor: 'Sehr schlecht',
+        extremelyPoor: 'Extrem schlecht'
+      },
+      aqiScaleInfo:
+        'Europäischer Luftqualitätsindex: 0–20 gut, 20–40 ausreichend, 40–60 mäßig, 60–80 schlecht, 80–100 sehr schlecht, 100+ extrem schlecht.'
     },
     location: {
       searchPlaceholder: 'Stadt suchen',
@@ -1072,7 +1128,19 @@ const es: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Luna nueva hoy' : `Luna nueva en ${days} d`,
       tomorrow: 'Mañana',
-      noLocation: 'Configura una ubicación para ver el tiempo'
+      noLocation: 'Configura una ubicación para ver el tiempo',
+      todayRange: (low, high) => `Hasta medianoche: mín. ${low}, máx. ${high}`,
+      airQuality: 'Calidad del aire',
+      aqiBand: {
+        good: 'Buena',
+        fair: 'Aceptable',
+        moderate: 'Moderada',
+        poor: 'Mala',
+        veryPoor: 'Muy mala',
+        extremelyPoor: 'Extremadamente mala'
+      },
+      aqiScaleInfo:
+        'Índice europeo de calidad del aire: 0–20 buena, 20–40 aceptable, 40–60 moderada, 60–80 mala, 80–100 muy mala, 100+ extremadamente mala.'
     },
     location: {
       searchPlaceholder: 'Buscar una ciudad',
@@ -1255,7 +1323,19 @@ const it: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Luna nuova oggi' : `Luna nuova in ${days} g`,
       tomorrow: 'Domani',
-      noLocation: 'Imposta una posizione per vedere il meteo'
+      noLocation: 'Imposta una posizione per vedere il meteo',
+      todayRange: (low, high) => `Fino a mezzanotte: min ${low}, max ${high}`,
+      airQuality: 'Qualità dell’aria',
+      aqiBand: {
+        good: 'Buona',
+        fair: 'Discreta',
+        moderate: 'Moderata',
+        poor: 'Scadente',
+        veryPoor: 'Molto scadente',
+        extremelyPoor: 'Estremamente scadente'
+      },
+      aqiScaleInfo:
+        'Indice europeo della qualità dell’aria: 0–20 buona, 20–40 discreta, 40–60 moderata, 60–80 scadente, 80–100 molto scadente, 100+ estremamente scadente.'
     },
     location: {
       searchPlaceholder: 'Cerca una città',
@@ -1437,7 +1517,19 @@ const pt: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Lua nova hoje' : `Lua nova em ${days} d`,
       tomorrow: 'Amanhã',
-      noLocation: 'Defina uma localização para ver o tempo'
+      noLocation: 'Defina uma localização para ver o tempo',
+      todayRange: (low, high) => `Até à meia-noite: mín. ${low}, máx. ${high}`,
+      airQuality: 'Qualidade do ar',
+      aqiBand: {
+        good: 'Boa',
+        fair: 'Razoável',
+        moderate: 'Moderada',
+        poor: 'Má',
+        veryPoor: 'Muito má',
+        extremelyPoor: 'Extremamente má'
+      },
+      aqiScaleInfo:
+        'Índice europeu de qualidade do ar: 0–20 boa, 20–40 razoável, 40–60 moderada, 60–80 má, 80–100 muito má, 100+ extremamente má.'
     },
     location: {
       searchPlaceholder: 'Pesquisar uma cidade',
@@ -1627,7 +1719,19 @@ const ru: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Сегодня новолуние' : `Новолуние через ${days} дн`,
       tomorrow: 'Завтра',
-      noLocation: 'Укажите местоположение, чтобы увидеть погоду'
+      noLocation: 'Укажите местоположение, чтобы увидеть погоду',
+      todayRange: (low, high) => `До полуночи: мин. ${low}, макс. ${high}`,
+      airQuality: 'Качество воздуха',
+      aqiBand: {
+        good: 'Хорошее',
+        fair: 'Приемлемое',
+        moderate: 'Умеренное',
+        poor: 'Плохое',
+        veryPoor: 'Очень плохое',
+        extremelyPoor: 'Крайне плохое'
+      },
+      aqiScaleInfo:
+        'Европейский индекс качества воздуха: 0–20 хорошее, 20–40 приемлемое, 40–60 умеренное, 60–80 плохое, 80–100 очень плохое, 100+ крайне плохое.'
     },
     location: {
       searchPlaceholder: 'Поиск города',
@@ -1786,7 +1890,19 @@ const zh: Dictionary = {
       moonNextFull: (days) => (days <= 0 ? '今天满月' : `满月还有 ${days} 天`),
       moonNextNew: (days) => (days <= 0 ? '今天新月' : `新月还有 ${days} 天`),
       tomorrow: '明天',
-      noLocation: '设置位置以查看天气'
+      noLocation: '设置位置以查看天气',
+      todayRange: (low, high) => `至午夜：最低 ${low}，最高 ${high}`,
+      airQuality: '空气质量',
+      aqiBand: {
+        good: '优',
+        fair: '良',
+        moderate: '中等',
+        poor: '差',
+        veryPoor: '很差',
+        extremelyPoor: '极差'
+      },
+      aqiScaleInfo:
+        '欧洲空气质量指数：0–20 优，20–40 良，40–60 中等，60–80 差，80–100 很差，100 以上极差。'
     },
     location: {
       searchPlaceholder: '搜索城市',
@@ -1971,7 +2087,19 @@ const hi: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'आज अमावस्या' : `अमावस्या ${days} दिन में`,
       tomorrow: 'कल',
-      noLocation: 'मौसम देखने के लिए स्थान सेट करें'
+      noLocation: 'मौसम देखने के लिए स्थान सेट करें',
+      todayRange: (low, high) => `आधी रात तक: न्यूनतम ${low}, अधिकतम ${high}`,
+      airQuality: 'वायु गुणवत्ता',
+      aqiBand: {
+        good: 'अच्छी',
+        fair: 'ठीक',
+        moderate: 'मध्यम',
+        poor: 'खराब',
+        veryPoor: 'बहुत खराब',
+        extremelyPoor: 'अत्यंत खराब'
+      },
+      aqiScaleInfo:
+        'यूरोपीय वायु गुणवत्ता सूचकांक: 0–20 अच्छी, 20–40 ठीक, 40–60 मध्यम, 60–80 खराब, 80–100 बहुत खराब, 100+ अत्यंत खराब।'
     },
     location: {
       searchPlaceholder: 'शहर खोजें',
@@ -2149,7 +2277,20 @@ const ar: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'محاق اليوم' : `المحاق بعد ${days} يوم`,
       tomorrow: 'غدًا',
-      noLocation: 'حدّد موقعًا لرؤية حالة الطقس'
+      noLocation: 'حدّد موقعًا لرؤية حالة الطقس',
+      todayRange: (low, high) =>
+        `حتى منتصف الليل: الصغرى ${low}، العظمى ${high}`,
+      airQuality: 'جودة الهواء',
+      aqiBand: {
+        good: 'جيدة',
+        fair: 'مقبولة',
+        moderate: 'متوسطة',
+        poor: 'رديئة',
+        veryPoor: 'رديئة جدًا',
+        extremelyPoor: 'رديئة للغاية'
+      },
+      aqiScaleInfo:
+        'مؤشر جودة الهواء الأوروبي: 0–20 جيدة، 20–40 مقبولة، 40–60 متوسطة، 60–80 رديئة، 80–100 رديئة جدًا، 100+ رديئة للغاية.'
     },
     location: {
       searchPlaceholder: 'البحث عن مدينة',
@@ -2330,7 +2471,20 @@ const bn: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'আজ অমাবস্যা' : `${days} দিনে অমাবস্যা`,
       tomorrow: 'আগামীকাল',
-      noLocation: 'আবহাওয়া দেখতে একটি স্থান নির্ধারণ করুন'
+      noLocation: 'আবহাওয়া দেখতে একটি স্থান নির্ধারণ করুন',
+      todayRange: (low, high) =>
+        `মধ্যরাত পর্যন্ত: সর্বনিম্ন ${low}, সর্বোচ্চ ${high}`,
+      airQuality: 'বায়ুর মান',
+      aqiBand: {
+        good: 'ভালো',
+        fair: 'মোটামুটি',
+        moderate: 'মাঝারি',
+        poor: 'খারাপ',
+        veryPoor: 'খুব খারাপ',
+        extremelyPoor: 'অত্যন্ত খারাপ'
+      },
+      aqiScaleInfo:
+        'ইউরোপীয় বায়ুমান সূচক: 0–20 ভালো, 20–40 মোটামুটি, 40–60 মাঝারি, 60–80 খারাপ, 80–100 খুব খারাপ, 100+ অত্যন্ত খারাপ।'
     },
     location: {
       searchPlaceholder: 'একটি শহর খুঁজুন',
@@ -2510,7 +2664,20 @@ const ur: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'آج نیا چاند ہے' : `${days} دن میں نیا چاند`,
       tomorrow: 'کل',
-      noLocation: 'موسم دیکھنے کے لیے مقام مقرر کریں'
+      noLocation: 'موسم دیکھنے کے لیے مقام مقرر کریں',
+      todayRange: (low, high) =>
+        `آدھی رات تک: کم از کم ${low}، زیادہ سے زیادہ ${high}`,
+      airQuality: 'ہوا کا معیار',
+      aqiBand: {
+        good: 'اچھا',
+        fair: 'مناسب',
+        moderate: 'درمیانہ',
+        poor: 'خراب',
+        veryPoor: 'بہت خراب',
+        extremelyPoor: 'انتہائی خراب'
+      },
+      aqiScaleInfo:
+        'یورپی ہوا کے معیار کا اشاریہ: 0–20 اچھا، 20–40 مناسب، 40–60 درمیانہ، 60–80 خراب، 80–100 بہت خراب، 100+ انتہائی خراب۔'
     },
     location: {
       searchPlaceholder: 'شہر تلاش کریں',
@@ -2693,7 +2860,20 @@ const id: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? 'Bulan baru hari ini' : `Bulan baru dalam ${days} hari`,
       tomorrow: 'Besok',
-      noLocation: 'Atur lokasi untuk melihat cuaca'
+      noLocation: 'Atur lokasi untuk melihat cuaca',
+      todayRange: (low, high) =>
+        `Hingga tengah malam: min ${low}, maks ${high}`,
+      airQuality: 'Kualitas udara',
+      aqiBand: {
+        good: 'Baik',
+        fair: 'Cukup',
+        moderate: 'Sedang',
+        poor: 'Buruk',
+        veryPoor: 'Sangat buruk',
+        extremelyPoor: 'Berbahaya'
+      },
+      aqiScaleInfo:
+        'Indeks Kualitas Udara Eropa: 0–20 baik, 20–40 cukup, 40–60 sedang, 60–80 buruk, 80–100 sangat buruk, 100+ berbahaya.'
     },
     location: {
       searchPlaceholder: 'Cari kota',
@@ -2871,7 +3051,19 @@ const ja: Dictionary = {
       moonNextNew: (days) =>
         days <= 0 ? '今日は新月' : `新月まであと${days}日`,
       tomorrow: '明日',
-      noLocation: '天気を見るには場所を設定してください'
+      noLocation: '天気を見るには場所を設定してください',
+      todayRange: (low, high) => `深夜0時まで：最低 ${low}、最高 ${high}`,
+      airQuality: '大気質',
+      aqiBand: {
+        good: '良好',
+        fair: 'まずまず',
+        moderate: '普通',
+        poor: '悪い',
+        veryPoor: '非常に悪い',
+        extremelyPoor: '極めて悪い'
+      },
+      aqiScaleInfo:
+        '欧州大気質指数：0–20 良好、20–40 まずまず、40–60 普通、60–80 悪い、80–100 非常に悪い、100以上 極めて悪い。'
     },
     location: {
       searchPlaceholder: '都市を検索',

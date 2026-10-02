@@ -94,12 +94,15 @@
 
   .bg-sky {
     z-index: 1;
-    background: linear-gradient(
-      178deg,
-      var(--sky-0) 0%,
-      var(--sky-1) 52%,
-      var(--sky-2) 100%
-    );
+    background:
+      radial-gradient(55% 50% at 12% 15%, var(--field-high), transparent),
+      radial-gradient(60% 50% at 55% 105%, var(--field-low), transparent),
+      linear-gradient(
+        180deg,
+        var(--sky-0) 0%,
+        var(--sky-1) 50%,
+        var(--sky-2) 100%
+      );
     overflow: hidden;
     transition: opacity 0.6s linear;
   }

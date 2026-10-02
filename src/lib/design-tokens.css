@@ -43,13 +43,15 @@
      by reading more from the (now taller) viewport height. */
   --u: min(1vw, 1.55vh);
 
-  /* Blue-hour dusk gradient. Never pure #000 — avoids OLED black smear and
-     keeps the room from going lit-up dark at night. */
-  --sky-0: #0a1726;
-  --sky-1: #10243a;
-  --sky-2: #1a2e46;
-  --pool-low: rgb(255 150 118 / 0.16); /* street glow */
-  --pool-high: rgb(92 170 210 / 0.14); /* cold sky */
+  /* Aurora: navy gradient under soft light fields. Never pure #000 — avoids
+     OLED black smear and keeps the room from going lit-up dark at night. */
+  --sky-0: #070d24;
+  --sky-1: #0c1a3d;
+  --sky-2: #0f2650;
+  --pool-low: rgb(40 220 200 / 0.32); /* drifting teal */
+  --pool-high: rgb(70 140 255 / 0.3); /* drifting azure */
+  --field-high: rgb(60 130 255 / 0.4); /* fixed, top-left behind the clock */
+  --field-low: rgb(150 110 255 / 0.45); /* fixed, violet under the timeline */
 
   --text: #eef4fb; /* primary */
   --text-2: #bdcddd; /* secondary */
@@ -68,7 +70,7 @@
   /* Type scale */
   --fs-clock: calc(var(--u) * 19);
   --fs-temp: calc(var(--u) * 9);
-  --fs-xl: calc(var(--u) * 3.3);
+  --fs-xl: calc(var(--u) * 5);
   --fs-l: calc(var(--u) * 2.1);
   --fs-m: max(17px, calc(var(--u) * 1.55));
   --fs-s: max(14px, calc(var(--u) * 1.2));
@@ -134,19 +136,26 @@
    dusk under a "Clear sky" label reads as evening, not sunshine, so sunlit
    daytime warms the sky, light pools and glass. Base text colours are kept
    and must stay >=4.5:1 on these (checked by tests/visual). */
+/* The sunny top-left field is saturated rather than light: the sun's glare
+   already brightens that corner, and a paler blue would drop the clock's
+   contrast. */
 :root[data-sky='sunny'] {
-  --sky-0: #1a4a76;
-  --sky-1: #2d5677;
-  --sky-2: #66564c;
-  --pool-low: rgb(255 176 112 / 0.36);
-  --pool-high: rgb(255 210 130 / 0.5);
+  --sky-0: #0e3466;
+  --sky-1: #154c88;
+  --sky-2: #1a5a97;
+  --pool-low: rgb(80 210 255 / 0.3);
+  --pool-high: rgb(255 210 140 / 0.45);
+  --field-high: rgb(30 110 255 / 0.65);
+  --field-low: rgb(140 130 255 / 0.45);
   --glass: rgb(255 236 214 / 0.09);
   --glass-edge: rgb(255 228 196 / 0.22);
 }
 :root[data-sky='partly'] {
-  --sky-0: #133452;
-  --sky-1: #22405a;
-  --sky-2: #3f3a3c;
-  --pool-low: rgb(255 164 118 / 0.22);
-  --pool-high: rgb(255 204 140 / 0.24);
+  --sky-0: #0b2550;
+  --sky-1: #123b6e;
+  --sky-2: #16457a;
+  --pool-low: rgb(70 200 240 / 0.28);
+  --pool-high: rgb(255 204 140 / 0.26);
+  --field-high: rgb(45 120 255 / 0.5);
+  --field-low: rgb(145 120 255 / 0.45);
 }

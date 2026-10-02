@@ -137,5 +137,26 @@
         <circle cx="12" cy="7.5" r="0.1" stroke-linecap="round" />
       </g>
     </symbol>
+    <symbol id="i-air" viewBox="0 0 24 24">
+      <g
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      >
+        <path d="M3 8h11a3 3 0 1 0-3-3" />
+        <path d="M3 12h16a3 3 0 1 1-3 3" />
+        <path d="M3 16h7" />
+      </g>
+    </symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          stroke-linejoin="round"
+          d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"
+        />
+        <circle cx="12" cy="10" r="2.3" />
+      </g>
+    </symbol>
   </defs>
 </svg>

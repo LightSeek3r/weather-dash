@@ -36,6 +36,7 @@
     initWeather,
     setDebugWeatherSnapshot
   } from './lib/weather/store'
+  import { nameUnnamedLocation } from './lib/weather/locationName'
   import {
     buildDebugSnapshot,
     isDebugWeatherState,
@@ -108,7 +109,7 @@
   let lastUpdated = $derived($weatherStore.lastUpdated)
 
   // Sky mood for the [data-sky] token overrides in design-tokens.css. Only
-  // sunlit daytime states get one; everything else keeps Blue Hour, which
+  // sunlit daytime states get one; everything else keeps the default sky, which
   // already suits night, rain, fog and snow.
   let skyMood = $derived.by(() => {
     const c = $weatherStore.snapshot?.current
@@ -180,6 +181,8 @@
       debugWeather && isDebugWeatherState(debugWeather)
         ? startDebugWeather(debugWeather)
         : initWeather()
+    // GPS fixes saved before reverse geocoding existed are still unnamed.
+    if (!debugWeather) void nameUnnamedLocation(false)
     const stopNightlyReload = scheduleNightlyReload('03:30')
     if (started) {
       void acquireWakeLock()
