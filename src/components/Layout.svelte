@@ -199,6 +199,14 @@
     }
   }
 
+  /* Text straight on the sky, no glass: the sun, moon and fog pass behind
+     it, and this halo only shows over them. */
+  .hero,
+  .tm {
+    text-shadow:
+      0 0 0.12em rgb(4 10 32 / 0.75),
+      0 0 0.45em rgb(4 10 32 / 0.6);
+  }
   .hero {
     grid-area: hero;
     display: flex;
@@ -253,8 +261,9 @@
     box-shadow:
       inset 0 1px 0 var(--glass-hi),
       0 30px 60px -30px rgb(0 8 20 / 0.6);
-    -webkit-backdrop-filter: blur(22px) saturate(1.25);
-    backdrop-filter: blur(22px) saturate(1.25);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25)
+      brightness(var(--glass-dim));
+    backdrop-filter: blur(22px) saturate(1.25) brightness(var(--glass-dim));
   }
 
   @media (prefers-reduced-motion: reduce) {

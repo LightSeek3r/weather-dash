@@ -186,11 +186,6 @@
     line-height: 1.1;
     letter-spacing: -0.01em;
   }
-  /* The sun and moon cross behind this text; the halo only shows over them. */
-  .date,
-  .meta {
-    text-shadow: 0 0 0.35em rgb(4 10 32 / 0.7);
-  }
   /* break-spaces keeps the separator's trailing space as real width between
      the groups, yet still wraps inside a group too wide for any line. */
   .date .group {

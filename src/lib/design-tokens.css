@@ -63,6 +63,9 @@
   --glass: rgb(196 222 255 / 0.075);
   --glass-edge: rgb(222 238 255 / 0.16);
   --glass-hi: rgb(255 255 255 / 0.1);
+  /* Backdrop brightness behind glass: the only dim the sun ever gets, and
+     only where text sits on top of it. */
+  --glass-dim: 1;
 
   --display: 'Lexend', 'Segoe UI Variable Display', 'Avenir Next', sans-serif;
   --text-font: 'Atkinson Hyperlegible', 'Verdana', sans-serif;
@@ -147,8 +150,14 @@
   --pool-high: rgb(255 210 140 / 0.45);
   --field-high: rgb(30 110 255 / 0.65);
   --field-low: rgb(140 130 255 / 0.45);
-  --glass: rgb(255 236 214 / 0.09);
+  --glass: rgb(60 130 220 / 0.14);
   --glass-edge: rgb(255 228 196 / 0.22);
+  /* The sun sits behind the weather card mid-afternoon: dim the glare under
+     the glass and lift the labels, measured >=4.5:1 over the brightest
+     pixels behind each line (not the sky token alone). */
+  --glass-dim: 0.4;
+  --text-2: #d4e1ee;
+  --text-3: #c3d3e2;
 }
 :root[data-sky='partly'] {
   --sky-0: #0b2550;
@@ -158,4 +167,9 @@
   --pool-high: rgb(255 204 140 / 0.26);
   --field-high: rgb(45 120 255 / 0.5);
   --field-low: rgb(145 120 255 / 0.45);
+  --glass-dim: 0.7;
+}
+:root[data-sky='fog'] {
+  --glass-dim: 0.6;
+  --text-3: #b4c5d6;
 }

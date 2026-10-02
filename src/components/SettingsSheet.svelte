@@ -966,8 +966,9 @@
     background: var(--color-glass, rgba(196, 222, 255, 0.09));
     border-inline-start: 1px solid
       var(--color-glass-edge, rgba(222, 238, 255, 0.18));
-    backdrop-filter: blur(24px) saturate(1.25);
-    -webkit-backdrop-filter: blur(24px) saturate(1.25);
+    backdrop-filter: blur(24px) saturate(1.25) brightness(var(--glass-dim, 1));
+    -webkit-backdrop-filter: blur(24px) saturate(1.25)
+      brightness(var(--glass-dim, 1));
     color: var(--color-text, #eef4fb);
     font-family: var(--font-body, sans-serif);
     overflow-y: auto;
@@ -1072,6 +1073,10 @@
     color: var(--color-text, #eef4fb);
     font-family: var(--font-body, sans-serif);
     font-size: var(--font-size-md, 1rem);
+  }
+  .location-search input::placeholder {
+    color: var(--text-3);
+    opacity: 1;
   }
 
   .location-search button,

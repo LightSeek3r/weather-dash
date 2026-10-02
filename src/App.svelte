@@ -108,13 +108,15 @@
   // through subsequent failures rather than clearing it.
   let lastUpdated = $derived($weatherStore.lastUpdated)
 
-  // Sky mood for the [data-sky] token overrides in design-tokens.css. Only
-  // sunlit daytime states get one; everything else keeps the default sky, which
-  // already suits night, rain, fog and snow.
+  // Sky mood for the [data-sky] token overrides in design-tokens.css: sunlit
+  // daytime and fog get one; everything else keeps the default sky, which
+  // already suits night, rain and snow.
   let skyMood = $derived.by(() => {
     const c = $weatherStore.snapshot?.current
-    if (!c?.isDay) return null
+    if (!c) return null
     const key = mapWmoCode(c.weatherCode, c.isDay).conditionKey
+    if (key === 'fog') return 'fog' // a pale wash behind the glass, day or night
+    if (!c.isDay) return null
     if (key === 'clearSky' || key === 'mainlyClear') return 'sunny'
     if (key === 'partlyCloudy') return 'partly'
     return null
@@ -319,8 +321,9 @@
     border-radius: var(--r);
     background: var(--glass);
     border: 1px solid var(--glass-edge);
-    -webkit-backdrop-filter: blur(22px) saturate(1.25);
-    backdrop-filter: blur(22px) saturate(1.25);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25)
+      brightness(var(--glass-dim));
+    backdrop-filter: blur(22px) saturate(1.25) brightness(var(--glass-dim));
     font-family: var(--display);
     font-size: var(--fs-l);
     font-weight: 300;
