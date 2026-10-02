@@ -75,7 +75,8 @@
   .clock {
     display: block;
     font-family: var(--display);
-    font-size: var(--fs-clock);
+    /* --clock-fit: set on the hero by lib/ui/fit-height.ts. */
+    font-size: calc(var(--fs-clock) * var(--clock-fit, 1));
     font-weight: 250;
     line-height: 0.86;
     letter-spacing: -0.045em;

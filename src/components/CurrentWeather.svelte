@@ -16,6 +16,7 @@
   import type { MoonPhaseKey } from '../lib/weather/types'
   import WeatherIconSprite from './WeatherIconSprite.svelte'
   import InfoDisclosure from './InfoDisclosure.svelte'
+  import { fitHeight } from '../lib/ui/fit-height'
 
   // Decorative + always paired with the translated phase name below, not an
   // icon-only control — the phase's actual shape (crescent/gibbous/etc.) is
@@ -99,7 +100,10 @@
 {#if !current || !visual}
   <p class="no-location">{s.weather.panel.noLocation}</p>
 {:else}
-  <div class="weather-panel">
+  <div
+    class="weather-panel"
+    use:fitHeight={{ target: '.cap-now', prop: '--temp-fit' }}
+  >
     <div class="cap-now">
       <div class="temp-row">
         <p class="temp">
@@ -285,7 +289,8 @@
   }
   .temp {
     font-family: var(--display);
-    font-size: var(--fs-temp);
+    /* --temp-fit: set on .weather-panel by lib/ui/fit-height.ts. */
+    font-size: calc(var(--fs-temp) * var(--temp-fit, 1));
     font-weight: 200;
     line-height: 0.9;
     letter-spacing: -0.04em;
@@ -298,8 +303,8 @@
     margin-left: 0.06em;
   }
   .hero-icon {
-    width: calc(var(--u) * 8.5);
-    height: calc(var(--u) * 8.5);
+    width: calc(var(--u) * 8.5 * var(--temp-fit, 1));
+    height: calc(var(--u) * 8.5 * var(--temp-fit, 1));
     flex: none;
   }
 

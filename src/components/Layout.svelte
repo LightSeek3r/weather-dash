@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { fitHeight } from '../lib/ui/fit-height'
 
   interface Props {
     /** Clock + date line (phase 1). */
@@ -55,7 +56,12 @@
 
 <main class="page">
   {#if hero}
-    <section class="hero" aria-label="Time and date" data-fx-calm="text">
+    <section
+      class="hero"
+      aria-label="Time and date"
+      data-fx-calm="text"
+      use:fitHeight={{ target: '.clock', prop: '--clock-fit' }}
+    >
       {@render hero()}
     </section>
   {/if}
