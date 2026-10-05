@@ -82,10 +82,12 @@
     letter-spacing: -0.045em;
     margin-left: -0.06em;
     white-space: nowrap;
-    /* Dark edge first: the sun crosses behind the digits in portrait. */
+    /* Dark edge first: the sun crosses behind the digits in portrait. Own
+       declared text-shadow, so it replaces rather than adds to Layout.svelte's
+       `.hero` halo — kept at the same strength as that one. */
     text-shadow:
-      0 0 0.02em rgb(4 10 32 / 0.7),
-      0 0 0.08em rgb(4 10 32 / 0.45),
+      0 0 0.05em rgb(4 10 32 / 0.9),
+      0 0 0.25em rgb(4 10 32 / 0.75),
       0 0 60px rgb(166 220 255 / 0.18);
   }
   .sep {

@@ -22,10 +22,12 @@
 
 <!--
   Background stack, back to front: gradient sky, a slot phase 4 (photos)
-  drops a rotating <img> into, and a scrim that keeps text readable over
-  either. The slot exists now (rendering the `bg` snippet, empty when no
-  Background component is passed) so later work never has to touch this
-  layout to wire a background image in.
+  drops a rotating <img> into, and a scrim that applies the user's photo-dim
+  slider when a photo is showing (text contrast over the plain sky and over
+  photos comes from text-shadow on the text itself, not a dim layer — see
+  the `.hero, .tm` rule below). The slot exists now (rendering the `bg`
+  snippet, empty when no Background component is passed) so later work
+  never has to touch this layout to wire a background image in.
 
   Full stacking order (z-index; same z paints in DOM order):
     0  .bg-photo      rotating photo (bg slot)
@@ -101,7 +103,6 @@
   .bg-sky {
     z-index: 1;
     background:
-      radial-gradient(55% 50% at 12% 15%, var(--field-high), transparent),
       radial-gradient(60% 50% at 55% 105%, var(--field-low), transparent),
       linear-gradient(
         180deg,
@@ -150,29 +151,21 @@
     }
   }
 
-  /* Alpha tuned for a pure-white photo, blended the way browsers actually
-     blend (gamma-encoded sRGB), so text keeps >=4.5:1 (WCAG AA) over any
-     image dropped into [data-bg-slot="photo"] later. */
+  /* Invisible with no background declared — only [data-photo] below ever
+     paints it. Text contrast over the plain sky comes from text-shadow on
+     the text itself (see `.hero, .tm`), not from dimming the sky. */
   .scrim {
     z-index: 2;
-    opacity: 0.25;
-    background:
-      radial-gradient(
-        120% 90% at 30% 35%,
-        rgb(10 23 38 / 0.7),
-        rgb(10 23 38 / 0.82)
-      ),
-      linear-gradient(180deg, rgb(10 23 38 / 0.2), rgb(10 23 38 / 0.35));
   }
-  /* The only dim over a photo: its strength is the user's dim slider
-     (`--photo-scrim`, set by Background.svelte), slightly deeper behind the
-     clock, which has no glass panel of its own. Stacking a fixed floor or a
-     blur on top of the slider left photos barely visible at any setting. */
+  /* The photo's own dim slider (`--photo-scrim`, set by Background.svelte) —
+     purely the user's taste setting, not a text-contrast hack. Stacking a
+     fixed floor or a blur on top of it left photos barely visible at any
+     setting. */
   :global([data-photo]) .scrim {
     opacity: 1;
     background: radial-gradient(
       120% 90% at 30% 35%,
-      rgb(10 23 38 / min(1, calc(var(--photo-scrim, 0.55) + 0.1))),
+      rgb(10 23 38 / var(--photo-scrim, 0.55)),
       rgb(10 23 38 / var(--photo-scrim, 0.55))
     );
   }
@@ -199,13 +192,15 @@
     }
   }
 
-  /* Text straight on the sky, no glass: the sun, moon and fog pass behind
-     it, and this halo only shows over them. */
+  /* Text straight on the sky, no glass and no dim layer behind it: the sun,
+     moon, fog and aurora all pass directly behind this text, so the halo
+     alone (tight dark edge, mid blur, wide soft falloff) carries contrast. */
   .hero,
   .tm {
     text-shadow:
-      0 0 0.12em rgb(4 10 32 / 0.75),
-      0 0 0.45em rgb(4 10 32 / 0.6);
+      0 0 0.05em rgb(4 10 32 / 0.9),
+      0 0 0.25em rgb(4 10 32 / 0.75),
+      0 0 0.5em rgb(4 10 32 / 0.4);
   }
   .hero {
     grid-area: hero;

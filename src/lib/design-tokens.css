@@ -50,7 +50,6 @@
   --sky-2: #0f2650;
   --pool-low: rgb(40 220 200 / 0.32); /* drifting teal */
   --pool-high: rgb(70 140 255 / 0.3); /* drifting azure */
-  --field-high: rgb(60 130 255 / 0.4); /* fixed, top-left behind the clock */
   --field-low: rgb(150 110 255 / 0.45); /* fixed, violet under the timeline */
 
   --text: #eef4fb; /* primary */
@@ -139,16 +138,12 @@
    dusk under a "Clear sky" label reads as evening, not sunshine, so sunlit
    daytime warms the sky, light pools and glass. Base text colours are kept
    and must stay >=4.5:1 on these (checked by tests/visual). */
-/* The sunny top-left field is saturated rather than light: the sun's glare
-   already brightens that corner, and a paler blue would drop the clock's
-   contrast. */
 :root[data-sky='sunny'] {
   --sky-0: #0e3466;
   --sky-1: #154c88;
   --sky-2: #1a5a97;
   --pool-low: rgb(80 210 255 / 0.3);
   --pool-high: rgb(255 210 140 / 0.45);
-  --field-high: rgb(30 110 255 / 0.65);
   --field-low: rgb(140 130 255 / 0.45);
   --glass: rgb(60 130 220 / 0.14);
   --glass-edge: rgb(255 228 196 / 0.22);
@@ -165,7 +160,6 @@
   --sky-2: #16457a;
   --pool-low: rgb(70 200 240 / 0.28);
   --pool-high: rgb(255 204 140 / 0.26);
-  --field-high: rgb(45 120 255 / 0.5);
   --field-low: rgb(145 120 255 / 0.45);
   --glass-dim: 0.7;
 }

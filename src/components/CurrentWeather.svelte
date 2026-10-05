@@ -318,7 +318,9 @@
     flex-direction: column;
     gap: 0.2em;
     font-family: var(--display);
-    font-size: var(--fs-m);
+    /* A bit bigger than --fs-m: the hero icon beside it leaves spare room,
+       but it still reads secondary to the big --fs-temp figure. */
+    font-size: max(19px, calc(var(--u) * 1.85));
     line-height: 1.1;
     white-space: nowrap;
   }
