@@ -63,6 +63,8 @@ export interface Dictionary {
     openSettings: string
     installTip: string
     enterFullscreen: string
+    /** Aria-label for the small close button on the "tap to go fullscreen" overlay — dismisses it without requesting fullscreen. */
+    dismiss: string
   }
   /** Fullscreen anti-burn-in scene overlay. */
   scene: { tapToReturn: string }
@@ -203,7 +205,8 @@ const en: Dictionary = {
     openSettings: 'Open settings',
     installTip:
       'Tip: add to your home screen to stay fullscreen after a reload',
-    enterFullscreen: 'Go fullscreen'
+    enterFullscreen: 'Go fullscreen',
+    dismiss: 'Continue without fullscreen'
   },
   scene: { tapToReturn: 'Tap to return to the dashboard' },
   settings: {
@@ -394,7 +397,8 @@ const fr: Dictionary = {
     openSettings: 'Ouvrir les réglages',
     installTip:
       "Astuce : ajoutez l'app à l'écran d'accueil pour garder le plein écran après un rechargement",
-    enterFullscreen: 'Passer en plein écran'
+    enterFullscreen: 'Passer en plein écran',
+    dismiss: 'Continuer sans plein écran'
   },
   scene: { tapToReturn: 'Toucher pour revenir au tableau de bord' },
   settings: {
@@ -591,7 +595,8 @@ const nl: Dictionary = {
     openSettings: 'Instellingen openen',
     installTip:
       'Tip: voeg toe aan je startscherm om volledig scherm te behouden na een herlaad',
-    enterFullscreen: 'Volledig scherm'
+    enterFullscreen: 'Volledig scherm',
+    dismiss: 'Doorgaan zonder volledig scherm'
   },
   scene: { tapToReturn: 'Tik om terug te gaan naar het dashboard' },
   settings: {
@@ -786,7 +791,8 @@ const de: Dictionary = {
     openSettings: 'Einstellungen öffnen',
     installTip:
       'Tipp: Zum Startbildschirm hinzufügen, damit Vollbild nach einem Neuladen erhalten bleibt',
-    enterFullscreen: 'Vollbild'
+    enterFullscreen: 'Vollbild',
+    dismiss: 'Ohne Vollbild fortfahren'
   },
   scene: { tapToReturn: 'Tippen, um zum Dashboard zurückzukehren' },
   settings: {
@@ -980,7 +986,8 @@ const es: Dictionary = {
     openSettings: 'Abrir ajustes',
     installTip:
       'Consejo: añade la app a tu pantalla de inicio para mantener la pantalla completa tras recargar',
-    enterFullscreen: 'Pantalla completa'
+    enterFullscreen: 'Pantalla completa',
+    dismiss: 'Continuar sin pantalla completa'
   },
   scene: { tapToReturn: 'Toca para volver al panel' },
   settings: {
@@ -1173,7 +1180,8 @@ const it: Dictionary = {
     openSettings: 'Apri impostazioni',
     installTip:
       'Suggerimento: aggiungi alla schermata Home per restare a schermo intero dopo un ricaricamento',
-    enterFullscreen: 'Schermo intero'
+    enterFullscreen: 'Schermo intero',
+    dismiss: 'Continua senza schermo intero'
   },
   scene: { tapToReturn: 'Tocca per tornare alla dashboard' },
   settings: {
@@ -1368,7 +1376,8 @@ const pt: Dictionary = {
     openSettings: 'Abrir configurações',
     installTip:
       'Dica: adicione à tela inicial para manter a tela cheia após recarregar',
-    enterFullscreen: 'Tela cheia'
+    enterFullscreen: 'Tela cheia',
+    dismiss: 'Continuar sem tela cheia'
   },
   scene: { tapToReturn: 'Toque para voltar ao painel' },
   settings: {
@@ -1563,7 +1572,8 @@ const ru: Dictionary = {
     openSettings: 'Открыть настройки',
     installTip:
       'Совет: добавьте на главный экран, чтобы сохранить полноэкранный режим после перезагрузки',
-    enterFullscreen: 'Полноэкранный режим'
+    enterFullscreen: 'Полноэкранный режим',
+    dismiss: 'Продолжить без полноэкранного режима'
   },
   scene: { tapToReturn: 'Нажмите, чтобы вернуться на панель' },
   settings: {
@@ -1769,7 +1779,8 @@ const zh: Dictionary = {
     tapToStart: '轻触进入全屏',
     openSettings: '打开设置',
     installTip: '提示：添加到主屏幕，刷新后可保持全屏',
-    enterFullscreen: '全屏'
+    enterFullscreen: '全屏',
+    dismiss: '不进入全屏'
   },
   scene: { tapToReturn: '轻触返回仪表盘' },
   settings: {
@@ -1934,7 +1945,8 @@ const hi: Dictionary = {
     openSettings: 'सेटिंग्स खोलें',
     installTip:
       'सुझाव: रीलोड के बाद भी फ़ुलस्क्रीन बनाए रखने के लिए होम स्क्रीन पर जोड़ें',
-    enterFullscreen: 'फ़ुलस्क्रीन'
+    enterFullscreen: 'फ़ुलस्क्रीन',
+    dismiss: 'फ़ुलस्क्रीन के बिना जारी रखें'
   },
   scene: { tapToReturn: 'डैशबोर्ड पर वापस जाने के लिए टैप करें' },
   settings: {
@@ -2132,7 +2144,8 @@ const ar: Dictionary = {
     openSettings: 'فتح الإعدادات',
     installTip:
       'نصيحة: أضف التطبيق إلى الشاشة الرئيسية للبقاء في وضع ملء الشاشة بعد إعادة التحميل',
-    enterFullscreen: 'ملء الشاشة'
+    enterFullscreen: 'ملء الشاشة',
+    dismiss: 'الاستمرار دون ملء الشاشة'
   },
   scene: { tapToReturn: 'اضغط للعودة إلى لوحة المعلومات' },
   settings: {
@@ -2322,7 +2335,8 @@ const bn: Dictionary = {
     openSettings: 'সেটিংস খুলুন',
     installTip:
       'পরামর্শ: রিলোডের পরেও ফুলস্ক্রিন রাখতে হোম স্ক্রিনে যুক্ত করুন',
-    enterFullscreen: 'ফুলস্ক্রিন করুন'
+    enterFullscreen: 'ফুলস্ক্রিন করুন',
+    dismiss: 'ফুলস্ক্রিন ছাড়াই চালিয়ে যান'
   },
   scene: { tapToReturn: 'ড্যাশবোর্ডে ফিরতে ট্যাপ করুন' },
   settings: {
@@ -2518,7 +2532,8 @@ const ur: Dictionary = {
     openSettings: 'ترتیبات کھولیں',
     installTip:
       'مشورہ: ری لوڈ کے بعد بھی فل اسکرین برقرار رکھنے کے لیے ہوم اسکرین پر شامل کریں',
-    enterFullscreen: 'فل اسکرین کریں'
+    enterFullscreen: 'فل اسکرین کریں',
+    dismiss: 'فل اسکرین کے بغیر جاری رکھیں'
   },
   scene: { tapToReturn: 'ڈیش بورڈ پر واپس جانے کے لیے ٹیپ کریں' },
   settings: {
@@ -2711,7 +2726,8 @@ const id: Dictionary = {
     openSettings: 'Buka pengaturan',
     installTip:
       'Tips: tambahkan ke layar utama agar tetap layar penuh setelah dimuat ulang',
-    enterFullscreen: 'Masuk layar penuh'
+    enterFullscreen: 'Masuk layar penuh',
+    dismiss: 'Lanjutkan tanpa layar penuh'
   },
   scene: { tapToReturn: 'Ketuk untuk kembali ke dasbor' },
   settings: {
@@ -2906,7 +2922,8 @@ const ja: Dictionary = {
     openSettings: '設定を開く',
     installTip:
       'ヒント: 再読み込み後も全画面表示を保つには、ホーム画面に追加してください',
-    enterFullscreen: '全画面表示にする'
+    enterFullscreen: '全画面表示にする',
+    dismiss: '全画面表示にせず続ける'
   },
   scene: { tapToReturn: 'タップしてダッシュボードに戻る' },
   settings: {

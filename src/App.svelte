@@ -208,6 +208,16 @@
     started = true
     maybeAutoOpenSettings()
   }
+
+  // Same as handleStart but skips enterFullscreen() — for anyone who taps
+  // the dismiss button rather than the overlay itself. Still acquires the
+  // wake lock, matching the fullscreenOnStart-off skip path in onMount
+  // above: declining fullscreen isn't declining "stay awake".
+  async function handleDismiss() {
+    await acquireWakeLock()
+    started = true
+    maybeAutoOpenSettings()
+  }
 </script>
 
 <Layout>
@@ -292,12 +302,33 @@
 <SettingsSheet open={settingsOpen} onclose={() => (settingsOpen = false)} />
 
 {#if !started}
-  <button type="button" class="start-overlay" onclick={handleStart}>
-    <span class="glass">
-      {s.kiosk.tapToStart}
-      <small>{s.kiosk.installTip}</small>
-    </span>
-  </button>
+  <div class="start-overlay">
+    <button
+      type="button"
+      class="start-overlay__dismiss"
+      aria-label={s.kiosk.dismiss}
+      onclick={handleDismiss}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M18 6 6 18" />
+        <path d="M6 6l12 12" />
+      </svg>
+    </button>
+    <button type="button" class="start-overlay__trigger" onclick={handleStart}>
+      <span class="glass">
+        {s.kiosk.tapToStart}
+        <small>{s.kiosk.installTip}</small>
+      </span>
+    </button>
+  </div>
 {/if}
 
 <style>
@@ -305,14 +336,20 @@
     position: fixed;
     inset: 0;
     z-index: 10;
+    background: rgb(10 23 38 / 0.55);
+    color: var(--text);
+  }
+  .start-overlay__trigger {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
-    background: rgb(10 23 38 / 0.55);
     border: none;
-    color: var(--text);
+    background: none;
+    color: inherit;
     font: inherit;
     cursor: pointer;
   }
@@ -338,7 +375,36 @@
     font-weight: 400;
     color: var(--text-2);
   }
-  .start-overlay:focus-visible {
+  .start-overlay__trigger:focus-visible {
+    outline: 2px solid var(--ice);
+    outline-offset: -2px;
+  }
+  /* Above the trigger (same stacking context, later in DOM order) so the
+     tap target underneath it never steals the click. Top-right, clear of
+     the gear/fullscreen/status cluster this overlay already hides in the
+     bottom-right corner. */
+  .start-overlay__dismiss {
+    position: absolute;
+    top: var(--space-md, 1.5rem);
+    right: var(--space-md, 1.5rem);
+    z-index: 1;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
+    backdrop-filter: blur(16px);
+  }
+  .start-overlay__dismiss svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .start-overlay__dismiss:focus-visible {
     outline: 2px solid var(--ice);
     outline-offset: -2px;
   }
