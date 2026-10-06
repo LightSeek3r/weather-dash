@@ -183,6 +183,11 @@ export interface Dictionary {
       gpsFailed: string
       /** Shown after falling back to the network (IP) position. */
       approximate: string
+      searching: string
+      noResults: string
+      /** "Use my location" button label while waiting for a position. */
+      locating: string
+      locationSet: (name: string) => string
     }
   }
 }
@@ -374,7 +379,11 @@ const en: Dictionary = {
       gpsFailed:
         'Couldn’t determine your position — search for your city instead',
       approximate:
-        'Approximate location from your network — search your city for precision'
+        'Approximate location from your network — search your city for precision',
+      searching: 'Searching…',
+      noResults: 'No places found',
+      locating: 'Locating…',
+      locationSet: (name) => `Location set to ${name}`
     }
   }
 }
@@ -572,7 +581,11 @@ const fr: Dictionary = {
       gpsDenied: 'L’accès à la position a été refusé',
       gpsFailed: 'Position introuvable — recherchez plutôt votre ville',
       approximate:
-        'Position approximative d’après votre réseau — recherchez votre ville pour plus de précision'
+        'Position approximative d’après votre réseau — recherchez votre ville pour plus de précision',
+      searching: 'Recherche…',
+      noResults: 'Aucun lieu trouvé',
+      locating: 'Localisation…',
+      locationSet: (name) => `Position définie : ${name}`
     }
   }
 }
@@ -768,7 +781,11 @@ const nl: Dictionary = {
       gpsDenied: 'Toegang tot locatie is geweigerd',
       gpsFailed: 'Positie niet gevonden — zoek in plaats daarvan je stad',
       approximate:
-        'Geschatte locatie via je netwerk — zoek je stad voor meer precisie'
+        'Geschatte locatie via je netwerk — zoek je stad voor meer precisie',
+      searching: 'Zoeken…',
+      noResults: 'Geen plaatsen gevonden',
+      locating: 'Locatie bepalen…',
+      locationSet: (name) => `Locatie ingesteld op ${name}`
     }
   }
 }
@@ -963,7 +980,11 @@ const de: Dictionary = {
       gpsDenied: 'Standortzugriff wurde verweigert',
       gpsFailed: 'Standort nicht ermittelbar — bitte nach der Stadt suchen',
       approximate:
-        'Ungefährer Standort über das Netzwerk — für mehr Genauigkeit die Stadt suchen'
+        'Ungefährer Standort über das Netzwerk — für mehr Genauigkeit die Stadt suchen',
+      searching: 'Suche…',
+      noResults: 'Keine Orte gefunden',
+      locating: 'Standort wird ermittelt…',
+      locationSet: (name) => `Standort festgelegt: ${name}`
     }
   }
 }
@@ -1157,7 +1178,11 @@ const es: Dictionary = {
       gpsDenied: 'Se denegó el acceso a la ubicación',
       gpsFailed: 'No se pudo determinar la ubicación: busca tu ciudad',
       approximate:
-        'Ubicación aproximada según tu red: busca tu ciudad para mayor precisión'
+        'Ubicación aproximada según tu red: busca tu ciudad para mayor precisión',
+      searching: 'Buscando…',
+      noResults: 'No se encontraron lugares',
+      locating: 'Localizando…',
+      locationSet: (name) => `Ubicación establecida: ${name}`
     }
   }
 }
@@ -1353,7 +1378,11 @@ const it: Dictionary = {
       gpsDenied: 'Accesso alla posizione negato',
       gpsFailed: 'Impossibile determinare la posizione: cerca la tua città',
       approximate:
-        'Posizione approssimativa dalla rete: cerca la tua città per maggiore precisione'
+        'Posizione approssimativa dalla rete: cerca la tua città per maggiore precisione',
+      searching: 'Ricerca…',
+      noResults: 'Nessun luogo trovato',
+      locating: 'Localizzazione…',
+      locationSet: (name) => `Posizione impostata: ${name}`
     }
   }
 }
@@ -1549,7 +1578,11 @@ const pt: Dictionary = {
       gpsFailed:
         'Não foi possível determinar a localização — pesquise a sua cidade',
       approximate:
-        'Localização aproximada pela rede — pesquise a sua cidade para maior precisão'
+        'Localização aproximada pela rede — pesquise a sua cidade para maior precisão',
+      searching: 'A pesquisar…',
+      noResults: 'Nenhum local encontrado',
+      locating: 'A localizar…',
+      locationSet: (name) => `Localização definida: ${name}`
     }
   }
 }
@@ -1752,7 +1785,11 @@ const ru: Dictionary = {
       gpsFailed:
         'Не удалось определить местоположение — найдите свой город через поиск',
       approximate:
-        'Приблизительное местоположение по сети — для точности найдите свой город'
+        'Приблизительное местоположение по сети — для точности найдите свой город',
+      searching: 'Поиск…',
+      noResults: 'Места не найдены',
+      locating: 'Определение местоположения…',
+      locationSet: (name) => `Местоположение: ${name}`
     }
   }
 }
@@ -1922,7 +1959,11 @@ const zh: Dictionary = {
       currentLocationName: '当前位置',
       gpsDenied: '位置访问被拒绝',
       gpsFailed: '无法确定您的位置，请改为搜索城市',
-      approximate: '根据网络估算的大致位置，搜索城市可获得精确位置'
+      approximate: '根据网络估算的大致位置，搜索城市可获得精确位置',
+      searching: '正在搜索…',
+      noResults: '未找到地点',
+      locating: '正在定位…',
+      locationSet: (name) => `位置已设为${name}`
     }
   }
 }
@@ -2121,7 +2162,11 @@ const hi: Dictionary = {
       gpsDenied: 'स्थान की अनुमति अस्वीकार कर दी गई',
       gpsFailed: 'आपका स्थान निर्धारित नहीं हो सका — इसके बजाय अपना शहर खोजें',
       approximate:
-        'आपके नेटवर्क से अनुमानित स्थान — सटीकता के लिए अपना शहर खोजें'
+        'आपके नेटवर्क से अनुमानित स्थान — सटीकता के लिए अपना शहर खोजें',
+      searching: 'खोज रहे हैं…',
+      noResults: 'कोई स्थान नहीं मिला',
+      locating: 'स्थान का पता लगाया जा रहा है…',
+      locationSet: (name) => `स्थान सेट किया गया: ${name}`
     }
   }
 }
@@ -2312,7 +2357,11 @@ const ar: Dictionary = {
       currentLocationName: 'الموقع الحالي',
       gpsDenied: 'تم رفض الوصول إلى الموقع',
       gpsFailed: 'تعذّر تحديد موقعك — ابحث عن مدينتك بدلاً من ذلك',
-      approximate: 'موقع تقريبي من شبكتك — ابحث عن مدينتك لمزيد من الدقة'
+      approximate: 'موقع تقريبي من شبكتك — ابحث عن مدينتك لمزيد من الدقة',
+      searching: 'جارٍ البحث…',
+      noResults: 'لم يتم العثور على أماكن',
+      locating: 'جارٍ تحديد الموقع…',
+      locationSet: (name) => `تم ضبط الموقع: ${name}`
     }
   }
 }
@@ -2509,7 +2558,11 @@ const bn: Dictionary = {
       gpsFailed:
         'আপনার অবস্থান নির্ধারণ করা যায়নি — পরিবর্তে আপনার শহর খুঁজুন',
       approximate:
-        'আপনার নেটওয়ার্ক থেকে আনুমানিক অবস্থান — সঠিকতার জন্য আপনার শহর খুঁজুন'
+        'আপনার নেটওয়ার্ক থেকে আনুমানিক অবস্থান — সঠিকতার জন্য আপনার শহর খুঁজুন',
+      searching: 'খোঁজা হচ্ছে…',
+      noResults: 'কোনো স্থান পাওয়া যায়নি',
+      locating: 'অবস্থান নির্ণয় করা হচ্ছে…',
+      locationSet: (name) => `অবস্থান সেট করা হয়েছে: ${name}`
     }
   }
 }
@@ -2703,7 +2756,11 @@ const ur: Dictionary = {
       gpsFailed:
         'آپ کا مقام معلوم نہیں ہو سکا — اس کے بجائے اپنا شہر تلاش کریں',
       approximate:
-        'آپ کے نیٹ ورک سے تخمینی مقام — درستگی کے لیے اپنا شہر تلاش کریں'
+        'آپ کے نیٹ ورک سے تخمینی مقام — درستگی کے لیے اپنا شہر تلاش کریں',
+      searching: 'تلاش جاری ہے…',
+      noResults: 'کوئی جگہ نہیں ملی',
+      locating: 'مقام معلوم کیا جا رہا ہے…',
+      locationSet: (name) => `مقام مقرر کر دیا گیا: ${name}`
     }
   }
 }
@@ -2899,7 +2956,11 @@ const id: Dictionary = {
       gpsDenied: 'Akses lokasi ditolak',
       gpsFailed: 'Tidak dapat menentukan lokasi Anda — coba cari kota Anda',
       approximate:
-        'Lokasi perkiraan dari jaringan Anda — cari kota Anda untuk hasil yang lebih akurat'
+        'Lokasi perkiraan dari jaringan Anda — cari kota Anda untuk hasil yang lebih akurat',
+      searching: 'Mencari…',
+      noResults: 'Tempat tidak ditemukan',
+      locating: 'Menentukan lokasi…',
+      locationSet: (name) => `Lokasi diatur ke ${name}`
     }
   }
 }
@@ -3091,7 +3152,11 @@ const ja: Dictionary = {
       gpsFailed:
         '位置を特定できませんでした — 代わりに都市名で検索してください',
       approximate:
-        'ネットワークからのおおよその位置情報です — 精度を上げるには都市名で検索してください'
+        'ネットワークからのおおよその位置情報です — 精度を上げるには都市名で検索してください',
+      searching: '検索中…',
+      noResults: '場所が見つかりません',
+      locating: '現在地を取得中…',
+      locationSet: (name) => `位置を${name}に設定しました`
     }
   }
 }

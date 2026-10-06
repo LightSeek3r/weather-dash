@@ -141,6 +141,7 @@ interface RawGeocodeResult {
   name: string
   country?: string
   country_code?: string
+  admin1?: string
   timezone: string
 }
 
@@ -312,18 +313,26 @@ export async function fetchAirQuality(
   }
 }
 
-/** Geocodes a free-text query (city name, etc) to up to 5 candidate locations. */
-export async function geocode(query: string): Promise<GeocodeResult[]> {
+/**
+ * Geocodes a free-text query (city name, etc) to up to 6 candidate
+ * locations. An aborted `signal` rejects with the fetch's own AbortError,
+ * not a WeatherFetchError, so callers can tell "superseded" from "failed".
+ */
+export async function geocode(
+  query: string,
+  { language = 'en', signal }: { language?: string; signal?: AbortSignal } = {}
+): Promise<GeocodeResult[]> {
   const url = new URL(GEOCODING_URL)
   url.searchParams.set('name', query)
-  url.searchParams.set('count', '5')
-  url.searchParams.set('language', 'en')
+  url.searchParams.set('count', '6')
+  url.searchParams.set('language', language)
   url.searchParams.set('format', 'json')
 
   let response: Response
   try {
-    response = await fetch(url.toString())
+    response = await fetch(url.toString(), { signal })
   } catch (err) {
+    if (signal?.aborted) throw err
     throw new WeatherFetchError('Failed to reach Open-Meteo geocoding API', err)
   }
   if (!response.ok) {
@@ -347,6 +356,7 @@ export async function geocode(query: string): Promise<GeocodeResult[]> {
     lon: r.longitude,
     name: r.country ? `${r.name}, ${r.country}` : r.name,
     timezone: r.timezone,
-    countryCode: r.country_code ?? ''
+    countryCode: r.country_code ?? '',
+    region: r.admin1 ?? ''
   }))
 }

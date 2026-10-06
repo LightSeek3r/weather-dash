@@ -84,11 +84,10 @@
     white-space: nowrap;
     /* Dark edge first: the sun crosses behind the digits in portrait. Own
        declared text-shadow, so it replaces rather than adds to Layout.svelte's
-       `.hero` halo — kept at the same strength as that one. */
+       `.hero` halo. */
     text-shadow:
       0 0 0.05em rgb(4 10 32 / 0.9),
-      0 0 0.25em rgb(4 10 32 / 0.75),
-      0 0 60px rgb(166 220 255 / 0.18);
+      0 0 0.25em rgb(4 10 32 / 0.75);
   }
   .sep {
     display: inline-block;

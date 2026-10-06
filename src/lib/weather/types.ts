@@ -105,4 +105,6 @@ export interface GeocodeResult {
   timezone: string
   /** ISO 3166-1 alpha-2, from Open-Meteo's `country_code` field — feeds holidays' baseCountry default. */
   countryCode: string
+  /** First-level region (state, province), to tell same-named places apart; '' when unknown. */
+  region: string
 }

@@ -149,6 +149,7 @@ describe('geocode', () => {
             name: 'Brussels',
             country: 'Belgium',
             country_code: 'BE',
+            admin1: 'Brussels Capital',
             timezone: 'Europe/Brussels'
           }
         ]
@@ -162,9 +163,28 @@ describe('geocode', () => {
         lon: 4.34878,
         name: 'Brussels, Belgium',
         timezone: 'Europe/Brussels',
-        countryCode: 'BE'
+        countryCode: 'BE',
+        region: 'Brussels Capital'
       }
     ])
+  })
+
+  it('asks for results in the requested language', async () => {
+    const fetchMock = mockFetchOnce({})
+    vi.stubGlobal('fetch', fetchMock)
+    await geocode('Bruxelles', { language: 'fr' })
+    const url = new URL(String(fetchMock.mock.calls[0][0]))
+    expect(url.searchParams.get('language')).toBe('fr')
+  })
+
+  it('rethrows the abort itself, not a WeatherFetchError, when superseded', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const abortError = new DOMException('Aborted', 'AbortError')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abortError))
+    await expect(
+      geocode('Brussels', { signal: controller.signal })
+    ).rejects.toBe(abortError)
   })
 
   it('returns [] when the API has no matches', async () => {

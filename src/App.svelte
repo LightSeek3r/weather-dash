@@ -305,29 +305,37 @@
   <div class="start-overlay">
     <button
       type="button"
-      class="start-overlay__dismiss"
-      aria-label={s.kiosk.dismiss}
-      onclick={handleDismiss}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.75"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M18 6 6 18" />
-        <path d="M6 6l12 12" />
-      </svg>
-    </button>
-    <button type="button" class="start-overlay__trigger" onclick={handleStart}>
-      <span class="glass">
+      class="start-overlay__trigger"
+      aria-labelledby="start-overlay-message"
+      onclick={handleStart}
+    ></button>
+    <!-- Visual only: taps on the card fall through to the trigger beneath,
+         except on the X, which re-enables pointer events for itself. -->
+    <div class="start-overlay__card">
+      <p id="start-overlay-message">
         {s.kiosk.tapToStart}
         <small>{s.kiosk.installTip}</small>
-      </span>
-    </button>
+      </p>
+      <button
+        type="button"
+        class="start-overlay__dismiss"
+        aria-label={s.kiosk.dismiss}
+        onclick={handleDismiss}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 6 6 18" />
+          <path d="M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -336,69 +344,72 @@
     position: fixed;
     inset: 0;
     z-index: 10;
+    display: grid;
+    place-items: center;
     background: rgb(10 23 38 / 0.55);
     color: var(--text);
   }
   .start-overlay__trigger {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 100%;
     height: 100%;
     border: none;
     background: none;
-    color: inherit;
-    font: inherit;
     cursor: pointer;
   }
-  .start-overlay .glass {
-    padding: 1em 1.6em;
+  .start-overlay__trigger:focus-visible {
+    outline: 2px solid var(--ice);
+    outline-offset: -2px;
+  }
+  .start-overlay__card {
+    position: relative;
+    pointer-events: none;
+    margin: var(--pad);
+    padding: 1em 2.6em;
     border-radius: var(--r);
     background: var(--glass);
     border: 1px solid var(--glass-edge);
-    -webkit-backdrop-filter: blur(22px) saturate(1.25)
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25)
       brightness(var(--glass-dim));
-    backdrop-filter: blur(22px) saturate(1.25) brightness(var(--glass-dim));
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.25)
+      brightness(var(--glass-dim));
     font-family: var(--display);
-    font-size: var(--fs-l);
+    font-size: max(20px, var(--fs-l));
     font-weight: 300;
+  }
+  .start-overlay__card p {
+    margin: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5em;
     text-align: center;
   }
-  .start-overlay .glass small {
+  .start-overlay__card small {
     font-size: var(--fs-s);
     font-weight: 400;
     color: var(--text-2);
   }
-  .start-overlay__trigger:focus-visible {
-    outline: 2px solid var(--ice);
-    outline-offset: -2px;
-  }
-  /* Above the trigger (same stacking context, later in DOM order) so the
-     tap target underneath it never steals the click. Top-right, clear of
-     the gear/fullscreen/status cluster this overlay already hides in the
-     bottom-right corner. */
   .start-overlay__dismiss {
     position: absolute;
-    top: var(--space-md, 1.5rem);
-    right: var(--space-md, 1.5rem);
-    z-index: 1;
+    top: 0.35rem;
+    inset-inline-end: 0.35rem;
+    pointer-events: auto;
     width: 2.75rem;
     height: 2.75rem;
     display: grid;
     place-items: center;
     border-radius: var(--radius-full, 999px);
-    background: var(--color-glass, rgba(196, 222, 255, 0.09));
-    border: 1px solid var(--color-glass-edge, rgba(222, 238, 255, 0.18));
-    color: inherit;
+    background: none;
+    border: none;
+    color: var(--text-2);
     padding: 0;
     cursor: pointer;
-    backdrop-filter: blur(16px);
+  }
+  .start-overlay__dismiss:hover {
+    color: var(--text);
+    background: var(--glass-hi);
   }
   .start-overlay__dismiss svg {
     width: 1.25rem;
@@ -428,7 +439,7 @@
     color: var(--color-text-2, rgba(238, 244, 251, 0.75));
     padding: 0;
     cursor: pointer;
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.8));
     transition:
       opacity 0.4s var(--ease-standard, ease),
       transform 0.4s var(--ease-standard, ease);

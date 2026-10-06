@@ -118,3 +118,36 @@ test('standalone launch never offers the button', async ({ page }) => {
   await expect(page.locator('.page')).toBeVisible()
   await expect(fsButton(page)).toHaveCount(0)
 })
+
+test('the close button sits on the message card and skips fullscreen', async ({
+  page
+}) => {
+  await setup(page, BASE_SETTINGS)
+  await page.goto('/')
+
+  const card = await page.locator('.start-overlay__card').boundingBox()
+  const close = await page.locator('.start-overlay__dismiss').boundingBox()
+  expect(card && close).toBeTruthy()
+  expect(close!.x).toBeGreaterThanOrEqual(card!.x)
+  expect(close!.y).toBeGreaterThanOrEqual(card!.y)
+  expect(close!.x + close!.width).toBeLessThanOrEqual(card!.x + card!.width)
+  expect(close!.y + close!.height).toBeLessThanOrEqual(card!.y + card!.height)
+
+  await page.locator('.start-overlay__dismiss').click()
+  await expect(page.locator('.start-overlay')).toHaveCount(0)
+  expect(await page.evaluate(() => !!document.fullscreenElement)).toBe(false)
+})
+
+test('tapping the message card itself still enters fullscreen', async ({
+  page
+}) => {
+  await setup(page, BASE_SETTINGS)
+  await page.goto('/')
+
+  // A raw pointer tap: the card is pointer-events: none by design, so the
+  // tap must land on the trigger underneath it.
+  const card = await page.locator('.start-overlay__card').boundingBox()
+  await page.mouse.click(card!.x + card!.width / 2, card!.y + card!.height / 2)
+  await expect(page.locator('.start-overlay')).toHaveCount(0)
+  expect(await page.evaluate(() => !!document.fullscreenElement)).toBe(true)
+})

@@ -14,6 +14,10 @@
  *   strong as `text`: the translucent glass passes a bright sun straight
  *   through to its small secondary labels.
  *
+ * Screen-wide washes (sun glare, fog) skip `text` zones: damping an even
+ * wash around the words cuts a dark, text-shaped hole into it, so that text
+ * relies on its own halo (Layout.svelte's `.hero, .tm` text-shadow) instead.
+ *
  * Rects are CSS px (viewport space); callers scale to their backing store.
  */
 
@@ -79,11 +83,16 @@ function measureText(el: Element, out: CalmZone[]): void {
   if (out.length === before) pushRect(out, 'text', el.getBoundingClientRect())
 }
 
-export function measureCalmZones(root: ParentNode = document): CalmZone[] {
+export const ALL_CALM_KINDS: readonly CalmKind[] = ['text', 'glass']
+
+export function measureCalmZones(
+  root: ParentNode = document,
+  kinds: readonly CalmKind[] = ALL_CALM_KINDS
+): CalmZone[] {
   const out: CalmZone[] = []
   for (const el of Array.from(root.querySelectorAll(SELECTOR))) {
     const kind = (el as HTMLElement).dataset.fxCalm
-    if (!isKind(kind)) continue
+    if (!isKind(kind) || !kinds.includes(kind)) continue
     if (kind === 'glass') pushRect(out, 'glass', el.getBoundingClientRect())
     else measureText(el, out)
   }

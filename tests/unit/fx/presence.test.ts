@@ -88,6 +88,21 @@ describe('measureCalmZones', () => {
       { kind: 'glass', x0: 10, y0: 20, x1: 110, y1: 220 }
     ])
   })
+
+  it('skips kinds outside the requested set', () => {
+    const root = document.createElement('div')
+    root.innerHTML = '<div data-fx-calm="text">Hi</div>'
+    const el = root.firstElementChild as HTMLElement
+    const rect = { left: 0, top: 0, right: 50, bottom: 20 } as DOMRect
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect)
+    vi.spyOn(document, 'createRange').mockReturnValue({
+      selectNodeContents: () => {},
+      getClientRects: () => [rect]
+    } as unknown as Range)
+    expect(measureCalmZones(root, ['glass'])).toEqual([])
+    expect(measureCalmZones(root, ['text']).length).toBeGreaterThan(0)
+    vi.restoreAllMocks()
+  })
 })
 
 describe('buildPresenceField', () => {

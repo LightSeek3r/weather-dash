@@ -60,31 +60,106 @@
     settingsStore.update((current) => ({ ...current, locale: value }))
   }
 
-  // --- location: city search + GPS (plan decision: "city search or GPS button") ---
+  // --- location: search-as-you-type + GPS ---
+  const SEARCH_DEBOUNCE_MS = 250
+  const SEARCH_MIN_CHARS = 2
   let query = $state('')
   let results = $state<GeocodeResult[]>([])
+  let activeIndex = $state(-1)
   let searching = $state(false)
+  /** A lookup for the current query finished — gates "No places found". */
+  let searched = $state(false)
+  let searchTimer: ReturnType<typeof setTimeout> | undefined
+  let searchController: AbortController | null = null
   let gpsBusy = $state(false)
   let gpsError = $state<string | null>(null)
   let gpsNote = $state<string | null>(null)
+  /** Swaps the current-location line for "Location set to …" after a pick. */
+  let justSet = $state(false)
+  // Bumped by every location choice: a GPS or network answer that lands
+  // after the user already picked a city must not overwrite that pick.
+  let locateToken = 0
+
+  function cancelSearch(): void {
+    clearTimeout(searchTimer)
+    searchController?.abort()
+    searchController = null
+    searching = false
+  }
+
+  function clearSearch(): void {
+    cancelSearch()
+    query = ''
+    results = []
+    activeIndex = -1
+    searched = false
+  }
+
+  function onQueryInput(): void {
+    cancelSearch()
+    searched = false
+    if (query.trim().length < SEARCH_MIN_CHARS) {
+      results = []
+      activeIndex = -1
+      return
+    }
+    searchTimer = setTimeout(() => void runSearch(), SEARCH_DEBOUNCE_MS)
+  }
 
   async function runSearch(): Promise<void> {
     const trimmed = query.trim()
     if (!trimmed) return
+    cancelSearch()
+    const controller = new AbortController()
+    searchController = controller
     searching = true
+    gpsError = null
+    gpsNote = null
     try {
-      results = await geocode(trimmed)
+      results = await geocode(trimmed, {
+        language: $settingsStore.locale,
+        signal: controller.signal
+      })
+      activeIndex = results.length > 0 ? 0 : -1
+      searched = true
     } catch (err) {
-      // Network/HTTP failure — never crash the settings sheet over a lookup;
-      // the existing location (if any) stays untouched, results just stay empty.
+      if (controller.signal.aborted) return
+      // Never crash the settings sheet over a lookup; the saved location
+      // (if any) stays untouched.
       results = []
+      activeIndex = -1
+      searched = true
       console.warn('[settings] location search failed', err)
     } finally {
-      searching = false
+      if (searchController === controller) {
+        searchController = null
+        searching = false
+      }
+    }
+  }
+
+  function onQueryKeydown(e: KeyboardEvent): void {
+    if (results.length === 0) return
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const step = e.key === 'ArrowDown' ? 1 : -1
+      activeIndex = (activeIndex + step + results.length) % results.length
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault()
+      selectLocation(results[activeIndex])
+    } else if (e.key === 'Escape') {
+      // Close the list only; the sheet's window-level Escape stays for the next press.
+      e.stopPropagation()
+      results = []
+      activeIndex = -1
     }
   }
 
   function selectLocation(result: GeocodeResult): void {
+    locateToken++
+    gpsBusy = false
+    gpsError = null
+    gpsNote = null
     settingsStore.update((current) => ({
       ...current,
       location: { lat: result.lat, lon: result.lon, name: result.name },
@@ -96,8 +171,8 @@
         ? { ...current.holidays, baseCountry: result.countryCode }
         : current.holidays
     }))
-    results = []
-    query = ''
+    clearSearch()
+    justSet = true
   }
 
   function isGeolocationSupported(): boolean {
@@ -106,24 +181,31 @@
 
   // Same capability-guarded, never-throwing shape as lib/core/fullscreen.ts —
   // a kiosk settings sheet must not break just because GPS is unavailable or denied.
-  function setLocation(lat: number, lon: number, name: string): void {
+  function commitLocated(lat: number, lon: number, name: string): void {
     settingsStore.update((current) => ({
       ...current,
       location: { lat, lon, name }
     }))
+    clearSearch()
+    justSet = true
+    // Saved under the placeholder name first so the weather loads at once;
+    // the reverse lookup then renames it and sets the holiday country, or
+    // leaves the placeholder if it fails. No-op for an already-named fix.
+    void nameUnnamedLocation(true)
   }
 
   // Network (IP) position when the browser can't get a fix. Never used
   // after an explicit denial — that's the user saying no, not a failure.
-  async function useApproximateLocation(): Promise<void> {
+  async function useApproximateLocation(token: number): Promise<void> {
     gpsBusy = true
     const approx = await fetchApproxLocation()
+    if (token !== locateToken) return
     gpsBusy = false
     if (!approx) {
       gpsError = s.weather.location.gpsFailed
       return
     }
-    setLocation(
+    commitLocated(
       approx.lat,
       approx.lon,
       approx.city ?? s.weather.location.currentLocationName
@@ -132,42 +214,52 @@
   }
 
   function useMyLocation(): void {
+    const token = ++locateToken
     gpsError = null
     gpsNote = null
+    justSet = false
     if (!isGeolocationSupported()) {
-      void useApproximateLocation()
+      void useApproximateLocation(token)
       return
     }
     gpsBusy = true
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (token !== locateToken) return
         gpsBusy = false
-        // Saved under the placeholder name first so the weather loads at
-        // once; the reverse lookup then renames it and sets the holiday
-        // country, or leaves the placeholder if it fails.
-        setLocation(
+        commitLocated(
           position.coords.latitude,
           position.coords.longitude,
           s.weather.location.currentLocationName
         )
-        void nameUnnamedLocation(true)
       },
       (err) => {
-        gpsBusy = false
+        if (token !== locateToken) return
         // TIMEOUT (code 3) is real and common on desktop browsers with no
         // hardware GPS and a flaky/absent OS location provider — without an
         // explicit `timeout`, getCurrentPosition() can otherwise hang
         // indefinitely with neither callback ever firing (confirmed: this
         // read as "nothing happens" after granting permission, not a denial).
         if (err.code === err.PERMISSION_DENIED) {
+          gpsBusy = false
           gpsError = s.weather.location.gpsDenied
         } else {
-          void useApproximateLocation()
+          void useApproximateLocation(token)
         }
       },
       { timeout: 10000, maximumAge: 60000 }
     )
   }
+
+  // Closing the sheet drops in-flight lookups and one-off feedback, so a
+  // reopen starts clean instead of showing a stale list or note.
+  $effect(() => {
+    if (open) return
+    clearSearch()
+    justSet = false
+    gpsError = null
+    gpsNote = null
+  })
 
   // --- holidays: country/region + extra countries + per-holiday toggles ---
   // See lib/date/holidaysLazy.ts: date-holidays bundles one large all-countries
@@ -597,6 +689,7 @@
       >
         <form
           class="location-search"
+          role="search"
           onsubmit={(e) => {
             e.preventDefault()
             void runSearch()
@@ -604,7 +697,18 @@
         >
           <input
             type="text"
+            role="combobox"
+            autocomplete="off"
+            spellcheck="false"
+            aria-autocomplete="list"
+            aria-expanded={results.length > 0}
+            aria-controls="location-results"
+            aria-activedescendant={activeIndex >= 0
+              ? `location-result-${activeIndex}`
+              : undefined}
             bind:value={query}
+            oninput={onQueryInput}
+            onkeydown={onQueryKeydown}
             placeholder={s.weather.location.searchPlaceholder}
             aria-label={s.weather.location.searchPlaceholder}
           />
@@ -613,34 +717,75 @@
           </button>
         </form>
 
-        {#if results.length > 0}
-          <ul class="location-results">
-            {#each results as result (`${result.lat},${result.lon}`)}
-              <li>
-                <button type="button" onclick={() => selectLocation(result)}>
-                  {result.name}
-                </button>
-              </li>
-            {/each}
-          </ul>
+        <!-- Keyboard selection lives on the combobox input above
+             (arrows/Enter/Escape); options take pointer clicks only. -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <ul
+          class="location-results location-options"
+          id="location-results"
+          role="listbox"
+          aria-label={s.weather.location.searchPlaceholder}
+          hidden={results.length === 0}
+        >
+          {#each results as result, i (`${result.lat},${result.lon},${i}`)}
+            <li
+              id="location-result-{i}"
+              role="option"
+              aria-selected={i === activeIndex}
+              class:active={i === activeIndex}
+              onpointermove={() => (activeIndex = i)}
+              onclick={() => selectLocation(result)}
+            >
+              <span>{result.name}</span>
+              {#if result.region}
+                <small>{result.region}</small>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+        {#if searching}
+          <p class="location-note" role="status">
+            {s.weather.location.searching}
+          </p>
+        {:else if searched && results.length === 0}
+          <p class="location-note" role="status">
+            {s.weather.location.noResults}
+          </p>
         {/if}
 
         <button
           type="button"
           class="location-gps"
           disabled={gpsBusy}
+          aria-busy={gpsBusy}
           onclick={useMyLocation}
         >
-          {s.weather.location.useMyLocation}
+          {gpsBusy
+            ? s.weather.location.locating
+            : s.weather.location.useMyLocation}
         </button>
         {#if gpsError}
-          <p class="location-error">{gpsError}</p>
+          <p class="location-error" role="alert">{gpsError}</p>
         {:else if gpsNote}
           <p class="location-note">{gpsNote}</p>
         {/if}
 
         {#if $settingsStore.location}
-          <p class="location-current">{$settingsStore.location.name}</p>
+          <p
+            class="location-picked"
+            class:location-picked--set={justSet}
+            aria-live="polite"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"
+              />
+              <circle cx="12" cy="9.5" r="2.5" />
+            </svg>
+            {justSet
+              ? s.weather.location.locationSet($settingsStore.location.name)
+              : $settingsStore.location.name}
+          </p>
         {/if}
       </section>
 
@@ -1132,6 +1277,25 @@
     margin-top: 0.75rem;
   }
 
+  .location-options[hidden] {
+    display: none;
+  }
+  .location-options li {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5em 0.75em;
+    border-radius: var(--radius-sm, 0.4rem);
+    color: var(--color-text, #eef4fb);
+    cursor: pointer;
+  }
+  .location-options li.active {
+    background: var(--color-glass-hi, rgba(255, 255, 255, 0.1));
+  }
+  .location-options small {
+    color: var(--text-3);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
   .location-error {
     margin-top: 0.5rem;
     color: var(--color-error, #ff9a86);
@@ -1148,6 +1312,26 @@
     margin-top: 0.5rem;
     color: var(--color-text-2, rgba(238, 244, 251, 0.7));
     font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .location-picked {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-top: 0.75rem;
+    color: var(--color-text, #eef4fb);
+    font-size: var(--font-size-md, 1rem);
+  }
+  .location-picked svg {
+    flex: none;
+    width: 1.1em;
+    height: 1.1em;
+    fill: none;
+    stroke: var(--ice);
+    stroke-width: 1.75;
+  }
+  .location-picked--set {
+    color: var(--color-success, #8ce8b0);
   }
 
   .location-section h3 {

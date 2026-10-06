@@ -13,11 +13,13 @@
  */
 import { createCappedLoop } from '../raf-loop'
 import {
+  ALL_CALM_KINDS,
   CALM_FEATHER,
   calmAt,
   measureCalmZones,
   watchCalmZones,
   zonesSignature,
+  type CalmKind,
   type CalmZone
 } from '../calm-zones'
 import type { ActiveTier, BorderEffect, EffectOptions } from './types'
@@ -280,7 +282,8 @@ export interface FieldTracker {
 /** Keeps a presence field in sync with the layout; `onChange` fires after a zone-driven rebuild (not after `resize`). */
 export function createFieldTracker(
   floor: number,
-  onChange: () => void
+  onChange: () => void,
+  calmKinds: readonly CalmKind[] = ALL_CALM_KINDS
 ): FieldTracker {
   let w = 0
   let h = 0
@@ -290,7 +293,7 @@ export function createFieldTracker(
   let field: PresenceField | null = null
 
   function measure(): void {
-    zones = measureCalmZones(document)
+    zones = measureCalmZones(document, calmKinds)
     sig = zonesSignature(zones)
   }
   function rebuild(): void {
@@ -368,6 +371,8 @@ export interface Canvas2dSpec {
   maxPixels: number
   /** Presence away from the edges (see buildPresenceField). */
   floor: number
+  /** Calm-zone kinds this effect quiets behind; defaults to all (see lib/fx/calm-zones.ts). */
+  calm?: readonly CalmKind[]
 }
 
 /** Canvas + capped loop + presence mask + teardown plumbing for every Canvas2D effect, so each module is only its scene. */
@@ -416,9 +421,13 @@ export function createCanvas2dEffect(
         }
       }
 
-      const tracker = createFieldTracker(spec.floor, () => {
-        if (opts.frozen) renderFrozen()
-      })
+      const tracker = createFieldTracker(
+        spec.floor,
+        () => {
+          if (opts.frozen) renderFrozen()
+        },
+        spec.calm
+      )
       const layer = createLayerCanvas(host, {
         maxDpr: spec.maxDpr,
         maxPixels: spec.maxPixels,

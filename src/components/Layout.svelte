@@ -256,9 +256,10 @@
     box-shadow:
       inset 0 1px 0 var(--glass-hi),
       0 30px 60px -30px rgb(0 8 20 / 0.6);
-    -webkit-backdrop-filter: blur(22px) saturate(1.25)
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25)
       brightness(var(--glass-dim));
-    backdrop-filter: blur(22px) saturate(1.25) brightness(var(--glass-dim));
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.25)
+      brightness(var(--glass-dim));
   }
 
   @media (prefers-reduced-motion: reduce) {
