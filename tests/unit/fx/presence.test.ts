@@ -6,7 +6,9 @@ import {
 } from '../../../src/lib/fx/border/common'
 import {
   CALM_ATTENUATION,
+  CLEAR_MARGIN,
   calmAt,
+  clearAt,
   measureCalmZones,
   type CalmZone
 } from '../../../src/lib/fx/calm-zones'
@@ -37,42 +39,62 @@ describe('seedRandom', () => {
 })
 
 describe('calmAt', () => {
-  const text: CalmZone = { kind: 'text', x0: 100, y0: 100, x1: 300, y1: 200 }
-  const glass: CalmZone = { kind: 'glass', x0: 400, y0: 100, x1: 700, y1: 400 }
+  const glass: CalmZone = { x0: 400, y0: 100, x1: 700, y1: 400 }
   const F = 20
 
   it('is 1 away from every zone', () => {
-    expect(calmAt([text, glass], 0, 700, F)).toBe(1)
-    expect(calmAt([text, glass], 1000, 50, F)).toBe(1)
-  })
-
-  it('attenuates to the text level over glyphs, easing out beyond them', () => {
-    expect(calmAt([text], 200, 150, F)).toBeCloseTo(CALM_ATTENUATION.text)
-    const near = calmAt([text], 300 + F * 2.5, 150, F)
-    expect(near).toBeGreaterThan(CALM_ATTENUATION.text)
-    expect(near).toBeLessThan(1)
-    expect(calmAt([text], 300 + F * 5.4, 150, F)).toBe(1)
+    expect(calmAt([glass], 0, 700, F)).toBe(1)
+    expect(calmAt([glass], 1000, 50, F)).toBe(1)
   })
 
   it('ramps inward from a glass edge to the glass level', () => {
     expect(calmAt([glass], 400, 250, F)).toBe(1)
-    expect(calmAt([glass], 550, 250, F)).toBeCloseTo(CALM_ATTENUATION.glass)
+    const ramp = calmAt([glass], 400 + F / 2, 250, F)
+    expect(ramp).toBeGreaterThan(CALM_ATTENUATION)
+    expect(ramp).toBeLessThan(1)
+    expect(calmAt([glass], 550, 250, F)).toBeCloseTo(CALM_ATTENUATION)
   })
 
-  it('takes the quietest zone where zones overlap', () => {
-    const inner: CalmZone = { kind: 'text', x0: 500, y0: 200, x1: 600, y1: 300 }
-    expect(calmAt([glass, inner], 550, 250, F)).toBeCloseTo(
-      CALM_ATTENUATION.text
-    )
+  it('never dents the sky just outside a panel', () => {
+    expect(calmAt([glass], 395, 250, F)).toBe(1)
+  })
+})
+
+describe('clearAt', () => {
+  const glass: CalmZone = { x0: 400, y0: 100, x1: 700, y1: 400 }
+  const F = 20
+
+  it('cuts a panel and its margin out entirely', () => {
+    expect(clearAt([glass], 550, 250, F)).toBe(0)
+    expect(clearAt([glass], 400, 250, F)).toBe(0)
+    expect(clearAt([glass], 400 - CLEAR_MARGIN, 250, F)).toBe(0)
+  })
+
+  it('eases back to full presence outside the margin', () => {
+    const edge = 400 - CLEAR_MARGIN
+    const mid = clearAt([glass], edge - F / 2, 250, F)
+    expect(mid).toBeGreaterThan(0)
+    expect(mid).toBeLessThan(1)
+    expect(clearAt([glass], edge - F, 250, F)).toBe(1)
+    expect(clearAt([glass], 0, 700, F)).toBe(1)
+  })
+
+  it('rounds the corners of the cut-out', () => {
+    // Same per-axis offset: off a corner the Euclidean distance is longer
+    // than off a side, so a nearest-edge metric (square corners) would tie.
+    const d = (CLEAR_MARGIN + F / 2) / Math.SQRT2
+    const diag = clearAt([glass], 400 - d, 100 - d, F)
+    const side = clearAt([glass], 400 - d, 250, F)
+    expect(diag).toBeGreaterThan(side)
   })
 })
 
 describe('measureCalmZones', () => {
-  it('reads glass panels as their box and ignores unknown kinds', () => {
+  it('reads every tagged element as its box, skipping empty ones', () => {
     const root = document.createElement('div')
     root.innerHTML =
-      '<div data-fx-calm="glass"></div><div data-fx-calm="bogus"></div>'
-    const [panel] = Array.from(root.children) as HTMLElement[]
+      '<div data-fx-calm="glass"></div><div data-fx-calm></div><div></div>'
+    const [panel, empty, untagged] = Array.from(root.children) as HTMLElement[]
     vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({
       left: 10,
       top: 20,
@@ -84,23 +106,13 @@ describe('measureCalmZones', () => {
       y: 20,
       toJSON: () => ({})
     } as DOMRect)
+    const emptySpy = vi.spyOn(empty, 'getBoundingClientRect')
+    const untaggedSpy = vi.spyOn(untagged, 'getBoundingClientRect')
     expect(measureCalmZones(root)).toEqual([
-      { kind: 'glass', x0: 10, y0: 20, x1: 110, y1: 220 }
+      { x0: 10, y0: 20, x1: 110, y1: 220 }
     ])
-  })
-
-  it('skips kinds outside the requested set', () => {
-    const root = document.createElement('div')
-    root.innerHTML = '<div data-fx-calm="text">Hi</div>'
-    const el = root.firstElementChild as HTMLElement
-    const rect = { left: 0, top: 0, right: 50, bottom: 20 } as DOMRect
-    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect)
-    vi.spyOn(document, 'createRange').mockReturnValue({
-      selectNodeContents: () => {},
-      getClientRects: () => [rect]
-    } as unknown as Range)
-    expect(measureCalmZones(root, ['glass'])).toEqual([])
-    expect(measureCalmZones(root, ['text']).length).toBeGreaterThan(0)
+    expect(emptySpy).toHaveBeenCalled()
+    expect(untaggedSpy).not.toHaveBeenCalled()
     vi.restoreAllMocks()
   })
 })
@@ -120,10 +132,17 @@ describe('buildPresenceField', () => {
   })
 
   it('multiplies in calm zones, in CSS px scaled to backing-store px', () => {
-    const zone: CalmZone = { kind: 'text', x0: 200, y0: 100, x1: 300, y1: 200 }
-    // Canvas at 0.5x CSS resolution: the zone lands at 100..150 x 50..100.
+    const zone: CalmZone = { x0: 200, y0: 100, x1: 400, y1: 300 }
+    // Canvas at 0.5x CSS resolution: the zone lands at 100..200 x 50..150.
     const f = buildPresenceField(500, 300, 1, [zone], 0.5)
-    expect(f.at(125, 75)).toBeCloseTo(CALM_ATTENUATION.text, 1)
-    expect(f.at(400, 250)).toBeCloseTo(1, 2)
+    expect(f.at(150, 100)).toBeCloseTo(CALM_ATTENUATION, 1)
+    expect(f.at(450, 250)).toBeCloseTo(1, 2)
+  })
+
+  it('takes the front sampler: glass cut out, sky untouched', () => {
+    const zone: CalmZone = { x0: 200, y0: 100, x1: 400, y1: 300 }
+    const f = buildPresenceField(500, 300, 1, [zone], 0.5, clearAt)
+    expect(f.at(150, 100)).toBeCloseTo(0, 2)
+    expect(f.at(450, 250)).toBeCloseTo(1, 2)
   })
 })

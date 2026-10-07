@@ -8,10 +8,10 @@
    *
    * Static by design: it moves with the minute tick (a fraction of a percent
    * of the screen per minute), and nothing pulses, so there's no motion to
-   * reduce. Behind text (the clock, the tomorrow strip) the disc dims
-   * partway toward the calm-zone level the FX use, and the halo barely at
-   * all: the glow is what makes the sky read sunlit, the crisp disc is what
-   * would fight a digit.
+   * reduce. Behind a glass card the disc dims partway toward the calm-zone
+   * level the FX use, and the halo barely at all: the glow is what makes
+   * the sky read sunlit, the crisp disc is what would fight a card's small
+   * labels. Text straight on the sky gets no dimming (see calm-zones.ts).
    */
   import { onMount } from 'svelte'
   import { weatherStore } from '../lib/weather/store'

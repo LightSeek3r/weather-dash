@@ -348,4 +348,80 @@ describe('border effect lifecycle', () => {
     }
     expect(host.childElementCount).toBe(0)
   })
+
+  describe('with a front host', () => {
+    let front: HTMLDivElement
+    // Effects that let some of their elements pass in front of the page text.
+    const FRONT: EffectId[] = [
+      'sun',
+      'cloudy',
+      'snow',
+      'rain-eco',
+      'rain-webgl',
+      'storm'
+    ]
+    const frontCount = (id: EffectId) => (FRONT.includes(id) ? 1 : 0)
+
+    beforeEach(() => {
+      front = document.createElement('div')
+      document.body.appendChild(front)
+    })
+    afterEach(() => front.remove())
+
+    for (const id of ALL) {
+      for (const tier of ['high', 'eco'] as ActiveTier[]) {
+        it(`${id} (${tier}) draws ${frontCount(id)} front canvas in the same loop, released on unmount`, async () => {
+          const raf = fakeRaf()
+          const fx = (await loadEffect(id))()
+          fx.mount(host, { tier, density: 0.8, front })
+          expect(host.querySelectorAll('canvas')).toHaveLength(1)
+          expect(front.querySelectorAll('canvas')).toHaveLength(frontCount(id))
+          expect(raf.pendingCount()).toBe(1)
+          expect(() => raf.frames(90, 1000 / 60)).not.toThrow()
+
+          fx.unmount()
+          expect(host.childElementCount).toBe(0)
+          expect(front.childElementCount).toBe(0)
+          expect(raf.pendingCount()).toBe(0)
+          if (id === 'rain-webgl' || (id === 'storm' && tier === 'high')) {
+            expect(loseContext).toHaveBeenCalledTimes(1)
+          }
+        })
+      }
+
+      it(`${id} frozen fills the front canvas too, with no loop`, async () => {
+        const raf = fakeRaf()
+        const fx = (await loadEffect(id))()
+        fx.mount(host, { tier: 'high', density: 0.8, frozen: true, front })
+        expect(front.querySelectorAll('canvas')).toHaveLength(frontCount(id))
+        expect(raf.pendingCount()).toBe(0)
+        fx.unmount()
+        expect(front.childElementCount).toBe(0)
+      })
+    }
+
+    it('rain-webgl without WebGL hands the front layer to the Canvas2D rain', async () => {
+      webglAvailable = false
+      fakeRaf()
+      const fx = (await loadEffect('rain-webgl'))()
+      fx.mount(host, { tier: 'high', density: 1, front })
+      expect(host.querySelectorAll('canvas')).toHaveLength(1)
+      expect(front.querySelectorAll('canvas')).toHaveLength(1)
+      fx.unmount()
+      expect(front.childElementCount).toBe(0)
+    })
+
+    it('rain-webgl degrading mid-run swaps its front canvas, never doubling it', async () => {
+      const raf = fakeRaf()
+      const fx = (await loadEffect('rain-webgl'))()
+      fx.mount(host, { tier: 'high', density: 1, front })
+      raf.frames(150, 100)
+      expect(host.querySelector('canvas')?.dataset.renderer).toBe('2d')
+      expect(front.querySelectorAll('canvas')).toHaveLength(1)
+      expect(raf.pendingCount()).toBe(1)
+      fx.unmount()
+      expect(front.childElementCount).toBe(0)
+      expect(raf.pendingCount()).toBe(0)
+    })
+  })
 })

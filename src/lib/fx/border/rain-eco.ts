@@ -11,7 +11,9 @@
  * - runners: heavier drops sliding down with a stick-slip gait, shedding a
  *   wet trail of tiny droplets and absorbing beads in their path;
  * - pool: water collecting along the bottom edge, its meniscus rippling and
- *   splashing wherever a runner or streak lands in it.
+ *   splashing wherever a runner or streak lands in it;
+ * - near rain (near-rain.ts): a few long soft streaks in front of the page
+ *   text, when mounted with a front layer.
  *
  * Drizzle swaps to fine mist-like beads and few runners. The icy variants
  * (freezing rain/drizzle, hail — see ice.ts) add edge frost and glints,
@@ -30,6 +32,7 @@ import {
   type SceneEnv
 } from './common'
 import { frostLayer, glintSprite, isIcy } from './ice'
+import { createNearRain, rainSlant, streakSprite } from './near-rain'
 import type { BorderEffect, EffectOptions } from './types'
 
 interface Bead {
@@ -147,20 +150,6 @@ function dropSprite(icy: boolean): HTMLCanvasElement {
   })
 }
 
-/** Vertical streak, transparent tail at the top, bright head at the bottom. */
-function streakSprite(): HTMLCanvasElement {
-  return makeSprite(8, 128, (ctx) => {
-    const g = ctx.createLinearGradient(0, 0, 0, 128)
-    g.addColorStop(0, 'rgba(200, 228, 255, 0)')
-    g.addColorStop(0.75, 'rgba(214, 236, 255, 0.55)')
-    g.addColorStop(1, 'rgba(240, 248, 255, 1)')
-    ctx.fillStyle = g
-    ctx.fillRect(2, 0, 4, 128)
-    ctx.fillStyle = 'rgba(240, 248, 255, 0.35)'
-    ctx.fillRect(0, 96, 8, 32)
-  })
-}
-
 function dotSprite(): HTMLCanvasElement {
   return makeSprite(16, 16, (ctx) => {
     const g = ctx.createRadialGradient(8, 8, 0, 8, 8, 8)
@@ -202,6 +191,7 @@ function rainScene(opts: EffectOptions, env: SceneEnv): Scene2d {
   const streakImg = streakSprite()
   const dot = dotSprite()
   const glintImg = icy ? glintSprite(48) : null
+  const nearRain = opts.front ? createNearRain(opts) : null
 
   const beadTarget = Math.round(
     tierScale * (isDrizzle ? 170 + 140 * d : 90 + 170 * d)
@@ -216,7 +206,7 @@ function rainScene(opts: EffectOptions, env: SceneEnv): Scene2d {
     tierScale * (isDrizzle ? 30 + 50 * d : 40 + 190 * d)
   )
   const hailTarget = hasHail ? Math.round(tierScale * 36) : 0
-  const slant = -(isDrizzle ? 0.03 : 0.05 + 0.13 * heavy)
+  const slant = rainSlant(opts)
   const cosS = Math.cos(slant)
   const sinS = Math.sin(slant)
   const TRAIL_CAP = 320
@@ -368,8 +358,9 @@ function rainScene(opts: EffectOptions, env: SceneEnv): Scene2d {
             }
           })
         : []
+      nearRain?.resize(w, h, band)
     },
-    draw(ctx, t, dt) {
+    draw(ctx, t, dt, front) {
       if (!veil) {
         veil = ctx.createLinearGradient(0, 0, 0, h * 0.6)
         veil.addColorStop(0, `rgba(22, 34, 50, ${0.32 + 0.2 * heavy})`)
@@ -593,6 +584,7 @@ function rainScene(opts: EffectOptions, env: SceneEnv): Scene2d {
         }
       }
       ctx.globalAlpha = 1
+      if (front && nearRain) nearRain.draw(front, dt)
     }
   }
 }
@@ -603,7 +595,8 @@ export function createEffect(): BorderEffect {
       fps: FPS[o.tier],
       maxDpr: o.tier === 'high' ? 2 : 1,
       maxPixels: o.tier === 'high' ? 3_000_000 : 1_000_000,
-      floor: 0.7
+      floor: 0.7,
+      front: true
     }),
     rainScene
   )

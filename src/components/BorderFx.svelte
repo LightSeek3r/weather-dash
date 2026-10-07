@@ -5,12 +5,14 @@
    * overlay — mount once anywhere in App.svelte, no Layout.svelte slot
    * needed.
    *
-   * Sits at z-index 3: above Layout's photo/sky/sun-moon/scrim layers
-   * (0–2, full order documented in Layout.svelte), below `.page` (4), so
-   * the effect reads as weather on the window *behind* the glass cards and
-   * can never cover text or controls. Each effect also quiets itself behind
-   * Layout's `data-fx-calm` regions (lib/fx/calm-zones.ts), so nothing busy
-   * sits under the clock even though it's physically beneath it.
+   * Two hosts. The back one sits at z-index 3: above Layout's photo/sky/
+   * sun-moon/scrim layers (0–2, full order documented in Layout.svelte),
+   * below `.page` (4) — weather on the window *behind* the text and glass
+   * cards, quieted behind the glass (lib/fx/calm-zones.ts). The front one
+   * also sits at z-index 4 but after Layout in the DOM, so it paints over
+   * the page text and still under the gear buttons (5) and every overlay:
+   * a few near rays, wisps, flakes and streaks cross the clock for
+   * immersion, while the glass cards are cut out of it entirely.
    *
    * Renders nothing until the first weather snapshot exists (no effect over
    * "no location set"), when the resolved tier is `off`, or when reduced
@@ -37,6 +39,7 @@
   import type { CelestialPosition } from '../lib/weather/celestialPosition'
 
   let host = $state<HTMLDivElement | null>(null)
+  let frontHost = $state<HTMLDivElement | null>(null)
   let osReducedMotion = $state(false)
 
   // Night mode dims the whole view for battery/burn-in reasons (see
@@ -108,7 +111,8 @@
     const it = intensity
     const hl = hail
     const day = isDay
-    if (!el || !id || activeTier === 'off') return
+    const front = frontHost
+    if (!el || !front || !id || activeTier === 'off') return
 
     let cancelled = false
     let fx: BorderEffect | null = null
@@ -124,7 +128,8 @@
           hail: hl,
           isDay: day,
           frozen: debugParams.freeze,
-          celestial
+          celestial,
+          front
         })
       })
       .catch((err) => console.warn(`[fx] could not load "${id}"`, err))
@@ -156,6 +161,12 @@
     data-fx={effectId}
     data-tier={tier}
   ></div>
+  <div
+    class="border-fx border-fx--front"
+    bind:this={frontHost}
+    aria-hidden="true"
+    data-fx-layer="front"
+  ></div>
 {/if}
 
 <style>
@@ -166,5 +177,8 @@
     pointer-events: none;
     overflow: hidden;
     contain: strict;
+  }
+  .border-fx--front {
+    z-index: 4;
   }
 </style>

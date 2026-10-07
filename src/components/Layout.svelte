@@ -38,8 +38,10 @@
                       not part of the picture
     3  .border-fx     weather FX (BorderFx.svelte, mounted by App) — veils
                       the sun/moon in bad weather, stays quiet behind the
-                      `data-fx-calm` regions below (lib/fx/calm-zones.ts)
-    4  .page          text and glass; nothing below may ever cover it
+                      `data-fx-calm` glass regions (lib/fx/calm-zones.ts)
+    4  .page          text and glass
+    4  .border-fx--front  a few near FX in front of the text (BorderFx,
+                      after Layout in the DOM); glass regions cut out
   Overlays above the page (gear/status 5, fullscreen scene 8, night dim 9,
   start overlay 10, settings 20, toasts 1000) live in their own components.
 -->
@@ -61,7 +63,6 @@
     <section
       class="hero"
       aria-label="Time and date"
-      data-fx-calm="text"
       use:fitHeight={{ target: '.clock', prop: '--clock-fit' }}
     >
       {@render hero()}
@@ -82,7 +83,7 @@
     </section>
   {/if}
   {#if tm}
-    <footer class="tm" aria-label="Tomorrow" data-fx-calm="text">
+    <footer class="tm" aria-label="Tomorrow">
       {@render tm()}
     </footer>
   {/if}

@@ -4,7 +4,8 @@
  * few big out-of-focus near flakes. Light snow is a sparse, gentle, almost
  * vertical drift; heavy snow is dense, bigger, faster and blown sideways by
  * a gusting wind. Snow collects in a lumpy bank along the bottom edge
- * (deeper when heavy) that sparkles here and there.
+ * (deeper when heavy) that sparkles here and there. The near flakes fall
+ * in front of the page text.
  *
  * Snow grains (and anything icy, see ice.ts) swap the flakes for small hard
  * pellets that fall fast and straight with sharp glints, plus frost grown
@@ -260,7 +261,8 @@ function snowScene(opts: EffectOptions, env: SceneEnv): Scene2d {
       bank = bankSprite()
       frost = icy ? frostLayer(w, h, band * 1.3, px, true) : null
     },
-    draw(ctx, t, dt) {
+    draw(ctx, t, dt, front) {
+      const near = front ?? ctx
       const gust = 0.7 + 0.3 * Math.sin(t / 7) + 0.15 * Math.sin(t / 2.3)
       const vx = band * windFactor * gust
 
@@ -280,8 +282,13 @@ function snowScene(opts: EffectOptions, env: SceneEnv): Scene2d {
           continue
         }
         if (env.presence(sx, f.y) < 0.02) continue
-        ctx.globalAlpha = f.alpha
         const s = f.size
+        if (f.kind === 2) {
+          near.globalAlpha = f.alpha
+          near.drawImage(bokeh, sx - s / 2, f.y - s / 2, s, s)
+          continue
+        }
+        ctx.globalAlpha = f.alpha
         if (f.kind === 1) {
           ctx.save()
           ctx.translate(sx, f.y)
@@ -289,7 +296,7 @@ function snowScene(opts: EffectOptions, env: SceneEnv): Scene2d {
           ctx.drawImage(crystal, -s / 2, -s / 2, s, s)
           ctx.restore()
         } else {
-          const img = f.kind === 2 ? bokeh : f.kind === 3 ? pellet : dot
+          const img = f.kind === 3 ? pellet : dot
           ctx.drawImage(img, sx - s / 2, f.y - s / 2, s, s)
         }
         if (f.glint) {
@@ -322,6 +329,7 @@ function snowScene(opts: EffectOptions, env: SceneEnv): Scene2d {
         }
       }
       ctx.globalAlpha = 1
+      near.globalAlpha = 1
     }
   }
 }
@@ -332,7 +340,8 @@ export function createEffect(): BorderEffect {
       fps: FPS[o.tier],
       maxDpr: o.tier === 'high' ? 2 : 1,
       maxPixels: o.tier === 'high' ? 3_000_000 : 1_000_000,
-      floor: 0.8
+      floor: 0.8,
+      front: true
     }),
     snowScene
   )

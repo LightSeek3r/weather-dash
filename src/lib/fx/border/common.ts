@@ -6,20 +6,23 @@
  * The presence field is where on screen an effect may show, 0..1: strongest
  * along the edges (the frame still reads as a window), a per-effect floor
  * everywhere else so weather fills the whole sky, and quiet behind the
- * layout's calm zones (lib/fx/calm-zones.ts) so nothing busy ever sits under
- * text or glass. It's a coarse grid (≤128 cells on the long side), so it's
- * cheap to rebuild whenever the layout moves, and doubles as a tiny alpha
- * mask canvas that upscales smoothly for `destination-in` clipping.
+ * layout's glass panels (lib/fx/calm-zones.ts). It's a coarse grid (≤128
+ * cells on the long side), so it's cheap to rebuild whenever the layout
+ * moves, and doubles as a tiny alpha mask canvas that upscales smoothly for
+ * `destination-in` clipping.
+ *
+ * Effects may also draw a few "near" elements into a front canvas that sits
+ * above the page text (BorderFx.svelte's front host). Its own field cuts the
+ * glass panels out entirely, so nothing ever paints over a card.
  */
 import { createCappedLoop } from '../raf-loop'
 import {
-  ALL_CALM_KINDS,
   CALM_FEATHER,
   calmAt,
+  clearAt,
   measureCalmZones,
   watchCalmZones,
   zonesSignature,
-  type CalmKind,
   type CalmZone
 } from '../calm-zones'
 import type { ActiveTier, BorderEffect, EffectOptions } from './types'
@@ -117,15 +120,28 @@ export interface LayerCanvas {
   destroy(): void
 }
 
-export function createLayerCanvas(
-  host: HTMLElement,
-  opts: LayerCanvasOptions
-): LayerCanvas {
+/** A full-host canvas with no sizing of its own (createLayerCanvas sizes one; a front canvas mirrors its layer's size). */
+export function appendCanvas(host: HTMLElement): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.setAttribute('aria-hidden', 'true')
   canvas.style.cssText =
     'position:absolute;inset:0;width:100%;height:100%;display:block;'
   host.appendChild(canvas)
+  return canvas
+}
+
+/** Removes a canvas and drops its backing store now rather than whenever GC gets to it. */
+export function releaseCanvas(canvas: HTMLCanvasElement): void {
+  canvas.remove()
+  canvas.width = 0
+  canvas.height = 0
+}
+
+export function createLayerCanvas(
+  host: HTMLElement,
+  opts: LayerCanvasOptions
+): LayerCanvas {
+  const canvas = appendCanvas(host)
 
   const layer: LayerCanvas = {
     canvas,
@@ -133,10 +149,7 @@ export function createLayerCanvas(
     height: 0,
     destroy() {
       window.removeEventListener('resize', resize)
-      canvas.remove()
-      // Drop the backing store now rather than whenever GC gets to it.
-      canvas.width = 0
-      canvas.height = 0
+      releaseCanvas(canvas)
     }
   }
 
@@ -193,13 +206,15 @@ export interface PresenceField {
 /**
  * @param floor presence away from the edges and calm zones (1 = no edge bias).
  * @param cssScale backing-store px per CSS px (zones are in CSS px).
+ * @param sample zone multiplier: `calmAt` behind the page, `clearAt` in front of it.
  */
 export function buildPresenceField(
   w: number,
   h: number,
   floor: number,
   zones: CalmZone[],
-  cssScale: number
+  cssScale: number,
+  sample: typeof calmAt = calmAt
 ): PresenceField {
   const cell = Math.max(1, Math.max(w, h) / FIELD_CELLS)
   const cols = Math.ceil(w / cell) + 1
@@ -214,7 +229,7 @@ export function buildPresenceField(
       const x = Math.min(w, i * cell)
       const edge = floor >= 1 ? 1 : edgeFactor(x, y, w, h, edgeBand)
       const base = floor + (1 - floor) * edge
-      values[j * cols + i] = base * calmAt(zones, x / s, y / s, feather)
+      values[j * cols + i] = base * sample(zones, x / s, y / s, feather)
     }
   }
 
@@ -266,12 +281,14 @@ export function drawPresenceMask(
   ctx.globalCompositeOperation = 'source-over'
 }
 
-// Layout rarely moves without a resize/ResizeObserver signal, but text
-// width does (the clock's digits every minute): re-measure this often.
+// Layout rarely moves without a resize/ResizeObserver signal, but the page's
+// pixel-shift transform does, and ResizeObserver can't see transforms.
 const REMEASURE_S = 5
 
 export interface FieldTracker {
   readonly field: PresenceField | null
+  /** Front-layer field (glass cut out, no edge bias); null unless built `withFront`. */
+  readonly front: PresenceField | null
   /** Backing-store size changed: re-measure and rebuild. */
   resize(w: number, h: number): void
   /** Frame-loop hook for the periodic re-measure. */
@@ -283,7 +300,7 @@ export interface FieldTracker {
 export function createFieldTracker(
   floor: number,
   onChange: () => void,
-  calmKinds: readonly CalmKind[] = ALL_CALM_KINDS
+  withFront = false
 ): FieldTracker {
   let w = 0
   let h = 0
@@ -291,20 +308,17 @@ export function createFieldTracker(
   let sig = ''
   let since = 0
   let field: PresenceField | null = null
+  let front: PresenceField | null = null
 
   function measure(): void {
-    zones = measureCalmZones(document, calmKinds)
+    zones = measureCalmZones(document)
     sig = zonesSignature(zones)
   }
   function rebuild(): void {
     if (w <= 0 || h <= 0) return
-    field = buildPresenceField(
-      w,
-      h,
-      floor,
-      zones,
-      w / Math.max(1, window.innerWidth)
-    )
+    const scale = w / Math.max(1, window.innerWidth)
+    field = buildPresenceField(w, h, floor, zones, scale)
+    if (withFront) front = buildPresenceField(w, h, 1, zones, scale, clearAt)
   }
   function recheck(): void {
     const prev = sig
@@ -318,6 +332,9 @@ export function createFieldTracker(
   return {
     get field() {
       return field
+    },
+    get front() {
+      return front
     },
     resize(nw, nh) {
       w = nw
@@ -334,6 +351,7 @@ export function createFieldTracker(
     destroy() {
       unwatch()
       field = null
+      front = null
     }
   }
 }
@@ -348,8 +366,8 @@ export function createFieldTracker(
  */
 export const FROZEN_SEED = 0x5eed
 export const FROZEN_T = 120
-const FROZEN_STEPS = 60
-const FROZEN_DT = 1 / 30
+export const FROZEN_STEPS = 60
+export const FROZEN_DT = 1 / 30
 
 // --- Canvas2D effect scaffold ------------------------------------------------
 
@@ -361,8 +379,18 @@ export interface SceneEnv {
 export interface Scene2d {
   /** Called on mount and on every viewport resize, in backing-store px. `band` is the particle size unit. */
   resize(w: number, h: number, band: number): void
-  /** `t`/`dt` in seconds. The canvas is already cleared; the presence mask is applied afterwards. */
-  draw(ctx: CanvasRenderingContext2D, t: number, dt: number): void
+  /**
+   * `t`/`dt` in seconds. Both canvases are already cleared; the presence
+   * masks are applied afterwards. `front` (same size as `ctx`) is where the
+   * scene's near elements go when the effect has a front layer — null when
+   * it doesn't, in which case those elements belong on `ctx`.
+   */
+  draw(
+    ctx: CanvasRenderingContext2D,
+    t: number,
+    dt: number,
+    front: CanvasRenderingContext2D | null
+  ): void
 }
 
 export interface Canvas2dSpec {
@@ -371,8 +399,8 @@ export interface Canvas2dSpec {
   maxPixels: number
   /** Presence away from the edges (see buildPresenceField). */
   floor: number
-  /** Calm-zone kinds this effect quiets behind; defaults to all (see lib/fx/calm-zones.ts). */
-  calm?: readonly CalmKind[]
+  /** The scene draws near elements in front of the page when mounted with `opts.front`. */
+  front?: boolean
 }
 
 /** Canvas + capped loop + presence mask + teardown plumbing for every Canvas2D effect, so each module is only its scene. */
@@ -390,6 +418,7 @@ export function createCanvas2dEffect(
         presence: (x, y) => tracker.field?.at(x, y) ?? 1
       }
       let ctx: CanvasRenderingContext2D | null = null
+      let fctx: CanvasRenderingContext2D | null = null
       let scene: Scene2d | null = null
       let w = 0
       let h = 0
@@ -397,12 +426,18 @@ export function createCanvas2dEffect(
 
       function frame(dt: number): void {
         if (!ctx || !scene) return
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.globalAlpha = 1
-        ctx.clearRect(0, 0, w, h)
-        scene.draw(ctx, t, dt)
+        for (const c of fctx ? [ctx, fctx] : [ctx]) {
+          c.globalCompositeOperation = 'source-over'
+          c.globalAlpha = 1
+          c.clearRect(0, 0, w, h)
+        }
+        scene.draw(ctx, t, dt, fctx)
         ctx.globalAlpha = 1
         if (tracker.field) drawPresenceMask(ctx, tracker.field)
+        if (fctx) {
+          fctx.globalAlpha = 1
+          if (tracker.front) drawPresenceMask(fctx, tracker.front)
+        }
       }
 
       function renderFrozen(): void {
@@ -421,19 +456,26 @@ export function createCanvas2dEffect(
         }
       }
 
+      const frontHost = spec.front ? opts.front : undefined
       const tracker = createFieldTracker(
         spec.floor,
         () => {
           if (opts.frozen) renderFrozen()
         },
-        spec.calm
+        !!frontHost
       )
+      // Created before the layer so the layer's first onResize sizes it too.
+      const frontCanvas = frontHost ? appendCanvas(frontHost) : null
       const layer = createLayerCanvas(host, {
         maxDpr: spec.maxDpr,
         maxPixels: spec.maxPixels,
         onResize(nw, nh) {
           w = nw
           h = nh
+          if (frontCanvas) {
+            frontCanvas.width = nw
+            frontCanvas.height = nh
+          }
           tracker.resize(nw, nh)
           if (opts.frozen) renderFrozen()
           else scene?.resize(nw, nh, bandSize(nw, nh))
@@ -441,18 +483,23 @@ export function createCanvas2dEffect(
       })
       layer.canvas.dataset.renderer = '2d'
       ctx = layer.canvas.getContext('2d')
-      if (!ctx) {
+      if (frontCanvas) {
+        frontCanvas.dataset.renderer = '2d'
+        fctx = frontCanvas.getContext('2d')
+      }
+      const release = (): void => {
         tracker.destroy()
         layer.destroy()
+        if (frontCanvas) releaseCanvas(frontCanvas)
+      }
+      if (!ctx) {
+        release()
         return
       }
 
       if (opts.frozen) {
         renderFrozen()
-        teardown = () => {
-          tracker.destroy()
-          layer.destroy()
-        }
+        teardown = release
         return
       }
 
@@ -467,8 +514,7 @@ export function createCanvas2dEffect(
       loop.start()
       teardown = () => {
         loop.stop()
-        tracker.destroy()
-        layer.destroy()
+        release()
       }
     },
     unmount() {

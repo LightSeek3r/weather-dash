@@ -98,8 +98,7 @@ export function createEffect(): BorderEffect {
       fps: o.tier === 'high' ? 20 : 12,
       maxDpr: o.tier === 'high' ? 0.5 : 0.33,
       maxPixels: o.tier === 'high' ? 400_000 : 160_000,
-      floor: 0.85,
-      calm: ['glass']
+      floor: 0.85
     }),
     fogScene
   )

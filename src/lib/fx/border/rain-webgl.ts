@@ -42,14 +42,23 @@
 import { createCappedLoop } from '../raf-loop'
 import {
   FPS,
+  FROZEN_DT,
+  FROZEN_SEED,
+  FROZEN_STEPS,
   FROZEN_T,
+  appendCanvas,
+  bandSize,
   createFieldTracker,
   createLayerCanvas,
+  drawPresenceMask,
   random,
+  releaseCanvas,
+  seedRandom,
   smoothstep,
   type PresenceField
 } from './common'
 import { isIcy } from './ice'
+import { createNearRain, type NearRain } from './near-rain'
 import { createEffect as createEcoEffect } from './rain-eco'
 import type { BorderEffect, EffectOptions } from './types'
 
@@ -335,20 +344,59 @@ export function createEffect(): BorderEffect {
     let fieldDirty = true
     // Frozen renders draw on demand instead of from a loop.
     let redraw: (() => void) | null = null
-    const tracker = createFieldTracker(0.7, () => {
-      fieldDirty = true
-      redraw?.()
-    })
+    const tracker = createFieldTracker(
+      0.7,
+      () => {
+        fieldDirty = true
+        redraw?.()
+      },
+      !!opts.front
+    )
+    // Near rain in front of the page text: Canvas2D, since one GL context
+    // can't also draw this second canvas. Created before the layer so the
+    // layer's first onResize sizes it too.
+    const frontCanvas = opts.front ? appendCanvas(opts.front) : null
+    const fctx = frontCanvas?.getContext('2d') ?? null
+    if (frontCanvas) frontCanvas.dataset.renderer = '2d'
+    let nearRain: NearRain | null = fctx ? createNearRain(opts) : null
     const layer = createLayerCanvas(host, {
       maxDpr: 1.25,
       maxPixels: 1_200_000,
       onResize: (w, h) => {
         tracker.resize(w, h)
+        if (frontCanvas) {
+          frontCanvas.width = w
+          frontCanvas.height = h
+        }
+        if (!opts.frozen) nearRain?.resize(w, h, bandSize(w, h))
         resized = true
         fieldDirty = true
         redraw?.()
       }
     })
+
+    function drawFront(dt: number): void {
+      if (!fctx || !nearRain || !frontCanvas) return
+      fctx.globalCompositeOperation = 'source-over'
+      fctx.clearRect(0, 0, frontCanvas.width, frontCanvas.height)
+      nearRain.draw(fctx, dt)
+      if (tracker.front) drawPresenceMask(fctx, tracker.front)
+    }
+
+    // Same contract as createCanvas2dEffect's frozen path: one seeded scene,
+    // warmed up so the streaks are spread out, never a loop.
+    function renderFrontFrozen(): void {
+      if (!fctx || !frontCanvas) return
+      seedRandom(FROZEN_SEED)
+      try {
+        nearRain = createNearRain(opts)
+        const { width: w, height: h } = frontCanvas
+        nearRain.resize(w, h, bandSize(w, h))
+        for (let i = 0; i < FROZEN_STEPS; i++) drawFront(FROZEN_DT)
+      } finally {
+        seedRandom(null)
+      }
+    }
     layer.canvas.dataset.renderer = 'webgl'
     const attrs: WebGLContextAttributes = {
       alpha: true,
@@ -364,6 +412,7 @@ export function createEffect(): BorderEffect {
     if (!gl) {
       tracker.destroy()
       layer.destroy()
+      if (frontCanvas) releaseCanvas(frontCanvas)
       toEco(host, opts, 'no WebGL context')
       return
     }
@@ -391,6 +440,8 @@ export function createEffect(): BorderEffect {
         gl.getExtension('WEBGL_lose_context')?.loseContext()
       }
       layer.destroy()
+      if (frontCanvas) releaseCanvas(frontCanvas)
+      nearRain = null
     }
 
     try {
@@ -477,7 +528,10 @@ export function createEffect(): BorderEffect {
     }
 
     if (opts.frozen) {
-      redraw = () => draw(FROZEN_T)
+      redraw = () => {
+        draw(FROZEN_T)
+        renderFrontFrozen()
+      }
       redraw()
       return
     }
@@ -503,6 +557,7 @@ export function createEffect(): BorderEffect {
       tracker.tick(deltaMs / 1000)
       t = (t + deltaMs / 1000) % TIME_WRAP_S
       draw(t)
+      drawFront(deltaMs / 1000)
     })
     loop.start()
   }

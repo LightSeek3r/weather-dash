@@ -254,6 +254,7 @@
 <button
   type="button"
   class="gear"
+  data-fx-calm
   class:gear--hidden={!gearVisible}
   aria-label={s.kiosk.openSettings}
   onclick={() => (settingsOpen = true)}
@@ -278,6 +279,7 @@
   <button
     type="button"
     class="gear gear--fullscreen"
+    data-fx-calm
     class:gear--hidden={!gearVisible}
     aria-label={s.kiosk.enterFullscreen}
     onclick={() => void enterFullscreen()}

@@ -11,6 +11,9 @@
  * `overcast` gets more, greyer clouds under a continuous cloud deck from the
  * top of the frame (which is also what hides the sky layer's sun). `isDay`
  * swaps sunlight for cooler, dimmer moonlight.
+ *
+ * In front of the page text: one or two translucent near wisps, drifting
+ * faster than any layer behind, so cloud passes across the clock itself.
  */
 import {
   createCanvas2dEffect,
@@ -43,6 +46,9 @@ const LAYERS = [
   { width: [3.5, 5.5], y: [0.12, 0.46], speed: 1 / 220, alpha: 0.7 },
   { width: [6, 9], y: [-0.08, 0.3], speed: 1 / 120, alpha: 0.82 }
 ]
+
+// Front wisps: nearest of all (fastest), and thin enough to read through.
+const WISP = { width: [5, 8], y: [-0.05, 0.4], speed: 1 / 80, alpha: 0.3 }
 
 function shadeFor(partly: boolean, day: boolean): Shade {
   if (!day) {
@@ -143,8 +149,11 @@ function cloudyScene(opts: EffectOptions): Scene2d {
   )
   const dim = day ? 1 : 0.75
 
+  let wisps: Cloud[] = []
+  const wispCount = opts.front ? (partly ? 1 : 2) : 0
+
   function makeCloud(layer: number, x?: number): Cloud {
-    const L = LAYERS[layer]
+    const L = layer < 0 ? WISP : LAYERS[layer]
     const cw = band * rand(L.width[0], L.width[1])
     const ch = cw * rand(0.42, 0.55)
     return {
@@ -171,8 +180,15 @@ function cloudyScene(opts: EffectOptions): Scene2d {
         }
       })
       deck = partly ? null : deckSprite(w, h * 0.34, day)
+      wisps = Array.from({ length: wispCount }, (_, i) => {
+        const c = makeCloud(-1)
+        c.x =
+          ((i + rand(0.1, 0.9)) / wispCount) * (w + c.sprite.width) -
+          c.sprite.width
+        return c
+      })
     },
-    draw(ctx, t, dt) {
+    draw(ctx, t, dt, front) {
       if (deck) {
         const off = ((((t * w) / 600) % w) + w) % w
         ctx.globalAlpha = (0.55 + 0.35 * opts.density) * dim
@@ -194,6 +210,18 @@ function cloudyScene(opts: EffectOptions): Scene2d {
         ctx.drawImage(c.sprite, c.x, c.y)
       }
       ctx.globalAlpha = 1
+      if (!front) return
+      for (let i = 0; i < wisps.length; i++) {
+        const c = wisps[i]
+        c.x += w * WISP.speed * dt
+        if (c.x > w) {
+          wisps[i] = makeCloud(-1, -rand(1, 1.6) * c.sprite.width)
+          continue
+        }
+        front.globalAlpha = WISP.alpha * dim
+        front.drawImage(c.sprite, c.x, c.y)
+      }
+      front.globalAlpha = 1
     }
   }
 }
@@ -204,7 +232,8 @@ export function createEffect(): BorderEffect {
       fps: o.tier === 'high' ? 20 : 12,
       maxDpr: o.tier === 'high' ? 0.5 : 0.33,
       maxPixels: o.tier === 'high' ? 400_000 : 160_000,
-      floor: 0.85
+      floor: 0.85,
+      front: true
     }),
     cloudyScene
   )

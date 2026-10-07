@@ -41,6 +41,13 @@ export interface EffectOptions {
    * minute-by-minute movement never forces a remount; read per frame.
    */
   celestial?: () => CelestialPosition | null
+  /**
+   * Host above the page text (BorderFx.svelte's front layer) for the few
+   * "near" elements an effect lets pass in front of the clock/date. Effects
+   * that draw nothing in front never touch it; without it, everything stays
+   * in `host`. Owned like `host`: left exactly as found on unmount.
+   */
+  front?: HTMLElement
 }
 
 export interface BorderEffect {

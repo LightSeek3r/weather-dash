@@ -81,6 +81,7 @@
   <button
     type="button"
     class="status-pill__dot"
+    data-fx-calm
     class:status-pill__dot--offline={!online}
     class:status-pill__dot--stale={online && stale}
     aria-label={label}
@@ -89,7 +90,7 @@
     onclick={toggleDetail}
   ></button>
   {#if detailOpen}
-    <p class="status-pill__detail">{label}</p>
+    <p class="status-pill__detail" data-fx-calm>{label}</p>
   {/if}
 </div>
 

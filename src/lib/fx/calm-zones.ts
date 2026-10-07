@@ -1,100 +1,49 @@
 /**
- * "Calm zones": the parts of the screen weather FX and the sky's sun/moon
- * must stay quiet behind, so nothing bright or busy ever sits under text.
- * Layout.svelte tags its regions with `data-fx-calm`:
+ * "Calm zones": the glass surfaces (current weather and 24h timeline
+ * cards, the status dot, the gear/fullscreen buttons) that weather FX must
+ * respect, tagged `data-fx-calm`.
  *
- * - `text` (hero clock/date, tomorrow strip — no glass of their own): the
- *   tight boxes of the rendered text itself get strong attenuation, easing
- *   back out over a wide, round-cornered falloff. Measured per text node
- *   via Range rects, so the empty space around a short date line stays
- *   mostly alive;
- * - `glass` (the frosted cap/timeline panels): the panel rect gets strong
- *   attenuation, ramping *inside* the panel border so the falloff is hidden
- *   under the glass's own blur and the sky outside it isn't dented. As
- *   strong as `text`: the translucent glass passes a bright sun straight
- *   through to its small secondary labels.
+ * - Behind the page (back layer, and the sky's sun/moon) a panel gets strong
+ *   attenuation, ramping *inside* its border so the falloff is hidden under
+ *   the glass's own blur and the sky outside it isn't dented: the
+ *   translucent glass would otherwise pass a bright sun straight through to
+ *   its small secondary labels.
+ * - In front of the page (front layer) a panel is cut out entirely, plus a
+ *   small margin, ramping back in *outside* its border: nothing may ever
+ *   paint over a card's data.
  *
- * Screen-wide washes (sun glare, fog) skip `text` zones: damping an even
- * wash around the words cuts a dark, text-shaped hole into it, so that text
- * relies on its own halo (Layout.svelte's `.hero, .tm` text-shadow) instead.
+ * Text sitting straight on the sky (clock, date, tomorrow strip) has no
+ * zone on purpose: quieting FX around it cut visible, text-shaped holes
+ * into the weather, so that text carries its own contrast (Layout.svelte's
+ * `.hero, .tm` text-shadow) and FX may pass behind and in front of it.
  *
  * Rects are CSS px (viewport space); callers scale to their backing store.
  */
 
-export type CalmKind = 'text' | 'glass'
-
 export interface CalmZone {
-  kind: CalmKind
   x0: number
   y0: number
   x1: number
   y1: number
 }
 
-/** Presence multiplier deep inside each kind of zone. */
-export const CALM_ATTENUATION: Record<CalmKind, number> = {
-  text: 0.3,
-  glass: 0.3
-}
+/** Back-layer presence multiplier deep inside a panel. */
+export const CALM_ATTENUATION = 0.3
 
 /** Falloff width as a fraction of the viewport's short side. */
 export const CALM_FEATHER = 0.035
 
-// Around text, in feathers: fully calm out to PAD, then easing to 1 over RAMP.
-// A long, gradual ramp rather than a flat core: over an even wash (fog, sun
-// glare) anything shorter reads as a dark panel behind the text.
-const TEXT_PAD = 0.3
-const TEXT_RAMP = 5
+/** Front-layer cut-out margin around a panel, CSS px: covers the page's pixel-shift drift between re-measures. */
+export const CLEAR_MARGIN = 8
 
 const SELECTOR = '[data-fx-calm]'
 
-function isKind(v: string | undefined): v is CalmKind {
-  return v === 'text' || v === 'glass'
-}
-
-function pushRect(
-  out: CalmZone[],
-  kind: CalmKind,
-  r: { left: number; top: number; right: number; bottom: number }
-): void {
-  if (!(r.right > r.left) || !(r.bottom > r.top)) return
-  out.push({ kind, x0: r.left, y0: r.top, x1: r.right, y1: r.bottom })
-}
-
-function measureText(el: Element, out: CalmZone[]): void {
-  const doc = el.ownerDocument
-  const range = typeof doc.createRange === 'function' ? doc.createRange() : null
-  if (!range || typeof range.getClientRects !== 'function') {
-    pushRect(out, 'text', el.getBoundingClientRect())
-    return
-  }
-  const before = out.length
-  const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    if (!n.textContent?.trim()) continue
-    range.selectNodeContents(n)
-    for (const r of Array.from(range.getClientRects())) pushRect(out, 'text', r)
-  }
-  // Icons sit in the text flow as visually as loud as the words.
-  for (const icon of Array.from(el.querySelectorAll('svg, img'))) {
-    pushRect(out, 'text', icon.getBoundingClientRect())
-  }
-  // No layout (or nothing rendered yet): the element box is the safe bound.
-  if (out.length === before) pushRect(out, 'text', el.getBoundingClientRect())
-}
-
-export const ALL_CALM_KINDS: readonly CalmKind[] = ['text', 'glass']
-
-export function measureCalmZones(
-  root: ParentNode = document,
-  kinds: readonly CalmKind[] = ALL_CALM_KINDS
-): CalmZone[] {
+export function measureCalmZones(root: ParentNode = document): CalmZone[] {
   const out: CalmZone[] = []
   for (const el of Array.from(root.querySelectorAll(SELECTOR))) {
-    const kind = (el as HTMLElement).dataset.fxCalm
-    if (!isKind(kind) || !kinds.includes(kind)) continue
-    if (kind === 'glass') pushRect(out, 'glass', el.getBoundingClientRect())
-    else measureText(el, out)
+    const r = el.getBoundingClientRect()
+    if (!(r.right > r.left) || !(r.bottom > r.top)) continue
+    out.push({ x0: r.left, y0: r.top, x1: r.right, y1: r.bottom })
   }
   return out
 }
@@ -104,7 +53,7 @@ export function zonesSignature(zones: CalmZone[]): string {
   return zones
     .map(
       (z) =>
-        `${z.kind[0]}${Math.round(z.x0)},${Math.round(z.y0)},${Math.round(z.x1)},${Math.round(z.y1)}`
+        `${Math.round(z.x0)},${Math.round(z.y0)},${Math.round(z.x1)},${Math.round(z.y1)}`
     )
     .join(';')
 }
@@ -114,9 +63,18 @@ function smoothstep(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t)
 }
 
+/** Signed distance from (x, y) to the zone's border: positive inside. */
+function inset(z: CalmZone, x: number, y: number): number {
+  const inside = Math.min(x - z.x0, z.x1 - x, y - z.y0, z.y1 - y)
+  if (inside >= 0) return inside
+  const dx = Math.max(z.x0 - x, 0, x - z.x1)
+  const dy = Math.max(z.y0 - y, 0, y - z.y1)
+  return -Math.hypot(dx, dy)
+}
+
 /**
- * Presence multiplier at (x, y) CSS px: 1 in open sky, down to the zone's
- * attenuation inside one. `feather` is the falloff width in CSS px.
+ * Back-layer presence multiplier at (x, y) CSS px: 1 in open sky and at a
+ * panel's border, easing down to CALM_ATTENUATION over `feather` inside it.
  */
 export function calmAt(
   zones: CalmZone[],
@@ -126,22 +84,29 @@ export function calmAt(
 ): number {
   let v = 1
   for (const z of zones) {
-    const att = CALM_ATTENUATION[z.kind]
-    let k: number
-    if (z.kind === 'glass') {
-      const inside = Math.min(x - z.x0, z.x1 - x, y - z.y0, z.y1 - y)
-      if (inside <= 0) continue
-      k = 1 - smoothstep(0, feather, inside)
-    } else {
-      const dx = Math.max(z.x0 - x, 0, x - z.x1)
-      const dy = Math.max(z.y0 - y, 0, y - z.y1)
-      const d = Math.hypot(dx, dy)
-      const pad = feather * TEXT_PAD
-      const end = pad + feather * TEXT_RAMP
-      if (d >= end) continue
-      k = smoothstep(pad, end, d)
-    }
-    const value = att + (1 - att) * k
+    const d = inset(z, x, y)
+    if (d <= 0) continue
+    const value = 1 - (1 - CALM_ATTENUATION) * smoothstep(0, feather, d)
+    if (value < v) v = value
+  }
+  return v
+}
+
+/**
+ * Front-layer presence multiplier at (x, y) CSS px: 0 over a panel and
+ * CLEAR_MARGIN around it, easing back to 1 over `feather` outside that.
+ */
+export function clearAt(
+  zones: CalmZone[],
+  x: number,
+  y: number,
+  feather: number
+): number {
+  let v = 1
+  for (const z of zones) {
+    const out = -inset(z, x, y) - CLEAR_MARGIN
+    if (out >= feather) continue
+    const value = smoothstep(0, feather, out)
     if (value < v) v = value
   }
   return v
@@ -150,7 +115,7 @@ export function calmAt(
 /**
  * Calls `onChange` whenever a tagged region may have moved or resized
  * (ResizeObserver where it exists, plus once when web fonts finish loading,
- * which reflows the clock). Viewport resizes are left to the caller, which
+ * which reflows the layout). Viewport resizes are left to the caller, which
  * already listens for them. Returns the unsubscribe.
  */
 export function watchCalmZones(onChange: () => void): () => void {

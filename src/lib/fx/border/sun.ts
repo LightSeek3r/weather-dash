@@ -8,6 +8,10 @@
  * along the sun → screen-centre line, and warm motes drift everywhere,
  * brighter the closer they are to the light.
  *
+ * In front of the page text: the lens ghosts (lens artefacts sit in front
+ * of everything by nature), a third of the motes, and a faint copy of the
+ * god rays — sunlight falling across the clock rather than only behind it.
+ *
  * Soft shapes only, so it renders at a fraction of screen resolution (the
  * upscale blur is part of the look) and at a low frame rate. The presence
  * field here has no edge bias (floor 1): only the glass calm zones quiet it.
@@ -16,6 +20,11 @@ import { createCanvas2dEffect, makeSprite, rand, type Scene2d } from './common'
 import type { BorderEffect, EffectOptions } from './types'
 
 const TAU = Math.PI * 2
+
+/** Strength of the god rays' copy in front of the text, relative to the back rays. */
+const FRONT_RAYS = 0.35
+/** Every Nth mote drifts in front of the text. */
+const FRONT_MOTE_EVERY = 3
 
 interface Mote {
   x: number
@@ -78,6 +87,33 @@ function sunScene(opts: EffectOptions): Scene2d {
     }
   }
 
+  /** Rays first on a canvas: the destination-in falloff erases anything drawn before it. */
+  function drawRays(
+    c: CanvasRenderingContext2D,
+    t: number,
+    sx: number,
+    sy: number,
+    strength: number
+  ): void {
+    const cg = c.createConicGradient(t / 90, sx, sy)
+    for (const [at, ray] of rays) {
+      const a = 0.6 * ray * strength
+      cg.addColorStop(at, 'rgba(255, 226, 176, 0)')
+      cg.addColorStop(Math.min(1, at + 0.009), `rgba(255, 226, 176, ${a})`)
+      cg.addColorStop(Math.min(1, at + 0.022), 'rgba(255, 226, 176, 0)')
+    }
+    c.globalCompositeOperation = 'lighter'
+    c.fillStyle = cg
+    c.fillRect(0, 0, w, h)
+    c.globalCompositeOperation = 'destination-in'
+    c.fillStyle = radial(c, sx, sy, reach * 0.75, [
+      [0, 'rgba(0, 0, 0, 1)'],
+      [0.45, 'rgba(0, 0, 0, 0.5)'],
+      [1, 'rgba(0, 0, 0, 0)']
+    ])
+    c.fillRect(0, 0, w, h)
+  }
+
   function spawnMote(anywhere: boolean): Mote {
     return {
       x: rand(0, w),
@@ -106,35 +142,20 @@ function sunScene(opts: EffectOptions): Scene2d {
         c.fillRect(0, 0, s, s)
       })
     },
-    draw(ctx, t, dt) {
+    draw(ctx, t, dt, front) {
       const breathe = 0.88 + 0.12 * Math.sin((t * TAU) / 23)
       const { x: sx, y: sy } = sun(t)
       // Low sun: warmer, redder light (sunrise/sunset glow).
       const low = Math.min(1, Math.max(0, (sy / h - 0.45) / 0.45))
       const warmRgb = low > 0.5 ? '255, 170, 110' : '255, 206, 150'
 
-      // Rays first: the destination-in falloff below would erase anything
-      // drawn before it. createConicGradient is missing on pre-2022
-      // engines — those simply get no rays.
+      // createConicGradient is missing on pre-2022 engines — those simply
+      // get no rays.
       if (typeof ctx.createConicGradient === 'function') {
-        const cg = ctx.createConicGradient(t / 90, sx, sy)
-        for (const [at, strength] of rays) {
-          const a = 0.6 * strength * breathe
-          cg.addColorStop(at, 'rgba(255, 226, 176, 0)')
-          cg.addColorStop(Math.min(1, at + 0.009), `rgba(255, 226, 176, ${a})`)
-          cg.addColorStop(Math.min(1, at + 0.022), 'rgba(255, 226, 176, 0)')
-        }
-        ctx.globalCompositeOperation = 'lighter'
-        ctx.fillStyle = cg
-        ctx.fillRect(0, 0, w, h)
-        ctx.globalCompositeOperation = 'destination-in'
-        ctx.fillStyle = radial(ctx, sx, sy, reach * 0.75, [
-          [0, 'rgba(0, 0, 0, 1)'],
-          [0.45, 'rgba(0, 0, 0, 0.5)'],
-          [1, 'rgba(0, 0, 0, 0)']
-        ])
-        ctx.fillRect(0, 0, w, h)
+        drawRays(ctx, t, sx, sy, breathe)
+        if (front) drawRays(front, t, sx, sy, breathe * FRONT_RAYS)
       }
+      const near = front ?? ctx
 
       ctx.globalCompositeOperation = 'lighter'
       // The light field: strong around the sun, still a warm tint by the
@@ -169,6 +190,7 @@ function sunScene(opts: EffectOptions): Scene2d {
       ctx.restore()
 
       // Lens ghosts along the sun -> screen-centre line (and past it).
+      near.globalCompositeOperation = 'lighter'
       const dx = w / 2 - sx
       const dy = h / 2 - sy
       const ghosts: [number, number, string, boolean][] = [
@@ -183,7 +205,7 @@ function sunScene(opts: EffectOptions): Scene2d {
         const gx = sx + dx * dist * drift
         const gy = sy + dy * dist * drift
         glow(
-          ctx,
+          near,
           gx,
           gy,
           band * size,
@@ -203,16 +225,18 @@ function sunScene(opts: EffectOptions): Scene2d {
       }
 
       if (moteSprite) {
-        for (const m of motes) {
+        for (let i = 0; i < motes.length; i++) {
+          const m = motes[i]
           m.x += m.vx * dt
           m.y += m.vy * dt
           if (m.y < -m.size || m.x < -m.size || m.x > w + m.size) {
             Object.assign(m, spawnMote(false))
           }
-          const near = 1 - Math.min(1, Math.hypot(m.x - sx, m.y - sy) / reach)
+          const c = i % FRONT_MOTE_EVERY === 0 ? near : ctx
+          const lit = 1 - Math.min(1, Math.hypot(m.x - sx, m.y - sy) / reach)
           const twinkle = 0.5 + 0.5 * Math.sin(t * 0.9 + m.phase)
-          ctx.globalAlpha = (0.3 + 0.7 * near * near) * twinkle
-          ctx.drawImage(
+          c.globalAlpha = (0.3 + 0.7 * lit * lit) * twinkle
+          c.drawImage(
             moteSprite,
             m.x - m.size,
             m.y - m.size,
@@ -221,8 +245,10 @@ function sunScene(opts: EffectOptions): Scene2d {
           )
         }
         ctx.globalAlpha = 1
+        near.globalAlpha = 1
       }
       ctx.globalCompositeOperation = 'source-over'
+      near.globalCompositeOperation = 'source-over'
     }
   }
 }
@@ -234,7 +260,7 @@ export function createEffect(): BorderEffect {
       maxDpr: o.tier === 'high' ? 0.5 : 0.33,
       maxPixels: o.tier === 'high' ? 400_000 : 160_000,
       floor: 1,
-      calm: ['glass']
+      front: true
     }),
     sunScene
   )
