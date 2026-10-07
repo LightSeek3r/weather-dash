@@ -96,6 +96,12 @@
     </div>
     <div class="curve">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="tl-area-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" class="fade-from" />
+            <stop offset="1" class="fade-to" />
+          </linearGradient>
+        </defs>
         <path class="area" d={paths.area} />
         <path class="line" d={paths.line} />
       </svg>
@@ -221,8 +227,15 @@
     vector-effect: non-scaling-stroke;
   }
   .curve .area {
-    fill: var(--ice);
-    opacity: 0.14;
+    fill: url(#tl-area-fade);
+  }
+  .curve .fade-from {
+    stop-color: var(--ice);
+    stop-opacity: 0.34;
+  }
+  .curve .fade-to {
+    stop-color: var(--ice);
+    stop-opacity: 0;
   }
   .curve .t {
     position: absolute;
