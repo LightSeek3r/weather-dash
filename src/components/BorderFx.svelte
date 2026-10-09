@@ -8,7 +8,7 @@
    * Two hosts. The back one sits at z-index 3: above Layout's photo/sky/
    * sun-moon/scrim layers (0–2, full order documented in Layout.svelte),
    * below `.page` (4) — weather on the window *behind* the text and glass
-   * cards, quieted behind the glass (lib/fx/calm-zones.ts). The front one
+   * cards, flowing behind the glass unhindered. The front one
    * also sits at z-index 4 but after Layout in the DOM, so it paints over
    * the page text and still under the gear buttons (5) and every overlay:
    * a few near rays, wisps, flakes and streaks cross the clock for

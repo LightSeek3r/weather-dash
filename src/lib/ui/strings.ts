@@ -55,6 +55,8 @@ export interface Dictionary {
     more: (n: number) => string
     /** Holiday provenance in the info popover: country, or country + region. */
     holidayOrigin: (country: string, region: string | null) => string
+    /** Accessible name of the icon marking a public (bank) holiday on the date line. */
+    bankHoliday: string
     /** Saint-of-the-day provenance in the info popover, composed with the already-translated `settings.saints.traditionRomanCatholic`/`traditionFrenchCivil` value. */
     saintSource: (tradition: string) => string
   }
@@ -203,6 +205,7 @@ const en: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Bank holiday',
     saintSource: (tradition) => `Source: ${tradition}`
   },
   kiosk: {
@@ -399,6 +402,7 @@ const fr: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Jour férié',
     saintSource: (tradition) => `Source : ${tradition}`
   },
   kiosk: {
@@ -601,6 +605,7 @@ const nl: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Feestdag',
     saintSource: (tradition) => `Bron: ${tradition}`
   },
   kiosk: {
@@ -801,6 +806,7 @@ const de: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Feiertag',
     saintSource: (tradition) => `Quelle: ${tradition}`
   },
   kiosk: {
@@ -1000,6 +1006,7 @@ const es: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Día festivo',
     saintSource: (tradition) => `Fuente: ${tradition}`
   },
   kiosk: {
@@ -1198,6 +1205,7 @@ const it: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Giorno festivo',
     saintSource: (tradition) => `Fonte: ${tradition}`
   },
   kiosk: {
@@ -1398,6 +1406,7 @@ const pt: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Feriado',
     saintSource: (tradition) => `Fonte: ${tradition}`
   },
   kiosk: {
@@ -1598,6 +1607,7 @@ const ru: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Праздничный день',
     saintSource: (tradition) => `Источник: ${tradition}`
   },
   kiosk: {
@@ -1810,6 +1820,7 @@ const zh: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country}（${region}）` : country,
+    bankHoliday: '公共假日',
     saintSource: (tradition) => `来源：${tradition}`
   },
   kiosk: {
@@ -1979,6 +1990,7 @@ const hi: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'सार्वजनिक अवकाश',
     saintSource: (tradition) => `स्रोत: ${tradition}`
   },
   kiosk: {
@@ -2182,6 +2194,7 @@ const ar: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'عطلة رسمية',
     saintSource: (tradition) => `المصدر: ${tradition}`
   },
   kiosk: {
@@ -2377,6 +2390,7 @@ const bn: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'সরকারি ছুটি',
     saintSource: (tradition) => `উৎস: ${tradition}`
   },
   kiosk: {
@@ -2578,6 +2592,7 @@ const ur: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'سرکاری تعطیل',
     saintSource: (tradition) => `ماخذ: ${tradition}`
   },
   kiosk: {
@@ -2776,6 +2791,7 @@ const id: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country} (${region})` : country,
+    bankHoliday: 'Hari libur nasional',
     saintSource: (tradition) => `Sumber: ${tradition}`
   },
   kiosk: {
@@ -2976,6 +2992,7 @@ const ja: Dictionary = {
     more: (n) => `+${n}`,
     holidayOrigin: (country, region) =>
       region ? `${country}（${region}）` : country,
+    bankHoliday: '祝日',
     saintSource: (tradition) => `出典: ${tradition}`
   },
   kiosk: {

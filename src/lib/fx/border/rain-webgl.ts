@@ -50,7 +50,6 @@ import {
   bandSize,
   createFieldTracker,
   createLayerCanvas,
-  drawPresenceMask,
   random,
   releaseCanvas,
   seedRandom,
@@ -344,14 +343,9 @@ export function createEffect(): BorderEffect {
     let fieldDirty = true
     // Frozen renders draw on demand instead of from a loop.
     let redraw: (() => void) | null = null
-    const tracker = createFieldTracker(
-      0.7,
-      () => {
-        fieldDirty = true
-        redraw?.()
-      },
-      !!opts.front
-    )
+    const tracker = createFieldTracker(0.7, () => {
+      redraw?.()
+    })
     // Near rain in front of the page text: Canvas2D, since one GL context
     // can't also draw this second canvas. Created before the layer so the
     // layer's first onResize sizes it too.
@@ -380,7 +374,7 @@ export function createEffect(): BorderEffect {
       fctx.globalCompositeOperation = 'source-over'
       fctx.clearRect(0, 0, frontCanvas.width, frontCanvas.height)
       nearRain.draw(fctx, dt)
-      if (tracker.front) drawPresenceMask(fctx, tracker.front)
+      tracker.clearFront(fctx)
     }
 
     // Same contract as createCanvas2dEffect's frozen path: one seeded scene,

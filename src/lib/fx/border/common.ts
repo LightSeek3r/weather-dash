@@ -5,21 +5,19 @@
  *
  * The presence field is where on screen an effect may show, 0..1: strongest
  * along the edges (the frame still reads as a window), a per-effect floor
- * everywhere else so weather fills the whole sky, and quiet behind the
- * layout's glass panels (lib/fx/calm-zones.ts). It's a coarse grid (≤128
- * cells on the long side), so it's cheap to rebuild whenever the layout
- * moves, and doubles as a tiny alpha mask canvas that upscales smoothly for
- * `destination-in` clipping.
+ * everywhere else so weather fills the whole sky. It's a coarse grid (≤128
+ * cells on the long side), so it's cheap to rebuild on resize, and doubles as
+ * a tiny alpha mask canvas that upscales smoothly for `destination-in`
+ * clipping.
  *
  * Effects may also draw a few "near" elements into a front canvas that sits
- * above the page text (BorderFx.svelte's front host). Its own field cuts the
- * glass panels out entirely, so nothing ever paints over a card.
+ * above the page text (BorderFx.svelte's front host). The layout's glass
+ * panels are erased from it (lib/fx/calm-zones.ts), so nothing ever paints
+ * over a card.
  */
 import { createCappedLoop } from '../raf-loop'
 import {
-  CALM_FEATHER,
-  calmAt,
-  clearAt,
+  clearZones,
   measureCalmZones,
   watchCalmZones,
   zonesSignature,
@@ -203,33 +201,23 @@ export interface PresenceField {
   mask: HTMLCanvasElement
 }
 
-/**
- * @param floor presence away from the edges and calm zones (1 = no edge bias).
- * @param cssScale backing-store px per CSS px (zones are in CSS px).
- * @param sample zone multiplier: `calmAt` behind the page, `clearAt` in front of it.
- */
+/** @param floor presence away from the edges (1 = no edge bias). */
 export function buildPresenceField(
   w: number,
   h: number,
-  floor: number,
-  zones: CalmZone[],
-  cssScale: number,
-  sample: typeof calmAt = calmAt
+  floor: number
 ): PresenceField {
   const cell = Math.max(1, Math.max(w, h) / FIELD_CELLS)
   const cols = Math.ceil(w / cell) + 1
   const rows = Math.ceil(h / cell) + 1
   const values = new Float32Array(cols * rows)
   const edgeBand = Math.min(w, h) * EDGE_FRACTION
-  const s = cssScale > 0 ? cssScale : 1
-  const feather = (Math.min(w, h) / s) * CALM_FEATHER
   for (let j = 0; j < rows; j++) {
     const y = Math.min(h, j * cell)
     for (let i = 0; i < cols; i++) {
       const x = Math.min(w, i * cell)
       const edge = floor >= 1 ? 1 : edgeFactor(x, y, w, h, edgeBand)
-      const base = floor + (1 - floor) * edge
-      values[j * cols + i] = base * sample(zones, x / s, y / s, feather)
+      values[j * cols + i] = floor + (1 - floor) * edge
     }
   }
 
@@ -287,8 +275,8 @@ const REMEASURE_S = 5
 
 export interface FieldTracker {
   readonly field: PresenceField | null
-  /** Front-layer field (glass cut out, no edge bias); null unless built `withFront`. */
-  readonly front: PresenceField | null
+  /** Erases the glass panels from a front-layer canvas (backing-store sized). */
+  clearFront(ctx: CanvasRenderingContext2D): void
   /** Backing-store size changed: re-measure and rebuild. */
   resize(w: number, h: number): void
   /** Frame-loop hook for the periodic re-measure. */
@@ -296,11 +284,10 @@ export interface FieldTracker {
   destroy(): void
 }
 
-/** Keeps a presence field in sync with the layout; `onChange` fires after a zone-driven rebuild (not after `resize`). */
+/** Keeps a presence field and the glass-panel rects in sync with the layout; `onChange` fires after a panel moved (not after `resize`). */
 export function createFieldTracker(
   floor: number,
-  onChange: () => void,
-  withFront = false
+  onChange: () => void
 ): FieldTracker {
   let w = 0
   let h = 0
@@ -308,23 +295,15 @@ export function createFieldTracker(
   let sig = ''
   let since = 0
   let field: PresenceField | null = null
-  let front: PresenceField | null = null
 
   function measure(): void {
     zones = measureCalmZones(document)
     sig = zonesSignature(zones)
   }
-  function rebuild(): void {
-    if (w <= 0 || h <= 0) return
-    const scale = w / Math.max(1, window.innerWidth)
-    field = buildPresenceField(w, h, floor, zones, scale)
-    if (withFront) front = buildPresenceField(w, h, 1, zones, scale, clearAt)
-  }
   function recheck(): void {
     const prev = sig
     measure()
     if (sig === prev || w <= 0) return
-    rebuild()
     onChange()
   }
 
@@ -333,14 +312,14 @@ export function createFieldTracker(
     get field() {
       return field
     },
-    get front() {
-      return front
+    clearFront(ctx) {
+      clearZones(ctx, zones, w / Math.max(1, window.innerWidth))
     },
     resize(nw, nh) {
       w = nw
       h = nh
       measure()
-      rebuild()
+      if (w > 0 && h > 0) field = buildPresenceField(w, h, floor)
     },
     tick(dt) {
       since += dt
@@ -351,7 +330,6 @@ export function createFieldTracker(
     destroy() {
       unwatch()
       field = null
-      front = null
     }
   }
 }
@@ -436,7 +414,7 @@ export function createCanvas2dEffect(
         if (tracker.field) drawPresenceMask(ctx, tracker.field)
         if (fctx) {
           fctx.globalAlpha = 1
-          if (tracker.front) drawPresenceMask(fctx, tracker.front)
+          tracker.clearFront(fctx)
         }
       }
 
@@ -457,13 +435,9 @@ export function createCanvas2dEffect(
       }
 
       const frontHost = spec.front ? opts.front : undefined
-      const tracker = createFieldTracker(
-        spec.floor,
-        () => {
-          if (opts.frozen) renderFrozen()
-        },
-        !!frontHost
-      )
+      const tracker = createFieldTracker(spec.floor, () => {
+        if (opts.frozen) renderFrozen()
+      })
       // Created before the layer so the layer's first onResize sizes it too.
       const frontCanvas = frontHost ? appendCanvas(frontHost) : null
       const layer = createLayerCanvas(host, {

@@ -103,14 +103,18 @@
   )
   // Compact date-line item, not a list view: show up to 2 names, then a
   // "+N" overflow marker rather than growing the line unbounded (e.g. two
-  // extraCountries both landing on the same day).
-  let holidayDisplay = $derived.by(() => {
-    const names = todaysHolidays.map((h) => h.name)
-    if (names.length <= 2) return names.join(', ')
-    return `${names.slice(0, 2).join(', ')} ${s.dateLine.more(names.length - 2)}`
-  })
+  // extraCountries both landing on the same day). `public` is the library's
+  // type for a day off work (its `bank` type is only banks closing).
+  let shownHolidays = $derived(
+    todaysHolidays
+      .slice(0, 2)
+      .map((h) => ({ name: h.name, bank: h.type === 'public' }))
+  )
+  let holidayOverflow = $derived(
+    todaysHolidays.length > 2 ? s.dateLine.more(todaysHolidays.length - 2) : ''
+  )
   // Untruncated per-holiday country/region breakdown for the info popover —
-  // the compact `holidayDisplay` line above stays as-is either way.
+  // the compact line above stays as-is either way.
   let holidayOrigins = $derived(
     todaysHolidays.map((h) => {
       const country = holidaysApi
@@ -161,7 +165,19 @@
   {/if}
   {#if todaysHolidays.length > 0}
     <li>
-      <b>{holidayDisplay}</b>
+      <b class="holidays"
+        >{#each shownHolidays as h, i (i)}{#if i > 0}<span
+              >,&nbsp;</span
+            >{/if}<span class="holiday"
+            >{#if h.bank}<svg
+                class="bank-ic"
+                role="img"
+                aria-label={s.dateLine.bankHoliday}
+              >
+                <use href="#i-bank-holiday" /></svg
+              >{/if}{h.name}</span
+          >{/each}{#if holidayOverflow}&nbsp;{holidayOverflow}{/if}</b
+      >
       <InfoDisclosure label={s.common.moreInfo} placement="above">
         {#snippet trigger()}
           <svg class="info-icon" aria-hidden="true"><use href="#i-info" /></svg>
@@ -219,6 +235,17 @@
     width: 0.9em;
     height: 0.9em;
     opacity: 0.6;
+  }
+  .holiday {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+  .bank-ic {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    color: var(--peach);
   }
   .meta .place {
     gap: 0.35em;

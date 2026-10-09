@@ -8,22 +8,14 @@
    *
    * Static by design: it moves with the minute tick (a fraction of a percent
    * of the screen per minute), and nothing pulses, so there's no motion to
-   * reduce. Behind a glass card the disc dims partway toward the calm-zone
-   * level the FX use, and the halo barely at all: the glow is what makes
-   * the sky read sunlit, the crisp disc is what would fight a card's small
-   * labels. Text straight on the sky gets no dimming (see calm-zones.ts).
+   * reduce. Nothing dims it near the glass cards or the text: the glass
+   * and the text-shadow carry contrast on their own.
    */
   import { onMount } from 'svelte'
   import { weatherStore } from '../lib/weather/store'
   import { celestialStore } from '../lib/weather/celestial-store'
   import { celestialVisibility } from '../lib/weather/celestialPosition'
   import { mapWmoCode } from '../lib/weather/mapWmo'
-  import {
-    CALM_FEATHER,
-    calmAt,
-    measureCalmZones,
-    watchCalmZones
-  } from '../lib/fx/calm-zones'
 
   let pos = $derived($celestialStore)
   let snapshot = $derived($weatherStore.snapshot)
@@ -40,54 +32,18 @@
   )
 
   let viewport = $state({ w: 0, h: 0 })
-  let layoutVersion = $state(0)
   function onResize(): void {
     viewport = { w: window.innerWidth, h: window.innerHeight }
-    layoutVersion++
   }
   if (typeof window !== 'undefined') onResize()
-  // onMount, not setup: Layout renders this sky layer before the page's
-  // tagged sections exist, so a watcher started here would observe nothing.
   onMount(() => {
     window.addEventListener('resize', onResize)
-    const unwatch = watchCalmZones(() => layoutVersion++)
-    layoutVersion++
-    return () => {
-      unwatch()
-      window.removeEventListener('resize', onResize)
-    }
+    return () => window.removeEventListener('resize', onResize)
   })
 
   let size = $derived(
     Math.min(170, Math.max(52, 0.095 * Math.min(viewport.w, viewport.h)))
   )
-
-  let calm = $state(1)
-  $effect(() => {
-    void layoutVersion
-    const p = pos
-    const { w, h } = viewport
-    if (!p || w <= 0 || h <= 0) {
-      calm = 1
-      return
-    }
-    const zones = measureCalmZones(document)
-    const feather = Math.min(w, h) * CALM_FEATHER
-    const cx = p.x * w
-    const cy = p.y * h
-    const r = size * 0.65
-    let k = 1
-    for (const [dx, dy] of [
-      [0, 0],
-      [r, 0],
-      [-r, 0],
-      [0, r],
-      [0, -r]
-    ]) {
-      k = Math.min(k, calmAt(zones, cx + dx, cy + dy, feather))
-    }
-    calm = k
-  })
 
   // Lit part of the moon as one path: the limb on the lit side, then the
   // terminator (a half-ellipse) back. Waxing is lit on the right in the
@@ -115,8 +71,6 @@
     style:left="{(pos.x * 100).toFixed(3)}%"
     style:top="{(pos.y * 100).toFixed(3)}%"
     style:--size="{size.toFixed(1)}px"
-    style:--disc-calm={(0.4 + 0.6 * calm).toFixed(3)}
-    style:--halo-calm={(0.75 + 0.25 * calm).toFixed(3)}
     style:opacity={visibility.toFixed(3)}
   >
     <div class="halo"></div>
@@ -161,12 +115,10 @@
   .halo {
     width: calc(var(--size) * 9);
     height: calc(var(--size) * 9);
-    opacity: var(--halo-calm, 1);
   }
   .disc {
     width: var(--size);
     height: var(--size);
-    opacity: var(--disc-calm, 1);
   }
 
   .sun .halo {

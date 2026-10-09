@@ -151,7 +151,7 @@
   /* The sun sits behind the weather card mid-afternoon: dim the glare under
      the glass and lift the labels, measured >=4.5:1 over the brightest
      pixels behind each line (not the sky token alone). */
-  --glass-dim: 0.45;
+  --glass-dim: 0.3;
   --text-2: #d4e1ee;
   --text-3: #c3d3e2;
 }
@@ -165,6 +165,6 @@
   --glass-dim: 0.85;
 }
 :root[data-sky='fog'] {
-  --glass-dim: 0.75;
+  --glass-dim: 0.45;
   --text-3: #b4c5d6;
 }

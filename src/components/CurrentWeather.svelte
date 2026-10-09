@@ -318,9 +318,9 @@
     flex-direction: column;
     gap: 0.2em;
     font-family: var(--display);
-    /* A bit bigger than --fs-m: the hero icon beside it leaves spare room,
-       but it still reads secondary to the big --fs-temp figure. */
-    font-size: max(19px, calc(var(--u) * 1.85));
+    /* Beside the temperature the two lines (high, gap, low) span the height of
+       its digits: digit height ≈ 0.7em, the stack ≈ 2em (pitch 1.3em + one digit). */
+    font-size: calc(var(--fs-temp) * var(--temp-fit, 1) * 0.35);
     line-height: 1.1;
     white-space: nowrap;
   }
@@ -542,6 +542,8 @@
     .range {
       flex-direction: row;
       gap: 0.7em;
+      /* A row under the temperature has no digit height to match. */
+      font-size: max(19px, calc(var(--u) * 1.85));
     }
   }
 

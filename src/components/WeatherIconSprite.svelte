@@ -158,5 +158,15 @@
         <circle cx="12" cy="10" r="2.3" />
       </g>
     </symbol>
+    <symbol id="i-bank-holiday" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="4" y="5" width="16" height="15" rx="2.5" />
+        <path stroke-linecap="round" d="M4 10h16M8 3v4M16 3v4" />
+      </g>
+      <path
+        fill="currentColor"
+        d="m12 12.2.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1L9 14.4l2.1-.3z"
+      />
+    </symbol>
   </defs>
 </svg>

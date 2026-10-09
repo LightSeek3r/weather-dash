@@ -14,7 +14,7 @@
  *
  * Soft shapes only, so it renders at a fraction of screen resolution (the
  * upscale blur is part of the look) and at a low frame rate. The presence
- * field here has no edge bias (floor 1): only the glass calm zones quiet it.
+ * field here has no edge bias (floor 1), so the sun's light reaches everywhere.
  */
 import { createCanvas2dEffect, makeSprite, rand, type Scene2d } from './common'
 import type { BorderEffect, EffectOptions } from './types'

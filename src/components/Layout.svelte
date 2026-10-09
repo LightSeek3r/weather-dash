@@ -37,11 +37,11 @@
                       photo dim never mutes the sun; it's a light source,
                       not part of the picture
     3  .border-fx     weather FX (BorderFx.svelte, mounted by App) — veils
-                      the sun/moon in bad weather, stays quiet behind the
-                      `data-fx-calm` glass regions (lib/fx/calm-zones.ts)
+                      the sun/moon in bad weather, flows behind the glass
     4  .page          text and glass
     4  .border-fx--front  a few near FX in front of the text (BorderFx,
-                      after Layout in the DOM); glass regions cut out
+                      after Layout in the DOM); `data-fx-calm` glass
+                      regions are erased (lib/fx/calm-zones.ts)
   Overlays above the page (gear/status 5, fullscreen scene 8, night dim 9,
   start overlay 10, settings 20, toasts 1000) live in their own components.
 -->
