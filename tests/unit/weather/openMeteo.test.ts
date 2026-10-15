@@ -197,3 +197,53 @@ describe('geocode', () => {
     await expect(geocode('Brussels')).rejects.toBeInstanceOf(WeatherFetchError)
   })
 })
+
+describe('request timeout', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('gives up on a forecast request that never answers instead of hanging for hours', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError'))
+            )
+          })
+      )
+    )
+
+    const outcome = fetchWeatherSnapshot(50.85, 4.35).then(
+      () => 'resolved',
+      (err: unknown) => err
+    )
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(await outcome).toBeInstanceOf(WeatherFetchError)
+  })
+
+  it('gives up on an air quality request that never answers and resolves to null', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError'))
+            )
+          })
+      )
+    )
+
+    const outcome = fetchAirQuality(50.85, 4.35)
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(await outcome).toBeNull()
+  })
+})

@@ -6,9 +6,8 @@
  * carries. Under `?freeze=1` the scheduler never ticks, so this stays at
  * the frozen `now`.
  */
-import { derived, readable, type Readable } from 'svelte/store'
-import { scheduler } from '../core/scheduler'
-import { debugParams } from '../core/debug-params'
+import { derived, type Readable } from 'svelte/store'
+import { minuteClock } from '../core/minute-clock'
 import { weatherStore } from './store'
 import {
   arcForLatitude,
@@ -16,14 +15,6 @@ import {
   locationNow,
   type CelestialPosition
 } from './celestialPosition'
-
-const minuteClock: Readable<Date> = readable(
-  debugParams.now ?? new Date(),
-  (set) => {
-    set(debugParams.now ?? new Date())
-    return scheduler.on('minute', set)
-  }
-)
 
 export const celestialStore: Readable<CelestialPosition | null> = derived(
   [minuteClock, weatherStore],

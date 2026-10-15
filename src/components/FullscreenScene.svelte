@@ -16,7 +16,7 @@
   import { untrack } from 'svelte'
   import { fade } from 'svelte/transition'
   import { settingsStore } from '../lib/core/storage/settings'
-  import { weatherStore } from '../lib/weather/store'
+  import { presentWeather } from '../lib/weather/present'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import {
     createSceneSchedule,
@@ -33,7 +33,7 @@
   let nightStart = $derived($settingsStore.nightMode.start)
   let nightEnd = $derived($settingsStore.nightMode.end)
 
-  let current = $derived($weatherStore.snapshot?.current ?? null)
+  let current = $derived($presentWeather?.current ?? null)
   let visual = $derived(
     current ? mapWmoCode(current.weatherCode, current.isDay) : null
   )

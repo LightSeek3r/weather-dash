@@ -2,7 +2,7 @@
   // Renders into Layout's `cap` slot (the glass panel is Layout's — this
   // only fills its content, matching design/mockups/02-blue-hour.html's
   // .cap-now / .cap-cond / .reads structure).
-  import { weatherStore } from '../lib/weather/store'
+  import { presentWeather } from '../lib/weather/present'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
   import { conditionLabel, t } from '../lib/ui/strings'
@@ -34,7 +34,7 @@
 
   let s = $derived(t($settingsStore.locale))
   let unit = $derived($settingsStore.weather.tempUnit)
-  let snapshot = $derived($weatherStore.snapshot)
+  let snapshot = $derived($presentWeather)
   let current = $derived(snapshot?.current ?? null)
   let visual = $derived(
     current ? mapWmoCode(current.weatherCode, current.isDay) : null

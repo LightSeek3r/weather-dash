@@ -12,13 +12,13 @@
    * and the text-shadow carry contrast on their own.
    */
   import { onMount } from 'svelte'
-  import { weatherStore } from '../lib/weather/store'
+  import { presentWeather } from '../lib/weather/present'
   import { celestialStore } from '../lib/weather/celestial-store'
   import { celestialVisibility } from '../lib/weather/celestialPosition'
   import { mapWmoCode } from '../lib/weather/mapWmo'
 
   let pos = $derived($celestialStore)
-  let snapshot = $derived($weatherStore.snapshot)
+  let snapshot = $derived($presentWeather)
   let visibility = $derived.by(() => {
     const c = snapshot?.current
     if (!c) return 0

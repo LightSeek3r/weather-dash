@@ -200,6 +200,24 @@ function mapDaily(raw: RawDaily, index: number): DailySummary {
   }
 }
 
+// Long enough for a slow mobile link, short enough that a request stalled by a
+// sleeping device or a dropped connection fails and gets retried instead of
+// staying pending (and answering with hours-old data) once the device wakes.
+const REQUEST_TIMEOUT_MS = 15_000
+
+/** Runs one request, headers and body, under a single abort deadline. */
+async function withTimeout<T>(
+  run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    return await run(controller.signal)
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /**
  * Fetches current/hourly/daily forecast for one location and maps it to a
  * `WeatherSnapshot`. `airQuality` is always `null` here (that's a separate
@@ -223,27 +241,30 @@ export async function fetchWeatherSnapshot(
   // the timeline UI scrolls through however much of that it actually returns.
   url.searchParams.set('forecast_days', '16')
 
-  let response: Response
-  try {
-    response = await fetch(url.toString())
-  } catch (err) {
-    throw new WeatherFetchError('Failed to reach Open-Meteo forecast API', err)
-  }
-  if (!response.ok) {
-    throw new WeatherFetchError(
-      `Open-Meteo forecast API returned ${response.status}`
-    )
-  }
-
-  let raw: RawForecastResponse
-  try {
-    raw = (await response.json()) as RawForecastResponse
-  } catch (err) {
-    throw new WeatherFetchError(
-      'Open-Meteo forecast response was not valid JSON',
-      err
-    )
-  }
+  const raw = await withTimeout(async (signal) => {
+    let response: Response
+    try {
+      response = await fetch(url.toString(), { signal })
+    } catch (err) {
+      throw new WeatherFetchError(
+        'Failed to reach Open-Meteo forecast API',
+        err
+      )
+    }
+    if (!response.ok) {
+      throw new WeatherFetchError(
+        `Open-Meteo forecast API returned ${response.status}`
+      )
+    }
+    try {
+      return (await response.json()) as RawForecastResponse
+    } catch (err) {
+      throw new WeatherFetchError(
+        'Open-Meteo forecast response was not valid JSON',
+        err
+      )
+    }
+  })
 
   const current = mapCurrent(raw.current)
 
@@ -300,14 +321,16 @@ export async function fetchAirQuality(
       'european_aqi,alder_pollen,birch_pollen,grass_pollen,mugwort_pollen,olive_pollen,ragweed_pollen'
     )
 
-    const response = await fetch(url.toString())
-    if (!response.ok) return null
+    return await withTimeout(async (signal) => {
+      const response = await fetch(url.toString(), { signal })
+      if (!response.ok) return null
 
-    const raw = (await response.json()) as RawAirQualityResponse
-    return {
-      europeanAqi: raw.current.european_aqi ?? null,
-      pollen: buildPollen(raw.current)
-    }
+      const raw = (await response.json()) as RawAirQualityResponse
+      return {
+        europeanAqi: raw.current.european_aqi ?? null,
+        pollen: buildPollen(raw.current)
+      }
+    })
   } catch {
     return null
   }

@@ -8,13 +8,13 @@
   // default (unscrolled) view still shows exactly the next 24h. No midnight
   // dashed rule: a vertical rule mid-strip used to read as "now", not as the
   // day change; a weekday label at each day boundary replaces it instead.
-  import { weatherStore } from '../lib/weather/store'
+  import { presentWeather } from '../lib/weather/present'
   import { settingsStore } from '../lib/core/storage/settings'
   import { localeTag } from '../lib/ui/i18n'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import type { HourlyPoint } from '../lib/weather/types'
 
-  let hourly = $derived($weatherStore.snapshot?.hourly ?? [])
+  let hourly = $derived($presentWeather?.hourly ?? [])
 
   let hourFormatter = $derived(
     new Intl.DateTimeFormat(localeTag($settingsStore.locale), {

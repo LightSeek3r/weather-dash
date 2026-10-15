@@ -36,6 +36,7 @@
     initWeather,
     setDebugWeatherSnapshot
   } from './lib/weather/store'
+  import { presentWeather } from './lib/weather/present'
   import { nameUnnamedLocation } from './lib/weather/locationName'
   import {
     buildDebugSnapshot,
@@ -112,7 +113,7 @@
   // daytime and fog get one; everything else keeps the default sky, which
   // already suits night, rain and snow.
   let skyMood = $derived.by(() => {
-    const c = $weatherStore.snapshot?.current
+    const c = $presentWeather?.current
     if (!c) return null
     const key = mapWmoCode(c.weatherCode, c.isDay).conditionKey
     if (key === 'fog') return 'fog' // a pale wash behind the glass, day or night

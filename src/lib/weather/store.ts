@@ -19,6 +19,13 @@ import { moonPhase } from './moon'
 import { getCachedSnapshot, setCachedSnapshot } from './cache'
 import type { WeatherSnapshot } from './types'
 
+const STALE_AFTER_MS = 61 * 60_000
+// Retry delay doubles with each consecutive failure (2, 4, 8, 16, then 30
+// minutes at most): a free, community-run API that is down must not be hit
+// every couple of minutes by every open dashboard.
+const RETRY_BASE_MS = 2 * 60_000
+const RETRY_MAX_MS = 30 * 60_000
+
 export interface WeatherState {
   snapshot: WeatherSnapshot | null
   status: 'idle' | 'loading' | 'error'
@@ -78,15 +85,30 @@ export function initWeather(): () => void {
     )
   })
 
+  // Requests are numbered when they start. A response older than one that
+  // already landed is dropped: after a long sleep the stalled request can
+  // answer last, and its hours-old snapshot must not replace the fresh one.
+  let startedSeq = 0
+  let committedSeq = 0
+  let inFlight = 0
+  let lastAttemptAt = 0
+  let consecutiveFailures = 0
+
   async function runFetch(
     location: NonNullable<Settings['location']>
   ): Promise<void> {
+    const seq = ++startedSeq
+    lastAttemptAt = Date.now()
+    inFlight += 1
     state.update((s) => ({ ...s, status: 'loading' }))
     try {
       const [forecast, airQuality] = await Promise.all([
         fetchWeatherSnapshot(location.lat, location.lon),
         fetchAirQuality(location.lat, location.lon)
       ])
+      if (seq < committedSeq) return
+      committedSeq = seq
+      consecutiveFailures = 0
       const snapshot: WeatherSnapshot = {
         ...forecast,
         location: { ...forecast.location, name: location.name },
@@ -100,10 +122,33 @@ export function initWeather(): () => void {
       })
       await setCachedSnapshot(snapshot)
     } catch (err) {
+      if (seq < committedSeq) return
+      consecutiveFailures += 1
       console.warn('[weather] refresh failed, keeping last-good snapshot', err)
       state.update((s) => ({ ...s, status: 'error' }))
       toast.error(t(get(settingsStore).locale).weather.fetchError)
+    } finally {
+      inFlight -= 1
     }
+  }
+
+  // The hour tick below is a single attempt per hour. This is the safety net
+  // under it: a failed attempt (typically the first one after a device wakes,
+  // before the network is back) or a snapshot more than an hour old, because
+  // a tick was missed, is retried on the next minute instead of waiting for
+  // the following top of the hour.
+  function refreshIfDue(now: Date, { force = false } = {}): void {
+    const { location } = get(settingsStore)
+    if (!location || inFlight > 0) return
+    const wait = Math.min(
+      RETRY_BASE_MS * 2 ** Math.max(0, consecutiveFailures - 1),
+      RETRY_MAX_MS
+    )
+    if (!force && now.getTime() - lastAttemptAt < wait) return
+    const fetchedAt = Date.parse(get(state).snapshot?.fetchedAt ?? '')
+    const stale =
+      !Number.isFinite(fetchedAt) || now.getTime() - fetchedAt >= STALE_AFTER_MS
+    if (consecutiveFailures > 0 || stale) void runFetch(location)
   }
 
   // `settingsStore.subscribe` fires immediately with the current value —
@@ -143,10 +188,19 @@ export function initWeather(): () => void {
   }
   const unsubscribeHour = scheduler.on('hour', refetchIfLocated)
   const unsubscribeMidnight = scheduler.on('midnight', refetchIfLocated)
+  const unsubscribeMinute = scheduler.on('minute', (now) => refreshIfDue(now))
+
+  // The network coming back is the moment a failed attempt can succeed.
+  const onOnline = (): void => refreshIfDue(new Date(), { force: true })
+  if (typeof window !== 'undefined') window.addEventListener('online', onOnline)
 
   return () => {
     unsubscribeSettings()
     unsubscribeHour()
     unsubscribeMidnight()
+    unsubscribeMinute()
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', onOnline)
+    }
   }
 }

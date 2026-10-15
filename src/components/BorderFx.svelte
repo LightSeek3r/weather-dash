@@ -22,7 +22,7 @@
    */
   import { onDestroy } from 'svelte'
   import { settingsStore } from '../lib/core/storage/settings'
-  import { weatherStore } from '../lib/weather/store'
+  import { presentWeather } from '../lib/weather/present'
   import { mapWmoCode } from '../lib/weather/mapWmo'
   import { resolveFxTier, resolveReducedMotion } from '../lib/fx/tiers'
   import { scheduler } from '../lib/core/scheduler'
@@ -72,7 +72,7 @@
           resolveReducedMotion($settingsStore.reducedMotion, osReducedMotion)
         )
   )
-  let current = $derived($weatherStore.snapshot?.current ?? null)
+  let current = $derived($presentWeather?.current ?? null)
   let visual = $derived(
     current ? mapWmoCode(current.weatherCode, current.isDay) : null
   )
