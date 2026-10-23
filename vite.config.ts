@@ -65,14 +65,19 @@ export default defineConfig({
     // deliberately-lazy chunk without hiding a real regression elsewhere
     // (the next-largest chunk here is ~108KB).
     chunkSizeWarningLimit: 1500,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          // date-holidays is deliberately excluded here — it's now reached
-          // only via dynamic import() (see lib/date/holidaysLazy.ts), and
-          // forcing it into this eager chunk via manualChunks would put it
-          // straight back into the main bundle, undoing the split.
-          vendor: ['svelte', 'valibot', 'idb-keyval']
+        codeSplitting: {
+          groups: [
+            {
+              // date-holidays is deliberately excluded here — it's now reached
+              // only via dynamic import() (see lib/date/holidaysLazy.ts), and
+              // forcing it into this eager chunk would put it straight back
+              // into the main bundle, undoing the split.
+              name: 'vendor',
+              test: /node_modules\/(svelte|valibot|idb-keyval)\//
+            }
+          ]
         }
       }
     }
