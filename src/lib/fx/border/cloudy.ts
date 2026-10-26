@@ -17,6 +17,7 @@
  */
 import {
   createCanvas2dEffect,
+  drawWrapped,
   makeSprite,
   rand,
   random,
@@ -192,8 +193,7 @@ function cloudyScene(opts: EffectOptions): Scene2d {
       if (deck) {
         const off = ((((t * w) / 600) % w) + w) % w
         ctx.globalAlpha = (0.55 + 0.35 * opts.density) * dim
-        ctx.drawImage(deck, off - w, 0)
-        ctx.drawImage(deck, off, 0)
+        drawWrapped(ctx, deck, off, 0)
       }
       for (let i = 0; i < clouds.length; i++) {
         const c = clouds[i]

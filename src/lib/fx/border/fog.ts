@@ -7,7 +7,13 @@
  * so a frame is six blits plus a gradient. The haze is also what veils the
  * sky layer's sun/moon.
  */
-import { createCanvas2dEffect, makeSprite, rand, type Scene2d } from './common'
+import {
+  createCanvas2dEffect,
+  drawWrapped,
+  makeSprite,
+  rand,
+  type Scene2d
+} from './common'
 import type { BorderEffect, EffectOptions } from './types'
 
 // Per layer (far → near): centre and thickness (fractions of h), speed
@@ -84,8 +90,7 @@ function fogScene(opts: EffectOptions): Scene2d {
         const y = h * L.y - img.height / 2 + bob
         const breathe = 0.85 + 0.15 * Math.sin(t / (13 + i * 5) + phases[i] * 4)
         ctx.globalAlpha = Math.min(1, L.alpha * boost * breathe)
-        ctx.drawImage(img, off - w, y)
-        ctx.drawImage(img, off, y)
+        drawWrapped(ctx, img, off, y)
       })
       ctx.globalAlpha = 1
     }

@@ -186,6 +186,35 @@ export function makeSprite(
   return c
 }
 
+const wrapPatterns = new WeakMap<HTMLCanvasElement, CanvasPattern>()
+
+/**
+ * Draws a horizontally seamless strip scrolled by `off` px (0 ≤ off < img.width)
+ * across a canvas of the strip's width. Two abutting `drawImage` blits leave a
+ * 1px translucent seam at the join on GPU-accelerated canvases (each edge is
+ * anti-aliased on its own), which scrolls across the sky as a thin vertical
+ * bar; a repeat-pattern fill samples across the wrap instead.
+ */
+export function drawWrapped(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLCanvasElement,
+  off: number,
+  y: number
+): void {
+  let pattern = wrapPatterns.get(img)
+  if (!pattern) {
+    const created = ctx.createPattern(img, 'repeat')
+    if (!created) return
+    pattern = created
+    wrapPatterns.set(img, pattern)
+  }
+  ctx.save()
+  ctx.translate(off, y)
+  ctx.fillStyle = pattern
+  ctx.fillRect(-off, 0, img.width, img.height)
+  ctx.restore()
+}
+
 // --- Presence field --------------------------------------------------------
 
 const FIELD_CELLS = 128
