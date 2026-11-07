@@ -3,6 +3,9 @@ import './app.css'
 import App from './App.svelte'
 import { scheduler } from './lib/core/scheduler'
 import { debugParams } from './lib/core/debug-params'
+// Imported for its side effect: the `beforeinstallprompt` listener must exist
+// before the browser fires the event, which can precede the banner's mount.
+import './lib/core/install'
 
 // Single app-wide tick source (see scheduler.ts) — started once here so the
 // clock, date line, and every future minute/hour/midnight consumer share it.

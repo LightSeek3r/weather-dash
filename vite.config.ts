@@ -12,7 +12,12 @@ export default defineConfig({
         short_name: 'Weather Dash',
         description:
           'Fullscreen, always-on weather and date wall display for phones, tablets, PCs and TVs',
+        id: '/',
         display: 'fullscreen',
+        // Falls back to standalone where fullscreen display isn't supported,
+        // instead of dropping to a plain browser tab.
+        display_override: ['fullscreen', 'standalone'],
+        orientation: 'any',
         theme_color: '#0a1726',
         background_color: '#0a1726',
         start_url: '/',

@@ -8,6 +8,7 @@
   import StatusPill from './components/StatusPill.svelte'
   import ToastStack from './components/ToastStack.svelte'
   import SettingsSheet from './components/SettingsSheet.svelte'
+  import InstallPrompt from './components/InstallPrompt.svelte'
   import CurrentWeather from './components/CurrentWeather.svelte'
   import Timeline24h from './components/Timeline24h.svelte'
   import Tomorrow from './components/Tomorrow.svelte'
@@ -303,6 +304,10 @@
 {/if}
 
 <SettingsSheet open={settingsOpen} onclose={() => (settingsOpen = false)} />
+
+<!-- Held back behind the start overlay, the settings sheet and fullscreen: a wall display
+     that is already running has no use for an install nag. -->
+<InstallPrompt suppressed={!started || fullscreen || settingsOpen} />
 
 {#if !started}
   <div class="start-overlay">

@@ -69,6 +69,16 @@ export interface Dictionary {
     dismiss: string
   }
   /** Fullscreen anti-burn-in scene overlay. */
+  /** "Install the app" banner (components/InstallPrompt.svelte). */
+  install: {
+    title: string
+    /** Why install, shown next to the Install button. */
+    body: string
+    /** How to install by hand, shown on iOS Safari (no install API there). */
+    ios: string
+    action: string
+    dismiss: string
+  }
   scene: { tapToReturn: string }
   settings: {
     title: string
@@ -215,6 +225,13 @@ const en: Dictionary = {
       'Tip: add to your home screen to stay fullscreen after a reload',
     enterFullscreen: 'Go fullscreen',
     dismiss: 'Continue without fullscreen'
+  },
+  install: {
+    title: 'Install Weather Dash',
+    body: 'Opens fullscreen on its own and works offline.',
+    ios: 'Tap Share, then “Add to Home Screen”.',
+    action: 'Install',
+    dismiss: 'Not now'
   },
   scene: { tapToReturn: 'Tap to return to the dashboard' },
   settings: {
@@ -412,6 +429,13 @@ const fr: Dictionary = {
       "Astuce : ajoutez l'app à l'écran d'accueil pour garder le plein écran après un rechargement",
     enterFullscreen: 'Passer en plein écran',
     dismiss: 'Continuer sans plein écran'
+  },
+  install: {
+    title: 'Installer Weather Dash',
+    body: "S'ouvre directement en plein écran et fonctionne hors ligne.",
+    ios: 'Touchez Partager, puis « Sur l’écran d’accueil ».',
+    action: 'Installer',
+    dismiss: 'Plus tard'
   },
   scene: { tapToReturn: 'Toucher pour revenir au tableau de bord' },
   settings: {
@@ -616,6 +640,13 @@ const nl: Dictionary = {
     enterFullscreen: 'Volledig scherm',
     dismiss: 'Doorgaan zonder volledig scherm'
   },
+  install: {
+    title: 'Weather Dash installeren',
+    body: 'Opent direct op volledig scherm en werkt offline.',
+    ios: 'Tik op Deel en kies “Zet op beginscherm”.',
+    action: 'Installeren',
+    dismiss: 'Niet nu'
+  },
   scene: { tapToReturn: 'Tik om terug te gaan naar het dashboard' },
   settings: {
     title: 'Instellingen',
@@ -817,6 +848,13 @@ const de: Dictionary = {
     enterFullscreen: 'Vollbild',
     dismiss: 'Ohne Vollbild fortfahren'
   },
+  install: {
+    title: 'Weather Dash installieren',
+    body: 'Startet direkt im Vollbild und funktioniert offline.',
+    ios: 'Tippe auf Teilen und dann auf „Zum Home-Bildschirm“.',
+    action: 'Installieren',
+    dismiss: 'Nicht jetzt'
+  },
   scene: { tapToReturn: 'Tippen, um zum Dashboard zurückzukehren' },
   settings: {
     title: 'Einstellungen',
@@ -1017,6 +1055,13 @@ const es: Dictionary = {
     enterFullscreen: 'Pantalla completa',
     dismiss: 'Continuar sin pantalla completa'
   },
+  install: {
+    title: 'Instalar Weather Dash',
+    body: 'Se abre directamente a pantalla completa y funciona sin conexión.',
+    ios: 'Toca Compartir y luego «Añadir a pantalla de inicio».',
+    action: 'Instalar',
+    dismiss: 'Ahora no'
+  },
   scene: { tapToReturn: 'Toca para volver al panel' },
   settings: {
     title: 'Ajustes',
@@ -1215,6 +1260,13 @@ const it: Dictionary = {
       'Suggerimento: aggiungi alla schermata Home per restare a schermo intero dopo un ricaricamento',
     enterFullscreen: 'Schermo intero',
     dismiss: 'Continua senza schermo intero'
+  },
+  install: {
+    title: 'Installa Weather Dash',
+    body: 'Si apre direttamente a schermo intero e funziona offline.',
+    ios: 'Tocca Condividi, poi «Aggiungi alla schermata Home».',
+    action: 'Installa',
+    dismiss: 'Non ora'
   },
   scene: { tapToReturn: 'Tocca per tornare alla dashboard' },
   settings: {
@@ -1417,6 +1469,13 @@ const pt: Dictionary = {
     enterFullscreen: 'Tela cheia',
     dismiss: 'Continuar sem tela cheia'
   },
+  install: {
+    title: 'Instalar o Weather Dash',
+    body: 'Abre diretamente em tela cheia e funciona offline.',
+    ios: 'Toque em Compartilhar e depois em “Adicionar à Tela de Início”.',
+    action: 'Instalar',
+    dismiss: 'Agora não'
+  },
   scene: { tapToReturn: 'Toque para voltar ao painel' },
   settings: {
     title: 'Configurações',
@@ -1617,6 +1676,13 @@ const ru: Dictionary = {
       'Совет: добавьте на главный экран, чтобы сохранить полноэкранный режим после перезагрузки',
     enterFullscreen: 'Полноэкранный режим',
     dismiss: 'Продолжить без полноэкранного режима'
+  },
+  install: {
+    title: 'Установить Weather Dash',
+    body: 'Открывается сразу на весь экран и работает офлайн.',
+    ios: 'Нажмите «Поделиться», затем «На экран “Домой”».',
+    action: 'Установить',
+    dismiss: 'Не сейчас'
   },
   scene: { tapToReturn: 'Нажмите, чтобы вернуться на панель' },
   settings: {
@@ -1830,6 +1896,13 @@ const zh: Dictionary = {
     enterFullscreen: '全屏',
     dismiss: '不进入全屏'
   },
+  install: {
+    title: '安装 Weather Dash',
+    body: '直接全屏打开，离线也能使用。',
+    ios: '点按“分享”，然后选择“添加到主屏幕”。',
+    action: '安装',
+    dismiss: '以后再说'
+  },
   scene: { tapToReturn: '轻触返回仪表盘' },
   settings: {
     title: '设置',
@@ -2000,6 +2073,13 @@ const hi: Dictionary = {
       'सुझाव: रीलोड के बाद भी फ़ुलस्क्रीन बनाए रखने के लिए होम स्क्रीन पर जोड़ें',
     enterFullscreen: 'फ़ुलस्क्रीन',
     dismiss: 'फ़ुलस्क्रीन के बिना जारी रखें'
+  },
+  install: {
+    title: 'Weather Dash इंस्टॉल करें',
+    body: 'सीधे फ़ुलस्क्रीन में खुलता है और ऑफ़लाइन भी काम करता है।',
+    ios: 'शेयर पर टैप करें, फिर “होम स्क्रीन में जोड़ें” चुनें।',
+    action: 'इंस्टॉल करें',
+    dismiss: 'अभी नहीं'
   },
   scene: { tapToReturn: 'डैशबोर्ड पर वापस जाने के लिए टैप करें' },
   settings: {
@@ -2205,6 +2285,13 @@ const ar: Dictionary = {
     enterFullscreen: 'ملء الشاشة',
     dismiss: 'الاستمرار دون ملء الشاشة'
   },
+  install: {
+    title: 'تثبيت Weather Dash',
+    body: 'يُفتح مباشرةً بملء الشاشة ويعمل دون اتصال.',
+    ios: 'اضغط على مشاركة ثم «إضافة إلى الشاشة الرئيسية».',
+    action: 'تثبيت',
+    dismiss: 'ليس الآن'
+  },
   scene: { tapToReturn: 'اضغط للعودة إلى لوحة المعلومات' },
   settings: {
     title: 'الإعدادات',
@@ -2400,6 +2487,13 @@ const bn: Dictionary = {
       'পরামর্শ: রিলোডের পরেও ফুলস্ক্রিন রাখতে হোম স্ক্রিনে যুক্ত করুন',
     enterFullscreen: 'ফুলস্ক্রিন করুন',
     dismiss: 'ফুলস্ক্রিন ছাড়াই চালিয়ে যান'
+  },
+  install: {
+    title: 'Weather Dash ইনস্টল করুন',
+    body: 'সরাসরি ফুলস্ক্রিনে খোলে এবং অফলাইনেও কাজ করে।',
+    ios: 'শেয়ার-এ ট্যাপ করে “হোম স্ক্রিনে যোগ করুন” বেছে নিন।',
+    action: 'ইনস্টল করুন',
+    dismiss: 'এখন নয়'
   },
   scene: { tapToReturn: 'ড্যাশবোর্ডে ফিরতে ট্যাপ করুন' },
   settings: {
@@ -2603,6 +2697,13 @@ const ur: Dictionary = {
     enterFullscreen: 'فل اسکرین کریں',
     dismiss: 'فل اسکرین کے بغیر جاری رکھیں'
   },
+  install: {
+    title: 'Weather Dash انسٹال کریں',
+    body: 'براہِ راست فل اسکرین میں کھلتا ہے اور آف لائن بھی کام کرتا ہے۔',
+    ios: 'شیئر پر ٹیپ کریں، پھر «ہوم اسکرین میں شامل کریں» چنیں۔',
+    action: 'انسٹال کریں',
+    dismiss: 'ابھی نہیں'
+  },
   scene: { tapToReturn: 'ڈیش بورڈ پر واپس جانے کے لیے ٹیپ کریں' },
   settings: {
     title: 'ترتیبات',
@@ -2801,6 +2902,13 @@ const id: Dictionary = {
       'Tips: tambahkan ke layar utama agar tetap layar penuh setelah dimuat ulang',
     enterFullscreen: 'Masuk layar penuh',
     dismiss: 'Lanjutkan tanpa layar penuh'
+  },
+  install: {
+    title: 'Instal Weather Dash',
+    body: 'Langsung terbuka layar penuh dan tetap berfungsi offline.',
+    ios: 'Ketuk Bagikan, lalu “Tambah ke Layar Utama”.',
+    action: 'Instal',
+    dismiss: 'Nanti saja'
   },
   scene: { tapToReturn: 'Ketuk untuk kembali ke dasbor' },
   settings: {
@@ -3002,6 +3110,13 @@ const ja: Dictionary = {
       'ヒント: 再読み込み後も全画面表示を保つには、ホーム画面に追加してください',
     enterFullscreen: '全画面表示にする',
     dismiss: '全画面表示にせず続ける'
+  },
+  install: {
+    title: 'Weather Dash をインストール',
+    body: '最初から全画面で開き、オフラインでも使えます。',
+    ios: '共有をタップして「ホーム画面に追加」を選びます。',
+    action: 'インストール',
+    dismiss: 'あとで'
   },
   scene: { tapToReturn: 'タップしてダッシュボードに戻る' },
   settings: {
