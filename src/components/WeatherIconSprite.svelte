@@ -9,6 +9,10 @@
   whichever copy of this sprite is in the DOM. Mounting it more than once
   would create duplicate `id` attributes.
 -->
+
+<!-- No logic: this empty script is what lets svelte-check give the file a
+     module declaration, so `import WeatherIconSprite` type-checks. -->
+<script lang="ts"></script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <linearGradient id="g-cloud" x1="0" y1="0" x2="0" y2="1">
