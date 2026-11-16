@@ -53,15 +53,24 @@ for (const { width, height } of SIZES) {
     )
     await page.goto('/?now=2026-01-15T10:00:00&weather=rain&freeze=1')
     await page.locator('.start-overlay__dismiss').click()
+    // The weather-driven triggers (air quality, moon) render once the
+    // snapshot lands; collecting before that would test a partial set.
+    await expect(page.locator('.aqi')).toBeVisible()
+    await expect(page.locator('.moon')).toBeVisible()
     const triggers = page.locator('.info-disclosure__trigger')
-    await expect(triggers.first()).toBeVisible()
     const count = await triggers.count()
     expect(count).toBeGreaterThan(0)
 
     for (let i = 0; i < count; i++) {
-      await triggers.nth(i).click({ force: true })
       const popover = page.locator('.info-disclosure__popover')
-      await expect(popover).toHaveCount(1)
+      // Retry the open: a late re-render can swallow the first click, and a
+      // second click on an already open one would close it again.
+      await expect(async () => {
+        if ((await popover.count()) === 0) {
+          await triggers.nth(i).click({ force: true })
+        }
+        await expect(popover).toHaveCount(1, { timeout: 2000 })
+      }).toPass()
       await expect
         .poll(async () => {
           const r = await popover.evaluate((el) => {
