@@ -120,7 +120,7 @@
         {/if}
       </div>
       <svg class="hero-icon" aria-hidden="true">
-        <use href="#{visual.icon}" />
+        <use href="#{visual.icon}-line" />
       </svg>
     </div>
     <div class="cap-cond">

@@ -104,6 +104,172 @@
       <path d="M17 15l-5 8h4l-2 6 7-9h-4z" fill="#ffb896" />
     </symbol>
 
+    <!-- outline twins of the condition icons (`<id>-line`): same 32-unit grid,
+         stroke only, for the current-conditions tile. Where one shape sits in
+         front of another, a mask knocks the back shape's line out around it
+         so the outlines never cross. -->
+    <path
+      id="p-cloud"
+      d="M10 24H23A5 5 0 0 0 23 14A7 7 0 0 0 10.5 16.2A4 4 0 0 0 10 24Z"
+    />
+    <mask
+      id="m-cloudy-back"
+      maskUnits="userSpaceOnUse"
+      x="-4"
+      y="-4"
+      width="40"
+      height="40"
+    >
+      <rect x="-4" y="-4" width="40" height="40" fill="#fff" />
+      <use
+        href="#p-cloud"
+        transform="translate(-1 3)"
+        fill="#000"
+        stroke="#000"
+        stroke-width="4"
+        stroke-linejoin="round"
+      />
+    </mask>
+    <mask
+      id="m-cloud-corner"
+      maskUnits="userSpaceOnUse"
+      x="-4"
+      y="-4"
+      width="40"
+      height="40"
+    >
+      <rect x="-4" y="-4" width="40" height="40" fill="#fff" />
+      <use
+        href="#p-cloud"
+        transform="translate(3 4)"
+        fill="#000"
+        stroke="#000"
+        stroke-width="4"
+        stroke-linejoin="round"
+      />
+    </mask>
+
+    <symbol id="i-sun-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke="#ffb896"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="16" cy="16" r="6" />
+        <path
+          d="M25.5 16H28.5M22.72 22.72L24.84 24.84M16 25.5V28.5M9.28 22.72L7.16 24.84M6.5 16H3.5M9.28 9.28L7.16 7.16M16 6.5V3.5M22.72 9.28L24.84 7.16"
+        />
+      </g>
+    </symbol>
+    <symbol id="i-moon-line" viewBox="0 0 32 32">
+      <path
+        d="M19 6.5A10 10 0 1 0 26.5 21A8 8 0 0 1 19 6.5Z"
+        fill="none"
+        stroke="#e9e6d8"
+        stroke-width="1.5"
+        stroke-linejoin="round"
+      />
+    </symbol>
+    <symbol id="i-cloudy-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <g mask="url(#m-cloudy-back)">
+          <use href="#p-cloud" transform="translate(2 -3)" stroke="#8fa5bd" />
+        </g>
+        <use href="#p-cloud" transform="translate(-1 3)" stroke="#e4edf8" />
+      </g>
+    </symbol>
+    <symbol id="i-partly-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <g mask="url(#m-cloud-corner)" stroke="#ffb896">
+          <circle cx="13" cy="13" r="5.5" />
+          <path
+            d="M21 13H23.5M18.66 18.66L20.42 20.42M13 21V23.5M7.34 18.66L5.58 20.42M5 13H2.5M7.34 7.34L5.58 5.58M13 5V2.5M18.66 7.34L20.42 5.58"
+          />
+        </g>
+        <use href="#p-cloud" transform="translate(3 4)" stroke="#e4edf8" />
+      </g>
+    </symbol>
+    <symbol id="i-moon-cloud-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <g mask="url(#m-cloud-corner)">
+          <path
+            transform="translate(-3 -2) scale(0.72)"
+            d="M19 6.5A10 10 0 1 0 26.5 21A8 8 0 0 1 19 6.5Z"
+            stroke="#e9e6d8"
+            stroke-width="2"
+          />
+        </g>
+        <use href="#p-cloud" transform="translate(3 4)" stroke="#e4edf8" />
+      </g>
+    </symbol>
+    <symbol id="i-rain-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <use href="#p-cloud" transform="translate(0 -3)" stroke="#e4edf8" />
+        <path d="M12 24l-1.5 4M17 24l-1.5 4M22 24l-1.5 4" stroke="#7cc4ff" />
+      </g>
+    </symbol>
+    <symbol id="i-snow-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <use href="#p-cloud" transform="translate(0 -3)" stroke="#e4edf8" />
+        <g stroke="#eef4fb">
+          <circle cx="12" cy="25" r="1.4" />
+          <circle cx="17" cy="27.5" r="1.4" />
+          <circle cx="22" cy="25" r="1.4" />
+        </g>
+      </g>
+    </symbol>
+    <symbol id="i-storm-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <use href="#p-cloud" transform="translate(0 -4)" stroke="#a9bbd2" />
+        <path d="M17.5 20.5l-5 6h4l-2 4.5 7-7.5h-4z" stroke="#ffb896" />
+      </g>
+    </symbol>
+    <symbol id="i-fog-line" viewBox="0 0 32 32">
+      <g
+        fill="none"
+        stroke="#95a9bd"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        opacity="0.9"
+      >
+        <path d="M6 13c3-2 6 2 9 0s6-2 9 0" />
+        <path d="M4 18c3-2 6 2 9 0s6-2 9 0" />
+        <path d="M8 23c3-2 6 2 8 0" />
+      </g>
+    </symbol>
+
     <!-- reused non-condition glyphs from the mockup -->
     <symbol id="i-rise" viewBox="0 0 24 24">
       <g
