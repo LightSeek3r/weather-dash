@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test'
-import { readFileSync } from 'node:fs'
 
 /**
  * A waiting app version (`?update=1` simulates it) turns the status dot into
