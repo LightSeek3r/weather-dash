@@ -1108,7 +1108,12 @@
     width: min(28rem, 100vw);
     height: 100%;
     padding: 0 var(--space-md, 1.5rem) var(--space-md, 1.5rem);
-    background: var(--color-glass, rgba(196, 222, 255, 0.09));
+    /* A dark base under the shared glass tint: the tint alone (~8%) let the
+       sun, rays and clouds behind the sheet bleed through the form text. The
+       base matches the sticky header's tone so the two read as one surface. */
+    background:
+      linear-gradient(rgb(9 20 34 / 0.9), rgb(9 20 34 / 0.9)),
+      var(--color-glass, rgba(196, 222, 255, 0.09));
     border-inline-start: 1px solid
       var(--color-glass-edge, rgba(222, 238, 255, 0.18));
     backdrop-filter: blur(24px) saturate(1.25) brightness(var(--glass-dim, 1));
