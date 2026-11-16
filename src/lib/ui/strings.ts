@@ -139,6 +139,10 @@ export interface Dictionary {
     noDataYet: string
     /** Prefixes `relative`, e.g. "updated" + "5m ago" -> "updated 5m ago". */
     updatedPrefix: string
+    /** Status dot while a newer app version waits to be loaded. */
+    update: string
+    /** Button that loads it. */
+    reload: string
     relative: RelativeTimeLabels
   }
   weather: {
@@ -288,6 +292,8 @@ const en: Dictionary = {
     offline: 'offline',
     noDataYet: 'no data yet',
     updatedPrefix: 'updated',
+    update: 'New version available',
+    reload: 'Reload',
     relative: {
       justNow: 'just now',
       minutesAgo: (n) => `${n}m ago`,
@@ -492,6 +498,8 @@ const fr: Dictionary = {
     offline: 'hors ligne',
     noDataYet: 'aucune donnée pour l’instant',
     updatedPrefix: 'mis à jour',
+    update: 'Nouvelle version disponible',
+    reload: 'Recharger',
     relative: {
       justNow: 'à l’instant',
       minutesAgo: (n) => `il y a ${n} min`,
@@ -705,6 +713,8 @@ const nl: Dictionary = {
     offline: 'offline',
     noDataYet: 'nog geen gegevens',
     updatedPrefix: 'bijgewerkt',
+    update: 'Nieuwe versie beschikbaar',
+    reload: 'Herladen',
     relative: {
       justNow: 'net nu',
       minutesAgo: (n) => `${n} min geleden`,
@@ -910,6 +920,8 @@ const de: Dictionary = {
     offline: 'offline',
     noDataYet: 'noch keine Daten',
     updatedPrefix: 'aktualisiert',
+    update: 'Neue Version verfügbar',
+    reload: 'Neu laden',
     relative: {
       justNow: 'gerade jetzt',
       minutesAgo: (n) => `vor ${n} Min.`,
@@ -1117,6 +1129,8 @@ const es: Dictionary = {
     offline: 'sin conexión',
     noDataYet: 'aún sin datos',
     updatedPrefix: 'actualizado',
+    update: 'Nueva versión disponible',
+    reload: 'Recargar',
     relative: {
       justNow: 'ahora mismo',
       minutesAgo: (n) => `hace ${n} min`,
@@ -1325,6 +1339,8 @@ const it: Dictionary = {
     offline: 'offline',
     noDataYet: 'nessun dato ancora',
     updatedPrefix: 'aggiornato',
+    update: 'Nuova versione disponibile',
+    reload: 'Ricarica',
     relative: {
       justNow: 'proprio ora',
       minutesAgo: (n) => `${n} min fa`,
@@ -1531,6 +1547,8 @@ const pt: Dictionary = {
     offline: 'offline',
     noDataYet: 'ainda sem dados',
     updatedPrefix: 'atualizado',
+    update: 'Nova versão disponível',
+    reload: 'Recarregar',
     relative: {
       justNow: 'agora mesmo',
       minutesAgo: (n) => `há ${n} min`,
@@ -1746,6 +1764,8 @@ const ru: Dictionary = {
     offline: 'офлайн',
     noDataYet: 'пока нет данных',
     updatedPrefix: 'обновлено',
+    update: 'Доступна новая версия',
+    reload: 'Перезагрузить',
     relative: {
       justNow: 'только что',
       minutesAgo: (n) => `${n} мин назад`,
@@ -1957,6 +1977,8 @@ const zh: Dictionary = {
     offline: '离线',
     noDataYet: '暂无数据',
     updatedPrefix: '更新于',
+    update: '有新版本可用',
+    reload: '重新加载',
     relative: {
       justNow: '刚刚',
       minutesAgo: (n) => `${n} 分钟前`,
@@ -2140,6 +2162,8 @@ const hi: Dictionary = {
     offline: 'ऑफ़लाइन',
     noDataYet: 'अभी तक कोई डेटा नहीं',
     updatedPrefix: 'अपडेट किया गया',
+    update: 'नया संस्करण उपलब्ध है',
+    reload: 'फिर से लोड करें',
     relative: {
       justNow: 'अभी अभी',
       minutesAgo: (n) => `${n} मिनट पहले`,
@@ -2347,6 +2371,8 @@ const ar: Dictionary = {
     offline: 'غير متصل',
     noDataYet: 'لا توجد بيانات بعد',
     updatedPrefix: 'آخر تحديث',
+    update: 'يتوفر إصدار جديد',
+    reload: 'إعادة التحميل',
     relative: {
       justNow: 'الآن',
       minutesAgo: (n) => `منذ ${n} د`,
@@ -2550,6 +2576,8 @@ const bn: Dictionary = {
     offline: 'অফলাইন',
     noDataYet: 'এখনও কোনো তথ্য নেই',
     updatedPrefix: 'আপডেট হয়েছে',
+    update: 'নতুন সংস্করণ পাওয়া যাচ্ছে',
+    reload: 'রিলোড করুন',
     relative: {
       justNow: 'এইমাত্র',
       minutesAgo: (n) => `${n} মিনিট আগে`,
@@ -2760,6 +2788,8 @@ const ur: Dictionary = {
     offline: 'آف لائن',
     noDataYet: 'ابھی کوئی ڈیٹا نہیں',
     updatedPrefix: 'تازہ کاری',
+    update: 'نیا ورژن دستیاب ہے',
+    reload: 'دوبارہ لوڈ کریں',
     relative: {
       justNow: 'ابھی ابھی',
       minutesAgo: (n) => `${n} منٹ پہلے`,
@@ -2965,6 +2995,8 @@ const id: Dictionary = {
     offline: 'luring',
     noDataYet: 'belum ada data',
     updatedPrefix: 'diperbarui',
+    update: 'Versi baru tersedia',
+    reload: 'Muat ulang',
     relative: {
       justNow: 'baru saja',
       minutesAgo: (n) => `${n} mnt lalu`,
@@ -3173,6 +3205,8 @@ const ja: Dictionary = {
     offline: 'オフライン',
     noDataYet: 'データなし',
     updatedPrefix: '更新',
+    update: '新しいバージョンがあります',
+    reload: '再読み込み',
     relative: {
       justNow: 'たった今',
       minutesAgo: (n) => `${n}分前`,

@@ -34,6 +34,8 @@ export interface DebugParams {
    * not here, so this module stays a dumb string-in/struct-out parser.
    */
   weather: string | null
+  /** `?update=1`: behave as if a newer app version is waiting (shows the reload invitation). */
+  update: boolean
 }
 
 /** Pure parse — never touches `window` itself, so it's trivially unit-testable with any query string. */
@@ -52,7 +54,7 @@ export function readDebugParams(search: string): DebugParams {
   const freeze = params.get('freeze') === '1' || explicitNow !== null
   const now = freeze ? (explicitNow ?? new Date()) : null
 
-  return { freeze, now, weather }
+  return { freeze, now, weather, update: params.get('update') === '1' }
 }
 
 /**

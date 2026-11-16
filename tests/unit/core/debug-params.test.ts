@@ -4,7 +4,12 @@ import { readDebugParams } from '../../../src/lib/core/debug-params'
 describe('readDebugParams', () => {
   it('defaults to not frozen, no now, no weather for an empty query string', () => {
     const params = readDebugParams('')
-    expect(params).toEqual({ freeze: false, now: null, weather: null })
+    expect(params).toEqual({
+      freeze: false,
+      now: null,
+      weather: null,
+      update: false
+    })
   })
 
   it('freeze=1 without ?now defaults now to "real now" at read time', () => {
@@ -57,7 +62,16 @@ describe('readDebugParams', () => {
     expect(params).toEqual({
       freeze: true,
       now: new Date('2026-01-15T23:00:00.000Z'),
-      weather: 'storm'
+      weather: 'storm',
+      update: false
     })
+  })
+})
+
+describe('readDebugParams update', () => {
+  it('?update=1 simulates a waiting app version, anything else does not', () => {
+    expect(readDebugParams('?update=1').update).toBe(true)
+    expect(readDebugParams('?update=0').update).toBe(false)
+    expect(readDebugParams('').update).toBe(false)
   })
 })

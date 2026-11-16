@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { registerSW } from 'virtual:pwa-register'
   import { onMount, onDestroy } from 'svelte'
   import Layout from './components/Layout.svelte'
   import Background from './components/Background.svelte'
@@ -46,6 +45,7 @@
   } from './lib/weather/debug-snapshots'
   import { debugParams } from './lib/core/debug-params'
   import { mapWmoCode } from './lib/weather/mapWmo'
+  import { initAppUpdate, applyAppUpdate } from './lib/core/app-update'
   import {
     scheduleNightlyReload,
     consumeNightlyReloadMarker
@@ -53,7 +53,7 @@
 
   let s = $derived(t($settingsStore.locale))
 
-  registerSW()
+  initAppUpdate()
 
   // Fullscreen requires a user gesture on most browsers (and iOS Safari has
   // no Fullscreen API at all), so the dashboard starts behind a "tap to
@@ -187,7 +187,7 @@
         : initWeather()
     // GPS fixes saved before reverse geocoding existed are still unnamed.
     if (!debugWeather) void nameUnnamedLocation(false)
-    const stopNightlyReload = scheduleNightlyReload('03:30')
+    const stopNightlyReload = scheduleNightlyReload('03:30', applyAppUpdate)
     if (started) {
       void acquireWakeLock()
       maybeAutoOpenSettings()

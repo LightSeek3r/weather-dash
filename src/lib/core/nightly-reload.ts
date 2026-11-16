@@ -1,8 +1,8 @@
 /**
  * Full page reload once a night (plan premortem P3: a 24/7 tab slowly
- * accumulates heap/GPU state no single leak fix fully clears; also the only
- * point a `registerType: 'autoUpdate'` service worker's new version actually
- * takes over an always-open tab).
+ * accumulates heap/GPU state no single leak fix fully clears; also the point a
+ * waiting service-worker version takes over an always-open tab nobody
+ * tapped the update invitation on: callers pass `applyAppUpdate`).
  *
  * Fires on the first `'minute'` tick at or after `atTime`, at most once per
  * local day, and only if:

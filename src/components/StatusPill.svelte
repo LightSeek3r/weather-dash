@@ -3,6 +3,7 @@
   import { settingsStore } from '../lib/core/storage/settings'
   import { t } from '../lib/ui/strings'
   import { debugParams } from '../lib/core/debug-params'
+  import { updateReady, applyAppUpdate } from '../lib/core/app-update'
 
   interface Props {
     lastUpdated: Date | null
@@ -38,7 +39,9 @@
   )
 
   let label = $derived(
-    !online
+    $updateReady
+      ? s.status.update
+      : !online
       ? s.status.offline
       : lastUpdated
         ? `${s.status.updatedPrefix} ${relativeTime(lastUpdated, now, s.status.relative)}`
@@ -52,6 +55,19 @@
   // hidden live region below, independent of whether the popover is open.
   let detailOpen = $state(false)
   let rootEl: HTMLDivElement | undefined
+
+  // A newer version turns the dot into an invitation: it opens by itself,
+  // then folds back into a pulsing dot (so an unattended wall display isn't
+  // left with a card over the forecast) — tapping the dot reopens it, and the
+  // nightly reload applies the update if nobody does.
+  const INVITE_MS = 30_000
+  $effect(() => {
+    if (!$updateReady) return
+    detailOpen = true
+    if (debugParams.freeze) return
+    const fold = setTimeout(() => (detailOpen = false), INVITE_MS)
+    return () => clearTimeout(fold)
+  })
 
   function toggleDetail(): void {
     detailOpen = !detailOpen
@@ -83,13 +99,25 @@
     class="status-pill__dot"
     data-fx-calm
     class:status-pill__dot--offline={!online}
-    class:status-pill__dot--stale={online && stale}
+    class:status-pill__dot--stale={online && stale && !$updateReady}
+    class:status-pill__dot--update={$updateReady}
     aria-label={label}
     aria-haspopup="true"
     aria-expanded={detailOpen}
     onclick={toggleDetail}
   ></button>
-  {#if detailOpen}
+  {#if detailOpen && $updateReady}
+    <div class="status-pill__detail status-pill__invite" data-fx-calm>
+      <span>{s.status.update}</span>
+      <button
+        type="button"
+        class="status-pill__reload"
+        onclick={applyAppUpdate}
+      >
+        {s.status.reload}
+      </button>
+    </div>
+  {:else if detailOpen}
     <p class="status-pill__detail" data-fx-calm>{label}</p>
   {/if}
 </div>
@@ -130,6 +158,28 @@
     box-shadow: none;
   }
 
+  /* Ringed and pulsing: the one state of this dot that asks for an action. */
+  .status-pill__dot--update {
+    animation: status-pill-pulse 2s ease-out infinite;
+  }
+  @keyframes status-pill-pulse {
+    from {
+      box-shadow:
+        0 0 8px var(--color-accent, #a6dcff),
+        0 0 0 0 var(--color-accent, #a6dcff);
+    }
+    to {
+      box-shadow:
+        0 0 8px var(--color-accent, #a6dcff),
+        0 0 0 0.9rem transparent;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .status-pill__dot--update {
+      animation: none;
+    }
+  }
+
   .status-pill__dot--offline {
     background: var(--color-error, #ff9a86);
     box-shadow: 0 0 8px var(--color-error, #ff9a86);
@@ -154,6 +204,34 @@
     font-family: var(--font-body, 'Atkinson Hyperlegible', sans-serif);
     font-size: var(--font-size-sm, 0.85rem);
     backdrop-filter: blur(16px);
+  }
+
+  .status-pill__invite {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4em 0.9em;
+    width: max-content;
+    max-width: calc(100vw - 2 * var(--space-md, 1.5rem));
+    white-space: normal;
+    color: var(--color-text, #eef4fb);
+  }
+  .status-pill__reload {
+    padding: 0.35em 1em;
+    border: none;
+    border-radius: var(--radius-full, 999px);
+    background: var(--color-accent, #a6dcff);
+    color: #0a1726;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .status-pill__reload:hover {
+    filter: brightness(1.1);
+  }
+  .status-pill__reload:focus-visible {
+    outline: 2px solid var(--color-text, #eef4fb);
+    outline-offset: 2px;
   }
 
   .sr-only {
