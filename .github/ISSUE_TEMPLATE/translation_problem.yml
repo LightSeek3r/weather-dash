@@ -1,0 +1,24 @@
+name: Translation problem
+description: A wrong, clumsy or truncated translation
+labels: [translation]
+body:
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: fr, ar, ja ...
+    validations:
+      required: true
+  - type: textarea
+    id: shown
+    attributes:
+      label: Text as shown
+      description: Where it appears (clock, condition, settings...) and what it says.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should say
+    validations:
+      required: true

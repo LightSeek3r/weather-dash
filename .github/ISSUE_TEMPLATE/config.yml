@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/LightSeek3r/weather-dash/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue (see SECURITY.md).
+  - name: About Weather Dash
+    url: https://weather.unit42.fr
+    about: The live app.

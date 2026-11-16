@@ -1,0 +1,12 @@
+Weather Dash includes third-party material.
+
+Typefaces (SIL Open Font License 1.1), self-hosted in src/assets/fonts:
+  Lexend                  https://fonts.google.com/specimen/Lexend
+  Atkinson Hyperlegible   https://fonts.google.com/specimen/Atkinson+Hyperlegible
+
+Data the app loads at run time (not bundled):
+  Weather, air quality and geocoding   Open-Meteo.com, CC BY 4.0   https://open-meteo.com/
+  Place names                          © OpenStreetMap contributors (Nominatim), ODbL
+                                       https://www.openstreetmap.org/copyright
+
+Libraries are listed in package.json and keep their own licences.
