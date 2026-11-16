@@ -1052,7 +1052,15 @@
            self-hosted fonts (see design-tokens.css) are OFL and credited
            here too. No dedicated About screen exists yet, so it lives here. -->
       <div class="attribution">
-        <p class="attribution__app">Weather Dash</p>
+        <p class="attribution__app">
+          Weather Dash <span class="attribution__version">v{__APP_VERSION__}</span>
+          ·
+          <a
+            href="https://github.com/LightSeek3r/weather-dash"
+            target="_blank"
+            rel="noopener noreferrer">GitHub</a
+          >
+        </p>
         <p>
           Weather data © <a
             href="https://open-meteo.com/"
@@ -1459,6 +1467,10 @@
   .attribution__app {
     color: var(--color-text, #eef4fb);
     font-weight: 600;
+  }
+  .attribution__version {
+    font-weight: 400;
+    color: var(--color-text-2, rgba(238, 244, 251, 0.75));
   }
 
   .attribution a {

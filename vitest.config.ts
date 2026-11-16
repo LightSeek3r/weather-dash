@@ -3,6 +3,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
   plugins: [svelte()],
+  define: { __APP_VERSION__: JSON.stringify('test') },
   // Svelte resolves to its server build under Node otherwise, where mount()
   // and onMount() are unavailable (needed by component tests).
   resolve: { conditions: ['browser'] },
