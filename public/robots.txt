@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://weather-dash-9j2.pages.dev/sitemap.xml
+Sitemap: https://weather.unit42.fr/sitemap.xml
