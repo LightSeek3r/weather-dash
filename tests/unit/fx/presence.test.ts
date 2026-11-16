@@ -80,15 +80,15 @@ describe('clearZones', () => {
     return { ctx, atFill, as: ctx as unknown as CanvasRenderingContext2D }
   }
 
-  it('erases the panel plus CLEAR_MARGIN, scaled to the backing store', () => {
+  it('erases exactly the panel plus CLEAR_MARGIN, scaled to the backing store (no outward snap)', () => {
     const { ctx, as } = recordingContext()
     clearZones(as, [glass], 0.5)
     expect(ctx.roundRect).toHaveBeenCalledTimes(1)
     const [x, y, w, h] = ctx.roundRect.mock.calls[0]
-    expect(x).toBeLessThanOrEqual((400 - CLEAR_MARGIN) * 0.5)
-    expect(y).toBeLessThanOrEqual((100 - CLEAR_MARGIN) * 0.5)
-    expect(x + w).toBeGreaterThanOrEqual((700 + CLEAR_MARGIN) * 0.5)
-    expect(y + h).toBeGreaterThanOrEqual((400 + CLEAR_MARGIN) * 0.5)
+    expect(x).toBeCloseTo((400 - CLEAR_MARGIN) * 0.5)
+    expect(y).toBeCloseTo((100 - CLEAR_MARGIN) * 0.5)
+    expect(x + w).toBeCloseTo((700 + CLEAR_MARGIN) * 0.5)
+    expect(y + h).toBeCloseTo((400 + CLEAR_MARGIN) * 0.5)
   })
 
   it('follows the rounded corners instead of erasing a square', () => {
@@ -121,7 +121,7 @@ describe('clearZones', () => {
       1
     )
     const radii = ctx.roundRect.mock.calls[0][4]
-    expect(radii.map((r: { x: number }) => r.x)).toEqual([0, 22, 0, 22])
+    expect(radii.map((r: { x: number }) => r.x)).toEqual([0, 21, 0, 21])
   })
 
   it('erases with destination-out, fully opaque, then restores the context', () => {
@@ -156,8 +156,8 @@ describe('clearZones', () => {
     expect(ctx.fill).not.toHaveBeenCalled()
   })
 
-  it('hugs the panel: the margin stays a couple of px, not a halo', () => {
-    expect(CLEAR_MARGIN).toBeLessThanOrEqual(4)
+  it('hugs the panel: the margin stays 1px, not a halo', () => {
+    expect(CLEAR_MARGIN).toBeLessThanOrEqual(1)
   })
 })
 

@@ -30,8 +30,13 @@ export interface CalmZone {
   radii: readonly [CornerRadius, CornerRadius, CornerRadius, CornerRadius]
 }
 
-/** Front-layer cut-out growth around a panel, CSS px: covers sub-pixel rect rounding and the page's pixel-shift drift between re-measures. */
-export const CLEAR_MARGIN = 2
+/**
+ * Front-layer cut-out growth around a panel, CSS px: covers the page's 1px
+ * pixel-shift drift between re-measures. Kept at 1 because the front canvas
+ * is a low-res backing store (~0.5 px per CSS px) scaled up: every CSS px of
+ * margin shows as a strip of bare sky between a cloud and the card.
+ */
+export const CLEAR_MARGIN = 1
 
 const SELECTOR = '[data-fx-calm]'
 
@@ -104,8 +109,8 @@ export function zonesSignature(zones: CalmZone[]): string {
 
 /**
  * Erases every zone's shape (plus CLEAR_MARGIN) from a front-layer canvas.
- * Straight edges snap outward to whole backing-store px so they erase
- * cleanly; only the rounded corners are anti-aliased.
+ * Edges are anti-aliased, not snapped outward to whole backing-store px: at
+ * half resolution a snap would widen the gap around a card by up to 2 CSS px.
  * @param cssScale backing-store px per CSS px.
  */
 export function clearZones(
@@ -127,10 +132,10 @@ export function clearZones(
   ctx.fillStyle = '#000'
   ctx.beginPath()
   for (const z of zones) {
-    const x0 = Math.floor((z.x0 - CLEAR_MARGIN) * cssScale)
-    const y0 = Math.floor((z.y0 - CLEAR_MARGIN) * cssScale)
-    const w = Math.ceil((z.x1 + CLEAR_MARGIN) * cssScale) - x0
-    const h = Math.ceil((z.y1 + CLEAR_MARGIN) * cssScale) - y0
+    const x0 = (z.x0 - CLEAR_MARGIN) * cssScale
+    const y0 = (z.y0 - CLEAR_MARGIN) * cssScale
+    const w = (z.x1 - z.x0 + 2 * CLEAR_MARGIN) * cssScale
+    const h = (z.y1 - z.y0 + 2 * CLEAR_MARGIN) * cssScale
     // Older engines lack roundRect: they get the square cut-out, which is
     // still correct, just not as pretty at the corners.
     if (typeof ctx.roundRect === 'function') {
