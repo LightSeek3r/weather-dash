@@ -2,7 +2,7 @@
   // Shared tap-to-reveal popover: extracts the toggle/outside-click/Escape
   // mechanics StatusPill.svelte implemented first (dot + status text) so the
   // moon, holiday, and saint info affordances don't each reimplement it.
-  import type { Snippet } from 'svelte'
+  import { tick, type Snippet } from 'svelte'
   import { t } from '../lib/ui/strings'
   import { settingsStore } from '../lib/core/storage/settings'
 
@@ -25,8 +25,46 @@
   let s = $derived(t($settingsStore.locale))
   let ariaLabel = $derived(label ?? s.common.moreInfo)
 
+  /** Keep-clear distance between the popover and the viewport edge, px. */
+  const EDGE = 8
+
   let open = $state(false)
   let rootEl: HTMLDivElement | undefined
+  let popEl: HTMLDivElement | undefined = $state()
+
+  // Collision handling: the popover opens on its preferred side, then flips
+  // to the roomier side, slides back inside the viewport horizontally and,
+  // only when neither side fits it, scrolls inside a capped height — it is
+  // never cropped by a screen edge, whatever the resolution.
+  let flipped = $state(false)
+  let shiftX = $state(0)
+  let maxHeight = $state<number | null>(null)
+  let side = $derived((placement === 'above') !== flipped ? 'above' : 'below')
+
+  async function place(): Promise<void> {
+    flipped = false
+    shiftX = 0
+    maxHeight = null
+    await tick()
+    if (!popEl || !rootEl) return
+    const p = popEl.getBoundingClientRect()
+    const t = rootEl.getBoundingClientRect()
+    const above = placement === 'above'
+    const gap = above ? t.top - p.bottom : p.top - t.bottom
+    const roomAbove = t.top - gap - EDGE
+    const roomBelow = window.innerHeight - t.bottom - gap - EDGE
+    const preferred = above ? roomAbove : roomBelow
+    const other = above ? roomBelow : roomAbove
+    if (p.height > preferred) {
+      flipped = other > preferred
+      const room = Math.max(preferred, other)
+      if (p.height > room) maxHeight = Math.max(0, room)
+    }
+    if (p.left < EDGE) shiftX = EDGE - p.left
+    else if (p.right > window.innerWidth - EDGE) {
+      shiftX = window.innerWidth - EDGE - p.right
+    }
+  }
 
   function toggle(): void {
     open = !open
@@ -42,11 +80,15 @@
 
   $effect(() => {
     if (!open) return
+    void place()
+    const onResize = (): void => void place()
     window.addEventListener('pointerdown', handlePointerDown)
     window.addEventListener('keydown', handleKeydown)
+    window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('resize', onResize)
     }
   })
 </script>
@@ -64,9 +106,13 @@
   </button>
   {#if open}
     <div
+      bind:this={popEl}
       class="info-disclosure__popover"
-      class:info-disclosure__popover--above={placement === 'above'}
+      class:info-disclosure__popover--above={side === 'above'}
       class:info-disclosure__popover--end={align === 'end'}
+      style:transform={shiftX ? `translateX(${shiftX}px)` : undefined}
+      style:max-height={maxHeight === null ? undefined : `${maxHeight}px`}
+      style:overflow-y={maxHeight === null ? undefined : 'auto'}
     >
       {@render content()}
     </div>
@@ -97,8 +143,8 @@
     top: calc(100% + var(--space-sm, 0.6rem));
     left: 0;
     z-index: 1;
-    min-width: 12em;
-    max-width: 22em;
+    min-width: min(12em, calc(100vw - 2 * 8px));
+    max-width: min(22em, calc(100vw - 2 * 8px));
     margin: 0;
     padding: 0.6em 0.9em;
     border-radius: var(--radius-md, 1rem);
