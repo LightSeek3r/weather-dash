@@ -21,7 +21,7 @@ jobs:
       - name: Extract the changelog section
         run: |
           v="${GITHUB_REF_NAME#v}"
-          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > release-notes.md
+          awk -v h="## [$v]" 'index($0, h) == 1 {f=1; next} index($0, "## [") == 1 {f=0} f' CHANGELOG.md > release-notes.md
           test -s release-notes.md || { echo "no CHANGELOG section for $v"; exit 1; }
       - name: Create the release
         env:
