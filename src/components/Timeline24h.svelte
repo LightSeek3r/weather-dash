@@ -111,7 +111,7 @@
             class={i === 0 ? 't now' : 't'}
             style="left:{xFor(i, hourly.length)}%;top:{yFor(
               point.temperature
-            )}%">{Math.round(point.temperature)}°</span
+            )}%"><span class="v">{Math.round(point.temperature)}°</span></span
           >
         {/if}
       {/each}
@@ -141,6 +141,11 @@
      content) must key off .viewport, not .chart. */
   .viewport {
     container-type: inline-size;
+    /* Padding and a matching negative margin leave the content box (and so
+       every cqw below) unchanged but widen the clip box into the card's
+       padding, which first-column labels use on narrow screens. */
+    margin-inline: calc(var(--tl-pad-x, 0px) * -1);
+    padding-inline: var(--tl-pad-x, 0px);
     overflow-x: auto;
     scrollbar-color: rgb(196 222 255 / 0.35) transparent;
     scrollbar-width: thin;
@@ -168,13 +173,6 @@
   }
   @container (max-width: 600px) {
     .hours .sparse {
-      visibility: hidden;
-    }
-  }
-  /* Too short for labels above the bars without colliding with the curve;
-     bar height alone still reads as the chance of rain. */
-  @media (orientation: landscape) and (max-height: 520px) {
-    .rain span {
       visibility: hidden;
     }
   }
@@ -208,9 +206,13 @@
     justify-self: center;
     overflow: visible;
   }
+  /* The labels keep their font floors while --u shrinks on small screens, so
+     the band is at least as tall as a temperature label above its point plus
+     the point's dot below it: without that floor the labels ran over the icons
+     above and the rain percentages below. */
   .curve {
     position: relative;
-    height: calc(var(--u) * 6);
+    height: max(calc(var(--u) * 6), calc(var(--fs-m) * 4.2));
   }
   .curve svg {
     position: absolute;
@@ -258,6 +260,15 @@
     background: var(--text);
     box-shadow: 0 0 0 4px rgb(238 244 251 / 0.14);
   }
+  /* The first label is centred on the first column, which is narrower than
+     the label on a phone: the text slides right just enough to stay inside
+     the card while its dot stays on the curve. */
+  .curve .t .v {
+    display: inline-block;
+  }
+  .curve .t.now .v {
+    translate: max(0px, calc(1.3em - 100cqw / 48 - var(--tl-pad-x, 0px))) 0;
+  }
   .curve .t.now {
     color: var(--peach);
   }
@@ -268,7 +279,8 @@
   .rain {
     height: calc(var(--u) * 3);
     align-items: end;
-    margin-top: calc(var(--u) * 0.4);
+    /* Room for the percentage label that sits on top of the tallest bars. */
+    margin-top: max(calc(var(--u) * 0.4), calc(var(--fs-xs) * 1.5));
   }
   .rain div {
     position: relative;
@@ -286,5 +298,26 @@
     translate: -50% -0.25em;
     font-size: var(--fs-xs);
     color: var(--ice);
+  }
+  /* Same slide for the first column's percentage. */
+  .rain div:first-child span {
+    translate: calc(-50% + max(0px, 1.3em - 100cqw / 48 - var(--tl-pad-x, 0px)))
+      -0.25em;
+  }
+
+  /* Too short for labels above the bars without colliding with the curve;
+     bar height alone still reads as the chance of rain. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .rain span {
+      visibility: hidden;
+    }
+    .rain {
+      margin-top: calc(var(--u) * 0.4);
+    }
+    /* Height is scarce here (the weather card shares the row): a label may
+       graze the icons' empty margin, but must not push the card off screen. */
+    .curve {
+      height: max(calc(var(--u) * 6), calc(var(--fs-m) * 3.3));
+    }
   }
 </style>

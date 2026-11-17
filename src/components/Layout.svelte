@@ -229,7 +229,10 @@
   }
   .tl {
     grid-area: tl;
-    padding: calc(var(--u) * 1.4) calc(var(--u) * 2.2) calc(var(--u) * 1.2);
+    /* Timeline24h's scroll area reaches into this inline padding, so a label
+       centred on the first column can overhang the chart without being clipped. */
+    --tl-pad-x: calc(var(--u) * 2.2);
+    padding: calc(var(--u) * 1.4) var(--tl-pad-x) calc(var(--u) * 1.2);
   }
   /* Right padding keeps Tomorrow's own text clear of the fixed bottom-right
      corner cluster — StatusPill's dot (the corner itself) plus App's gear

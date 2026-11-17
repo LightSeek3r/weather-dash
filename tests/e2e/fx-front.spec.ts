@@ -91,6 +91,9 @@ for (const c of CASES) {
         for (let i = 3; i < d.length; i += 4) if (d[i] > m) m = d[i]
         return m
       }
+      // The edge pixel of the cut-out is anti-aliased (a card edge rarely
+      // sits on a whole backing-store pixel), so probe 2px inside the card.
+      const EDGE = 2
       let overCards = 0
       for (const el of document.querySelectorAll('.cap, .tl')) {
         const r = el.getBoundingClientRect()
@@ -104,8 +107,18 @@ for (const c of CASES) {
         )
         overCards = Math.max(
           overCards,
-          maxAlpha(r.left + rad, r.top, r.width - 2 * rad, r.height),
-          maxAlpha(r.left, r.top + rad, r.width, r.height - 2 * rad)
+          maxAlpha(
+            r.left + rad,
+            r.top + EDGE,
+            r.width - 2 * rad,
+            r.height - 2 * EDGE
+          ),
+          maxAlpha(
+            r.left + EDGE,
+            r.top + rad,
+            r.width - 2 * EDGE,
+            r.height - 2 * rad
+          )
         )
       }
       return { overCards, elsewhere: maxAlpha(0, 0, innerWidth, innerHeight) }
