@@ -7,6 +7,28 @@ are tagged retroactively from the development history.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-17
+
+### Fixed
+
+- The hourly strip on small screens: on a phone in portrait the temperature labels ran over the
+  condition icons above and the rain percentages below, and the first column's labels were cut off
+  at the card's left edge. The curve band now has a floor tied to the label size, the percentage
+  row leaves room for its labels, and the first labels slide into the card's padding while their
+  dots stay on the curve.
+
+### Security
+
+- `npm audit` is clean: every dependency is updated within its range (vite 8.3.8, vitest 5.1,
+  svelte 5.57.3, Playwright 1.65, date-holidays 3.39...) and `glob` is overridden to ^14.0.6 inside
+  `workbox-build`, which clears the build-time `glob` and `minimatch` advisories.
+
+### Changed
+
+- GitHub Actions use checkout, setup-node and upload-artifact v7.
+- `PORT=5181 npx playwright test` runs the suite on another port when 5173 is taken, instead of
+  silently testing whatever app is listening there.
+
 ## [1.0.0] - 2026-11-16
 
 First public release. The app runs at <https://weather.unit42.fr>.
@@ -180,7 +202,8 @@ First public release. The app runs at <https://weather.unit42.fr>.
 
 - Svelte 5, TypeScript and Vite PWA scaffold: layout, clock, settings, toasts and the status pill.
 
-[Unreleased]: https://github.com/LightSeek3r/weather-dash/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/LightSeek3r/weather-dash/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/LightSeek3r/weather-dash/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/LightSeek3r/weather-dash/compare/v0.13.0...v1.0.0
 [0.13.0]: https://github.com/LightSeek3r/weather-dash/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/LightSeek3r/weather-dash/compare/v0.12.0...v0.12.1
