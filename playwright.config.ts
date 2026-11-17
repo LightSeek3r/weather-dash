@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// Overridable so the suite can run while another dev server holds 5173.
+const PORT = Number(process.env.PORT ?? 5173)
+
 export default defineConfig({
   testDir: './tests/e2e',
   testMatch: '**/*.spec.ts',
@@ -9,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry'
   },
   // Font antialiasing/subpixel rounding differs even in a controlled
@@ -51,8 +54,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
+    command: `npm run dev -- --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI
   }
 })
